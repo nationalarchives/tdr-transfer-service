@@ -1,3 +1,4 @@
+import Dependencies.*
 
 ThisBuild / version      := "0.0.1-SNAPSHOT"
 ThisBuild / scalaVersion := "2.13.14"
@@ -5,10 +6,15 @@ ThisBuild / organization := "uk.gov.nationalarchives"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "tdr-transfer-service"
+    name := "tdr-transfer-service",
+    libraryDependencies ++= Seq(
+      catsEffect,
+      http4sDsl,
+      http4sEmberServer
+    )
   )
 
-(Compile / run / mainClass) := Some("Main")
+(Compile / run / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.TransferServiceServer")
 
 (assembly / assemblyJarName) := "transferservice.jar"
 
@@ -19,4 +25,4 @@ lazy val root = (project in file("."))
   case _                                                               => MergeStrategy.first
 }
 
-(assembly / mainClass) := Some("Main")
+(assembly / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.TransferServiceServer")
