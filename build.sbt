@@ -11,6 +11,8 @@ lazy val root = (project in file("."))
       catsEffect,
       http4sDsl,
       http4sEmberServer,
+      logbackClassic,
+      logBackEncoder,
       scalaTest
     )
   )
