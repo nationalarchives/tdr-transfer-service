@@ -7,4 +7,6 @@ object Dependencies {
 
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
+
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.18"
 }

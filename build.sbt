@@ -10,7 +10,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       catsEffect,
       http4sDsl,
-      http4sEmberServer
+      http4sEmberServer,
+      scalaTest
     )
   )
 

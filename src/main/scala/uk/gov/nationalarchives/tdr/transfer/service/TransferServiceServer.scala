@@ -11,12 +11,12 @@ import org.http4s.server.middleware.Logger
 
 object TransferServiceServer extends IOApp {
 
-  private val route: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case GET -> Root / "helloworld" / str => Ok("Hello World!")
+  val healthCheckRoute: HttpRoutes[IO] = HttpRoutes.of[IO] {
+    case GET -> Root / "healthcheck" => Ok("Healthy")
   }
 
   private val app: Kleisli[IO, Request[IO], Response[IO]] = Router(
-    "/" -> route
+    "/" -> healthCheckRoute
   ).orNotFound
 
   private val finalApp = Logger.httpApp(true, true)(app)
