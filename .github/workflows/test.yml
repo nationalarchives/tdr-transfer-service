@@ -1,4 +1,4 @@
-name: TDR Run Transfer Frontend tests
+name: TDR Run Transfer Service tests
 on:
   pull_request:
   push:
