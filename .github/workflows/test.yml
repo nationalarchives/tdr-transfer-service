@@ -13,7 +13,7 @@ jobs:
     uses: nationalarchives/tdr-github-actions/.github/workflows/tdr_test.yml@main
     with:
       repo-name: tdr-transfer-service
-      test-command: |        
+      test-command: |
         sbt scalafmtCheckAll test
       java-version: '17'
     secrets:
