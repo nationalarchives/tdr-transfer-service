@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
     )
   )
 
-(Compile / run / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.TransferServiceServer")
+(Compile / run / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer")
 
 (assembly / assemblyJarName) := "transferservice.jar"
 
@@ -28,4 +28,4 @@ lazy val root = (project in file("."))
   case _                                                               => MergeStrategy.first
 }
 
-(assembly / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.TransferServiceServer")
+(assembly / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer")

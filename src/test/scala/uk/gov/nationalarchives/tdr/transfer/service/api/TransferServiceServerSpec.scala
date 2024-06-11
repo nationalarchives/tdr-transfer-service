@@ -1,4 +1,4 @@
-package uk.gov.nationalarchives.tdr.transfer.service
+package uk.gov.nationalarchives.tdr.transfer.service.api
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global

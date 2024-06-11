@@ -1,13 +1,13 @@
-package uk.gov.nationalarchives.tdr.transfer.service
+package uk.gov.nationalarchives.tdr.transfer.service.api
 
 import cats.data.Kleisli
 import cats.effect.{ExitCode, IO, IOApp}
 import com.comcast.ip4s.IpLiteralSyntax
 import org.http4s.dsl.io._
-import org.http4s.{HttpRoutes, Request, Response}
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import org.http4s.server.middleware.Logger
+import org.http4s.{HttpRoutes, Request, Response}
 
 object TransferServiceServer extends IOApp {
 
