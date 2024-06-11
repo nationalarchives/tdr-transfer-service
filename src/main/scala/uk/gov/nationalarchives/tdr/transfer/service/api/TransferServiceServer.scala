@@ -11,8 +11,8 @@ import org.http4s.{HttpRoutes, Request, Response}
 
 object TransferServiceServer extends IOApp {
 
-  val healthCheckRoute: HttpRoutes[IO] = HttpRoutes.of[IO] {
-    case GET -> Root / "healthcheck" => Ok("Healthy")
+  val healthCheckRoute: HttpRoutes[IO] = HttpRoutes.of[IO] { case GET -> Root / "healthcheck" =>
+    Ok("Healthy")
   }
 
   private val app: Kleisli[IO, Request[IO], Response[IO]] = Router(
