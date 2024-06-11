@@ -1,0 +1,34 @@
+name: TDR Deploy Transfer Service
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: 'Environment'
+        required: true
+        options:
+          - intg
+          - staging
+          - prod
+        default: 'intg'
+      to-deploy:
+        description: 'Version to deploy'
+        required: true
+
+run-name: Deploying Transfer Service ${{inputs.to-deploy}} to ${{inputs.environment}}
+permissions:
+  id-token: write
+  contents: write
+jobs:
+  deploy:
+    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_deploy.yml@main
+    with:
+      service: transferservice
+      image-name: transfer-service
+      environment: ${{ github.event.inputs.environment }}
+      to-deploy: ${{ github.event.inputs.to-deploy }}
+    secrets:
+      ACCOUNT_NUMBER: ${{ secrets.ACCOUNT_NUMBER }}
+      MANAGEMENT_ACCOUNT: ${{ secrets.MANAGEMENT_ACCOUNT }}
+      WORKFLOW_PAT: ${{ secrets.WORKFLOW_PAT }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

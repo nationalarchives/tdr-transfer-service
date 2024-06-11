@@ -1,0 +1,20 @@
+name: TDR Run Transfer Service tests
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - master
+      - release-*
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  test:
+    uses: nationalarchives/tdr-github-actions/.github/workflows/tdr_test.yml@main
+    with:
+      repo-name: tdr-transfer-service
+      test-command: |
+        sbt scalafmtCheckAll test
+      java-version: '17'
+    secrets:
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
