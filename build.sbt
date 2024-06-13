@@ -8,14 +8,20 @@ lazy val root = (project in file("."))
   .settings(
     name := "tdr-transfer-service",
     libraryDependencies ++= Seq(
+      authUtils,
       catsEffect,
       http4sDsl,
       http4sEmberServer,
+      keycloakMock % Test,
       logbackClassic,
       logBackEncoder,
+      pekkoTestKitHttp % Test,
       pureConfig,
       pureConfigCatsEffect,
-      scalaTest
+      scalaTest % Test,
+      tapirHttp4sServer,
+      tapirJsonCirce,
+      tapirSwaggerUI
     )
   )
 
