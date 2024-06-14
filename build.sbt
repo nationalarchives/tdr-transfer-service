@@ -10,11 +10,13 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       authUtils,
       catsEffect,
+      http4sCirce,
       http4sDsl,
       http4sEmberServer,
       keycloakMock % Test,
       logbackClassic,
       logBackEncoder,
+      mockito % Test,
       pekkoTestKitHttp % Test,
       pureConfig,
       pureConfigCatsEffect,
@@ -30,10 +32,12 @@ lazy val root = (project in file("."))
 (assembly / assemblyJarName) := "transferservice.jar"
 
 (assembly / assemblyMergeStrategy) := {
-  case PathList("META-INF", x, xs @ _*) if x.toLowerCase == "services" => MergeStrategy.filterDistinctLines
-  case PathList("META-INF", xs @ _*)                                   => MergeStrategy.discard
-  case PathList("reference.conf")                                      => MergeStrategy.concat
-  case _                                                               => MergeStrategy.first
+  case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") => MergeStrategy.singleOrError
+  case PathList("META-INF", "resources", "webjars", "swagger-ui", _*)               => MergeStrategy.singleOrError
+  case PathList("META-INF", x, xs @ _*) if x.toLowerCase == "services"              => MergeStrategy.filterDistinctLines
+  case PathList("META-INF", xs @ _*)                                                => MergeStrategy.discard
+  case PathList("reference.conf")                                                   => MergeStrategy.concat
+  case _                                                                            => MergeStrategy.first
 }
 
 (assembly / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer")
