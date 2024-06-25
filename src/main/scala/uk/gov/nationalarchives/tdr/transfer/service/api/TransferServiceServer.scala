@@ -9,12 +9,20 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.Logger
 import org.http4s.{HttpRoutes, Request, Response}
 import sttp.apispec.openapi.Info
+import sttp.client3.quick.backend
+import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
 object TransferServiceServer extends IOApp {
+  private val authUrl = config.auth.url
+  private val realm = config.auth.realm
+
+  implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+  implicit val keycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment(s"$authUrl", realm, 8080)
+
   private val apiPort: Port = Port.fromInt(ApplicationConfig.appConfig.api.port).getOrElse(port"8080")
 
   private val infoTitle = "TDR Transfer Service API"

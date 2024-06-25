@@ -10,10 +10,17 @@ import org.http4s.{Header, Headers, Method, Request, Status}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
+import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
+import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
+import scala.concurrent.ExecutionContextExecutor
+
 class TransferServiceServerSpec extends AnyFlatSpec with Matchers {
+  implicit val executionContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
+  implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+  implicit val tdrKeycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment("authUrl", "realm", 60)
 
   "'healthcheck' endpoint" should "return 200 if server running" in {
     val getHealthCheck = Request[IO](Method.GET, uri"/healthcheck")
