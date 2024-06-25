@@ -8,7 +8,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-import uk.gov.nationalarchives.tdr.transfer.service.Config.Configuration
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
 
 import java.util.UUID
 

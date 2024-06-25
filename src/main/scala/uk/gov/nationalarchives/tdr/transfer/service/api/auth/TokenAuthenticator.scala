@@ -2,7 +2,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.auth
 
 import cats.effect.IO
 import uk.gov.nationalarchives.tdr.keycloak.{KeycloakUtils, TdrKeycloakDeployment, Token}
-import uk.gov.nationalarchives.tdr.transfer.service.Config.Configuration
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
 
 import scala.concurrent.ExecutionContext

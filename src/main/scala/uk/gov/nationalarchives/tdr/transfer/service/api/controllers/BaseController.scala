@@ -7,7 +7,7 @@ import sttp.model.StatusCode
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.{Endpoint, auth, endpoint, statusCode}
-import uk.gov.nationalarchives.tdr.transfer.service.Config.Configuration
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._

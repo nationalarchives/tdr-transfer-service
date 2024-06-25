@@ -10,6 +10,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       authUtils,
       catsEffect,
+      generatedGraphql,
+      graphqlClient,
       http4sCirce,
       http4sDsl,
       http4sEmberServer,
