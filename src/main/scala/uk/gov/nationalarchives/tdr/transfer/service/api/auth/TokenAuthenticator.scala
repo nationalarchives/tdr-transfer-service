@@ -9,11 +9,11 @@ import scala.concurrent.ExecutionContext
 
 case class AuthenticatedContext(token: Token)
 
-class TokenAuthenticator(config: Configuration) {
+class TokenAuthenticator()(implicit appConfig: Configuration) {
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
 
-  private val authUrl = config.auth.url
-  private val realm = config.auth.realm
+  private val authUrl = appConfig.auth.url
+  private val realm = appConfig.auth.realm
 
   implicit val tdrKeycloakDeployment: TdrKeycloakDeployment =
     TdrKeycloakDeployment(s"$authUrl", realm, 8080)
@@ -33,5 +33,5 @@ class TokenAuthenticator(config: Configuration) {
 }
 
 object TokenAuthenticator {
-  def apply(config: Configuration) = new TokenAuthenticator(config)
+  def apply()(implicit appConfig: Configuration) = new TokenAuthenticator()
 }

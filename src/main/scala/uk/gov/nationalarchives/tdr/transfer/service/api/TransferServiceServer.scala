@@ -21,18 +21,18 @@ import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configurat
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
 object TransferServiceServer extends IOApp {
-  private val config = ConfigSource.default.load[Configuration] match {
+  implicit val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
     case Left(value)  => throw new RuntimeException(s"Failed to load database migration config${value.prettyPrint()}")
     case Right(value) => value
   }
 
-  private val authUrl = config.auth.url
-  private val realm = config.auth.realm
+  private val authUrl = appConfig.auth.url
+  private val realm = appConfig.auth.realm
 
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
   implicit val keycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment(s"$authUrl", realm, 8080)
 
-  private val apiPort: Port = Port.fromInt(config.api.port).getOrElse(port"8080")
+  private val apiPort: Port = Port.fromInt(appConfig.api.port).getOrElse(port"8080")
 
   private val infoTitle = "TDR Transfer Service API"
   private val infoVersion = "0.0.1"

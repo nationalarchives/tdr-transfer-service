@@ -13,12 +13,12 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 
 trait BaseController {
-  val config = ConfigSource.default.load[Configuration] match {
+  implicit val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
     case Left(value)  => throw new RuntimeException(s"Failed to load database migration config${value.prettyPrint()}")
     case Right(value) => value
   }
 
-  private val tokenAuthenticator = TokenAuthenticator(config)
+  private val tokenAuthenticator = TokenAuthenticator()
 
   private val securedWithBearerEndpoint: Endpoint[String, Unit, AuthenticationError, Unit, Any] = endpoint
     .securityIn(auth.bearer[String]())
