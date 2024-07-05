@@ -1,18 +1,10 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api.auth
 
 import cats.effect.unsafe.implicits.global
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
-import pureconfig.ConfigSource
-import pureconfig.generic.auto._
-import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
+import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 
-class TokenAuthenticatorSpec extends AnyFlatSpec with Matchers {
-  implicit val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
-    case Left(value)  => throw new RuntimeException(s"Failed to load database migration config${value.prettyPrint()}")
-    case Right(value) => value
-  }
+class TokenAuthenticatorSpec extends BaseSpec {
 
   "'authenticateUserToken'" should "return authenticated token when token valid" in {
     val validToken = validUserToken()
