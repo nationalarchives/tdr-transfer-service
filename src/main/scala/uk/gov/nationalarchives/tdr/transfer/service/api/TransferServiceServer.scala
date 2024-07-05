@@ -13,7 +13,8 @@ import sttp.client3.quick.backend
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
-import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
+import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
 object TransferServiceServer extends IOApp {

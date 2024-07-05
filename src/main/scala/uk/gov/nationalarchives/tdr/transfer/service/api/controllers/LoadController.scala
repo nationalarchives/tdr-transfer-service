@@ -46,7 +46,7 @@ object LoadController {
 
   def apply()(implicit backend: SttpBackend[Identity, Any], appConfig: Configuration) = new LoadController(
     GraphQlApiService.apply(
-      new GraphQLClient[ac.Data, ac.Variables](appConfig.api.url)
+      new GraphQLClient[ac.Data, ac.Variables](appConfig.consignmentApi.url)
     )
   )
 }

@@ -26,7 +26,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
   }
 
   "'load/sharepoint/initiate' endpoint" should "return 200 with correct authorisation header" in {
-    graphqlOkJson
+    graphqlOkJson()
     val validToken = validUserToken()
     val bearer = CIString("Authorization")
     val authHeader = Header.Raw.apply(bearer, s"$validToken")
