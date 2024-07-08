@@ -10,7 +10,7 @@ object ApplicationConfig {
   case class Configuration(auth: Auth, api: Api)
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
-    case Left(value)  => throw new RuntimeException(s"Failed to transfer service config ${value.prettyPrint()}")
+    case Left(value)  => throw new RuntimeException(s"Failed to load transfer service application configuration ${value.prettyPrint()}")
     case Right(value) => value
   }
 }
