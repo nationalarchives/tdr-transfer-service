@@ -2,6 +2,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.controllers
 
 import cats.effect.IO
 import graphql.codegen.AddConsignment.{addConsignment => ac}
+import graphql.codegen.StartUpload.{startUpload => su}
 import org.http4s.HttpRoutes
 import sttp.client3.{Identity, SttpBackend}
 import sttp.tapir._
@@ -38,7 +39,15 @@ class LoadController(graphqlApiService: GraphQlApiService) extends BaseControlle
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO]().toRoutes(
-      initiateLoadEndpoint.serverLogicSuccess(ac => _ => graphqlApiService.addConsignment(ac.token).flatMap(c => loadDetails(c.consignmentid.get, ac.token.userId)))
+      initiateLoadEndpoint.serverLogicSuccess(ac =>
+        _ =>
+          for {
+            addConsignmentResult <- graphqlApiService.addConsignment(ac.token)
+            consignmentId = addConsignmentResult.consignmentid.get
+            _ <- graphqlApiService.startUpload(ac.token, consignmentId)
+            result <- loadDetails(consignmentId, ac.token.userId)
+          } yield result
+      )
     )
 }
 
@@ -46,7 +55,8 @@ object LoadController {
 
   def apply()(implicit backend: SttpBackend[Identity, Any], appConfig: Configuration) = new LoadController(
     GraphQlApiService.apply(
-      new GraphQLClient[ac.Data, ac.Variables](appConfig.consignmentApi.url)
+      new GraphQLClient[ac.Data, ac.Variables](appConfig.consignmentApi.url),
+      new GraphQLClient[su.Data, su.Variables](appConfig.consignmentApi.url)
     )
   )
 }
