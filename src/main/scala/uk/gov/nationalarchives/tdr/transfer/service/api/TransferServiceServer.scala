@@ -13,24 +13,26 @@ import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
 object TransferServiceServer extends IOApp {
-  private val authUrl = config.auth.url
-  private val realm = config.auth.realm
+  private val appConfig = ApplicationConfig.appConfig
+  private val authUrl = appConfig.auth.url
+  private val realm = appConfig.auth.realm
 
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
   implicit val keycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment(s"$authUrl", realm, 8080)
 
-  private val apiPort: Port = Port.fromInt(ApplicationConfig.appConfig.api.port).getOrElse(port"8080")
+  private val apiPort: Port = Port.fromInt(appConfig.transferServiceApi.port).getOrElse(port"8080")
 
   private val infoTitle = "TDR Transfer Service API"
   private val infoVersion = "0.0.1"
   private val infoDescription = Some("APIs to allow client services to transfer records to TDR")
 
   private val openApiInfo: Info = Info(infoTitle, infoVersion, description = infoDescription)
-  private val loadController = LoadController.apply()
+  private val loadController = LoadController()
 
   private val documentationEndpoints =
     SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints, openApiInfo)

@@ -10,7 +10,7 @@ import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.GraphQLClient
-import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Configuration
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
@@ -53,7 +53,7 @@ class LoadController(graphqlApiService: GraphQlApiService) extends BaseControlle
 
 object LoadController {
 
-  def apply()(implicit backend: SttpBackend[Identity, Any], appConfig: Configuration) = new LoadController(
+  def apply()(implicit backend: SttpBackend[Identity, Any]) = new LoadController(
     GraphQlApiService.apply(
       new GraphQLClient[ac.Data, ac.Variables](appConfig.consignmentApi.url),
       new GraphQLClient[su.Data, su.Variables](appConfig.consignmentApi.url)
