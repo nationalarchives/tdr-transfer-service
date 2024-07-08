@@ -6,20 +6,12 @@ import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import pureconfig.ConfigSource
-import pureconfig.generic.auto._
-import uk.gov.nationalarchives.tdr.transfer.service.Config.Configuration
 
 import java.util.UUID
 
 object TestUtils extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
   private val tdrKeycloakMock: KeycloakMock = createServer("tdr", 8000)
   private val testKeycloakMock: KeycloakMock = createServer("test", 8001)
-
-  val config = ConfigSource.default.load[Configuration] match {
-    case Left(value)  => throw new RuntimeException(s"Failed to load database migration config${value.prettyPrint()}")
-    case Right(value) => value
-  }
 
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
 

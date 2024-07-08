@@ -12,7 +12,7 @@ class ConsignmentServiceSpec extends AnyFlatSpec with Matchers {
   val mockKeycloakToken: Token = mock[Token]
 
   "'createConsignment'" should "return the consignment id of the created consignment" in {
-    val response = ConsignmentService.apply().createConsignment(mockKeycloakToken).unsafeRunSync()
+    val response = ConsignmentService().createConsignment(mockKeycloakToken).unsafeRunSync()
 
     response.consignmentId shouldBe UUID.fromString("ae4b7cad-ee83-46bd-b952-80bc8263c6c2")
   }

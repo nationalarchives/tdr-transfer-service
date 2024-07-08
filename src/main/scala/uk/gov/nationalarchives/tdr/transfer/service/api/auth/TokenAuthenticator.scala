@@ -2,18 +2,19 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.auth
 
 import cats.effect.IO
 import uk.gov.nationalarchives.tdr.keycloak.{KeycloakUtils, TdrKeycloakDeployment, Token}
-import uk.gov.nationalarchives.tdr.transfer.service.Config.Configuration
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
 
 import scala.concurrent.ExecutionContext
 
 case class AuthenticatedContext(token: Token)
 
-class TokenAuthenticator(config: Configuration) {
+class TokenAuthenticator {
   implicit val ec: ExecutionContext = scala.concurrent.ExecutionContext.Implicits.global
+  private val appConfig = ApplicationConfig.appConfig
 
-  private val authUrl = config.auth.url
-  private val realm = config.auth.realm
+  private val authUrl = appConfig.auth.url
+  private val realm = appConfig.auth.realm
 
   implicit val tdrKeycloakDeployment: TdrKeycloakDeployment =
     TdrKeycloakDeployment(s"$authUrl", realm, 8080)
@@ -33,5 +34,5 @@ class TokenAuthenticator(config: Configuration) {
 }
 
 object TokenAuthenticator {
-  def apply(config: Configuration) = new TokenAuthenticator(config)
+  def apply() = new TokenAuthenticator
 }

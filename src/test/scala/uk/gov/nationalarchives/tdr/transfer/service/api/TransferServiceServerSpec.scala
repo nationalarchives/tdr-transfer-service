@@ -18,7 +18,6 @@ class TransferServiceServerSpec extends AnyFlatSpec with Matchers {
   "'healthcheck' endpoint" should "return 200 if server running" in {
     val getHealthCheck = Request[IO](Method.GET, uri"/healthcheck")
     val response = TransferServiceServer.healthCheckRoute.orNotFound(getHealthCheck).unsafeRunSync()
-    response.status shouldBe Status.Ok
 
     response.status shouldBe Status.Ok
     response.as[String].unsafeRunSync() shouldEqual "Healthy"

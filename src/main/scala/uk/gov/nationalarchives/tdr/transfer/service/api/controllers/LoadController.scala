@@ -17,7 +17,7 @@ class LoadController(consignmentService: ConsignmentService) extends BaseControl
 
   def routes: HttpRoutes[IO] = initiateLoadRoute
 
-  val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, Unit, BackendException.AuthenticationError, ConsignmentDetails, Any, IO] = securedWithBearer
+  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, Unit, BackendException.AuthenticationError, ConsignmentDetails, Any, IO] = securedWithBearer
     .summary("Initiate the load of records and metadata")
     .post
     .in("load" / "sharepoint" / "initiate")
@@ -28,5 +28,5 @@ class LoadController(consignmentService: ConsignmentService) extends BaseControl
 }
 
 object LoadController {
-  def apply() = new LoadController(ConsignmentService.apply())
+  def apply() = new LoadController(ConsignmentService())
 }
