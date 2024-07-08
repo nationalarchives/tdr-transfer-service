@@ -9,7 +9,6 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.Logger
 import org.http4s.{HttpRoutes, Request, Response}
 import sttp.apispec.openapi.Info
-import sttp.client3.quick.backend
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
