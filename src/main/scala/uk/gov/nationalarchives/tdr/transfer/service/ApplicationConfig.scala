@@ -4,10 +4,12 @@ import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
 object ApplicationConfig {
-  case class Api(port: Int)
+  case class TransferServiceApi(port: Int)
+  case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String)
+  case class S3(metadataUploadBucket: String, recordsUploadBucket: String)
 
-  case class Configuration(auth: Auth, api: Api)
+  case class Configuration(auth: Auth, transferServiceApi: TransferServiceApi, consignmentApi: ConsignmentApi, s3: S3)
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
     case Left(value)  => throw new RuntimeException(s"Failed to load transfer service application configuration ${value.prettyPrint()}")
