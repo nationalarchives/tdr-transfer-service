@@ -1,9 +1,12 @@
 package uk.gov.nationalarchives.tdr.transfer.service
 
-import pureconfig.ConfigSource
+import pureconfig.generic.ProductHint
+import pureconfig.{CamelCase, ConfigFieldMapping, ConfigSource}
 import pureconfig.generic.auto._
 
 object ApplicationConfig {
+  implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
+
   case class TransferServiceApi(port: Int)
   case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String)
