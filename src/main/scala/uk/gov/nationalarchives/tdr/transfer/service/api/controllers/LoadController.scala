@@ -22,7 +22,7 @@ import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class LoadController(graphqlApiService: GraphQlApiService) extends BaseController {
-  private val appConfig = ApplicationConfig.appConfig
+  private val s3Config = ApplicationConfig.appConfig.s3
 
   def endpoints: List[Endpoint[String, Unit, BackendException.AuthenticationError, LoadDetails, Any]] = List(initiateLoadEndpoint.endpoint)
 
@@ -35,8 +35,8 @@ class LoadController(graphqlApiService: GraphQlApiService) extends BaseControlle
     .out(jsonBody[LoadDetails])
 
   private def loadDetails(consignmentId: UUID, userId: UUID): IO[LoadDetails] = {
-    val recordsS3Bucket = AWSS3LoadDestination(s"${appConfig.s3.recordsUploadBucket}", s"$userId/$consignmentId")
-    val metadataS3Bucket = AWSS3LoadDestination(s"${appConfig.s3.metadataUploadBucket}", s"$consignmentId/dataload/data-load-metadata.csv")
+    val recordsS3Bucket = AWSS3LoadDestination(s"${s3Config.recordsUploadBucket}", s"$userId/$consignmentId")
+    val metadataS3Bucket = AWSS3LoadDestination(s"${s3Config.metadataUploadBucket}", s"$consignmentId/dataload/data-load-metadata.csv")
     IO(LoadDetails(consignmentId, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
   }
 
