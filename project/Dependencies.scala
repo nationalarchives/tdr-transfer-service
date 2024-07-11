@@ -5,7 +5,7 @@ object Dependencies {
   private val pureConfigVersion = "0.17.6"
   private val tapirVersion = "1.10.7"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.196"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.206-SNAPSHOT"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.4"
 
@@ -24,6 +24,8 @@ object Dependencies {
   lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.0.1"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
+
+  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.194"
 
   lazy val tapirHttp4sServer = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
