@@ -4,6 +4,7 @@ object Dependencies {
   private val http4sVersion = "0.23.26"
   private val pureConfigVersion = "0.17.6"
   private val tapirVersion = "1.10.7"
+  private val tdrAWSUtilsVersion = "0.1.194"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.206-SNAPSHOT"
 
@@ -25,7 +26,8 @@ object Dependencies {
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
 
-  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.194"
+  lazy val sfnUtils = "uk.gov.nationalarchives" %% "stepfunction-utils" % tdrAWSUtilsVersion
+  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % tdrAWSUtilsVersion
 
   lazy val tapirHttp4sServer = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion

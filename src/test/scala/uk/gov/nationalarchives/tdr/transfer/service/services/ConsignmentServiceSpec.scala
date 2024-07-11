@@ -5,6 +5,7 @@ import org.mockito.MockitoSugar.mock
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import uk.gov.nationalarchives.tdr.keycloak.Token
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.ConsignmentService
 
 import java.util.UUID
 
