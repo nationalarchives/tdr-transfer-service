@@ -20,7 +20,8 @@ class DataLoadProcessor {
   def trigger(consignmentId: UUID, token: Token): IO[String] = {
     // Trigger data load step function
     val metadataObjectKey = s"$consignmentId/metadataload/${s3Config.metadataFileName}"
-    val input = ExecutionInput(consignmentId, token.userId, s3SourceBucketKey = metadataObjectKey, s3UploadBucketKey = metadataObjectKey)
+    val input = ExecutionInput(
+      consignmentId, token.userId, s3SourceBucketKey = metadataObjectKey, s3UploadBucketKey = metadataObjectKey, s3QuarantineBucketKey = metadataObjectKey)
     for {
       _ <- StepFunctionUtils.apply(sfnAsyncClient(sfnConfig.sfnEndpoint)).startExecution(sfnConfig.dataLoadStepFunctionArn, input)
     } yield "OK"
@@ -35,6 +36,7 @@ object DataLoadProcessor {
                              userId: UUID,
                              s3SourceBucketKey: String,
                              s3UploadBucketKey: String,
+                             s3QuarantineBucketKey: String,
                              fileId: String = s3Config.metadataFileName,
                              s3SourceBucket: String = s3Config.metadataS3SourceBucket,
                              s3UploadBucket: String = s3Config.metadataS3UploadBucket,
