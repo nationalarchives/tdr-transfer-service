@@ -11,7 +11,8 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContex
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Consignment.ConsignmentDetails
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{ConsignmentService, DataLoadProcessor, DataLoadResultsHandler}
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadProcessor, DataLoadResultsHandler}
+import uk.gov.nationalarchives.tdr.transfer.service.services.graphqlapi.ConsignmentService
 
 import java.util.UUID
 
@@ -39,7 +40,7 @@ class LoadController(consignmentService: ConsignmentService, dataLoadProcessing:
     .summary("Notify result of load processing")
     .description("TDR internal endpoint. Triggers post-processing functions")
     .post
-    .in("load" / "processing" / "result" / consignmentId)
+    .in("load" / "process" / "result" / consignmentId)
     .out(jsonBody[String])
 
   val initiateLoadRoute: HttpRoutes[IO] =

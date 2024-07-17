@@ -4,7 +4,7 @@ object Dependencies {
   private val http4sVersion = "0.23.26"
   private val pureConfigVersion = "0.17.6"
   private val tapirVersion = "1.10.7"
-  private val tdrAWSUtilsVersion = "0.1.194"
+  private val tdrAWSUtilsVersion = "0.1.197-SNAPSHOT"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.206-SNAPSHOT"
 

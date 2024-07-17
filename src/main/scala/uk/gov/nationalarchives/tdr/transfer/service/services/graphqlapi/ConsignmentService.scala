@@ -1,4 +1,4 @@
-package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
+package uk.gov.nationalarchives.tdr.transfer.service.services.graphqlapi
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxApplicativeId

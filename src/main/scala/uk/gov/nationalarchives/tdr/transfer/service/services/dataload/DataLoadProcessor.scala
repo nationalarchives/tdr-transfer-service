@@ -3,12 +3,11 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 import cats.effect.IO
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax.EncoderOps
-import software.amazon.awssdk.services.sfn.model.{StartExecutionRequest, StartExecutionResponse}
 import uk.gov.nationalarchives.aws.utils.stepfunction.StepFunctionClients.sfnAsyncClient
+import uk.gov.nationalarchives.aws.utils.stepfunction.StepFunctionUtils
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.ExecutionInput
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{ExecutionInput, s3Config}
 
 import java.util.UUID
 
@@ -17,19 +16,29 @@ class DataLoadProcessor {
 
   private val sfnConfig = ApplicationConfig.appConfig.sfn
 
+
   def trigger(consignmentId: UUID, token: Token): IO[String] = {
     // Trigger data load step function
-    val input = ExecutionInput(consignmentId, token.userId, "metadata-file-name")
-    val startExecutionRequest = StartExecutionRequest
-      .builder()
-      .input(input.asJson.toString)
-      .build()
-
-    IO(sfnAsyncClient(sfnConfig.dataLoadEndpoint).startExecution(startExecutionRequest).get().executionArn())
+    val metadataObjectKey = s"$consignmentId/metadataload/${s3Config.metadataFileName}"
+    val input = ExecutionInput(consignmentId, token.userId, s3SourceBucketKey = metadataObjectKey, s3UploadBucketKey = metadataObjectKey)
+    for {
+      _ <- StepFunctionUtils.apply(sfnAsyncClient(sfnConfig.sfnEndpoint)).startExecution(sfnConfig.dataLoadStepFunctionArn, input)
+    } yield "OK"
   }
 }
 
 object DataLoadProcessor {
-  case class ExecutionInput(consignmentId: UUID, userId: UUID, fileId: String, scanType: String = "metadata")
+  val s3Config = ApplicationConfig.appConfig.s3
+
+  case class ExecutionInput(
+                             consignmentId: UUID,
+                             userId: UUID,
+                             s3SourceBucketKey: String,
+                             s3UploadBucketKey: String,
+                             fileId: String = s3Config.metadataFileName,
+                             s3SourceBucket: String = s3Config.metadataS3SourceBucket,
+                             s3UploadBucket: String = s3Config.metadataS3UploadBucket,
+                             draftMetadataType: String = "dataLoad"
+                           )
   def apply() = new DataLoadProcessor
 }

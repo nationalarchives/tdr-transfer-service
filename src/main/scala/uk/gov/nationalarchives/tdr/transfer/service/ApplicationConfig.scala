@@ -9,10 +9,12 @@ object ApplicationConfig {
 
   case class Api(port: Int)
   case class Auth(url: String, realm: String)
+  case class S3(metadataS3SourceBucket: String, metadataS3UploadBucket: String, metadataFileName: String)
   case class Sns(snsEndpoint: String, notificationsTopicArn: String)
-  case class Sfn(dataLoadEndpoint: String)
+  case class Sfn(sfnEndpoint: String, dataLoadStepFunctionArn: String)
+  case class TransferService(client: String, clientSecret: String)
 
-  case class Configuration(auth: Auth, api: Api, sns: Sns, sfn: Sfn)
+  case class Configuration(auth: Auth, api: Api, s3: S3, sns: Sns, sfn: Sfn, transferService: TransferService)
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
     case Left(value)  => throw new RuntimeException(s"Failed to load transfer service application configuration ${value.prettyPrint()}")
