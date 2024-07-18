@@ -2,6 +2,7 @@ import sbt.*
 
 object Dependencies {
   private val http4sVersion = "0.23.26"
+  private val mockitoVersion = "1.17.37"
   private val pureConfigVersion = "0.17.7"
   private val tapirVersion = "1.10.13"
   private val tdrAWSUtilsVersion = "0.1.197-SNAPSHOT"
@@ -9,6 +10,9 @@ object Dependencies {
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.207"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.4"
+
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.377"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.168"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
@@ -19,8 +23,8 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "7.4"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.6"
 
-  lazy val mockito = "org.mockito" %% "mockito-scala" % "1.17.37"
-  lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % "1.17.37"
+  lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
+  lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
   lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.0.1"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion

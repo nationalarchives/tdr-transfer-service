@@ -3,13 +3,10 @@ package uk.gov.nationalarchives.tdr.transfer.service
 import com.tngtech.keycloakmock.api.TokenConfig.aTokenConfig
 import com.tngtech.keycloakmock.api.{KeycloakMock, ServerConfig}
 import org.apache.pekko.http.scaladsl.model.headers.OAuth2BearerToken
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 
-object TestUtils extends AnyFlatSpec with Matchers with BeforeAndAfterEach {
+object TestUtils {
   private val tdrKeycloakMock: KeycloakMock = createServer("tdr", 8000)
   private val testKeycloakMock: KeycloakMock = createServer("test", 8001)
 

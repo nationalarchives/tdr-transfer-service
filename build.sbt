@@ -10,6 +10,8 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       authUtils,
       catsEffect,
+      generatedGraphql,
+      graphqlClient,
       http4sCirce,
       http4sDsl,
       http4sEmberServer,
@@ -31,6 +33,8 @@ lazy val root = (project in file("."))
 
 (Compile / run / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer")
 
+(Test / javaOptions) += s"-Dconfig.file=${sourceDirectory.value}/test/resources/application.conf"
+(Test / fork) := true
 (assembly / assemblyJarName) := "transferservice.jar"
 
 (assembly / assemblyMergeStrategy) := {
