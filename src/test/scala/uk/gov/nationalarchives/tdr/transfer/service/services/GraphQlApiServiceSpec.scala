@@ -4,6 +4,8 @@ import cats.effect.unsafe.implicits.global
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken
 import graphql.codegen.AddConsignment.addConsignment.AddConsignment
 import graphql.codegen.AddConsignment.{addConsignment => ac}
+import graphql.codegen.GetConsignment
+import graphql.codegen.GetConsignment.{getConsignment => gc}
 import graphql.codegen.StartUpload.{startUpload => su}
 import org.mockito.ArgumentMatchers.any
 import sangria.ast.Document
@@ -21,6 +23,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
   val mockKeycloakToken: Token = mock[Token]
   val keycloak: KeycloakUtils = mock[KeycloakUtils]
   val addConsignmentClient: GraphQLClient[ac.Data, ac.Variables] = mock[GraphQLClient[ac.Data, ac.Variables]]
+  val getConsignmentClient: GraphQLClient[gc.Data, gc.Variables] = mock[GraphQLClient[gc.Data, gc.Variables]]
   val startUploadClient: GraphQLClient[su.Data, su.Variables] = mock[GraphQLClient[su.Data, su.Variables]]
   val consignmentId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
 
@@ -30,7 +33,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
     mockKeycloak()
     mockAddConsignmentClient(Some(ac.Data(addConsignmentData)))
 
-    val response = GraphQlApiService.apply(addConsignmentClient, startUploadClient).addConsignment(mockKeycloakToken).unsafeRunSync()
+    val response = GraphQlApiService.apply(addConsignmentClient, getConsignmentClient, startUploadClient).addConsignment(mockKeycloakToken.bearerAccessToken).unsafeRunSync()
 
     response.consignmentid.get shouldBe UUID.fromString(consignmentId)
     response.seriesid shouldBe None
@@ -41,7 +44,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
     mockAddConsignmentClient(None)
 
     val exception = intercept[RuntimeException] {
-      GraphQlApiService.apply(addConsignmentClient, startUploadClient).addConsignment(mockKeycloakToken).unsafeRunSync()
+      GraphQlApiService.apply(addConsignmentClient, getConsignmentClient, startUploadClient).addConsignment(mockKeycloakToken.bearerAccessToken).unsafeRunSync()
     }
     exception.getMessage should equal(s"Consignment not added")
   }
@@ -53,7 +56,10 @@ class GraphQlApiServiceSpec extends BaseSpec {
     mockStartUploadClient(Some(su.Data(startUploadData)))
 
     val response =
-      GraphQlApiService.apply(addConsignmentClient, startUploadClient).startUpload(mockKeycloakToken, UUID.fromString(consignmentId), Some("parentFolder")).unsafeRunSync()
+      GraphQlApiService
+        .apply(addConsignmentClient, getConsignmentClient, startUploadClient)
+        .startUpload(mockKeycloakToken.bearerAccessToken, UUID.fromString(consignmentId), Some("parentFolder"))
+        .unsafeRunSync()
 
     response shouldBe startUploadData
   }
@@ -62,7 +68,10 @@ class GraphQlApiServiceSpec extends BaseSpec {
     mockKeycloak()
     mockStartUploadClient(Some(su.Data("")))
 
-    val response = GraphQlApiService.apply(addConsignmentClient, startUploadClient).startUpload(mockKeycloakToken, UUID.fromString(consignmentId)).unsafeRunSync()
+    val response = GraphQlApiService
+      .apply(addConsignmentClient, getConsignmentClient, startUploadClient)
+      .startUpload(mockKeycloakToken.bearerAccessToken, UUID.fromString(consignmentId))
+      .unsafeRunSync()
 
     response shouldBe ""
   }
@@ -72,7 +81,10 @@ class GraphQlApiServiceSpec extends BaseSpec {
     mockStartUploadClient(None)
 
     val exception = intercept[RuntimeException] {
-      GraphQlApiService.apply(addConsignmentClient, startUploadClient).startUpload(mockKeycloakToken, UUID.fromString(consignmentId)).unsafeRunSync()
+      GraphQlApiService
+        .apply(addConsignmentClient, getConsignmentClient, startUploadClient)
+        .startUpload(mockKeycloakToken.bearerAccessToken, UUID.fromString(consignmentId))
+        .unsafeRunSync()
     }
     exception.getMessage should equal(s"Load not started for consignment: 6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
   }

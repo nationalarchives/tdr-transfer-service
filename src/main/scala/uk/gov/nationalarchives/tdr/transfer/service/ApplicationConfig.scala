@@ -10,7 +10,7 @@ object ApplicationConfig {
   case class TransferServiceApi(port: Int)
   case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String)
-  case class S3(metadataUploadBucket: String, recordsUploadBucket: String)
+  case class S3(metadataUploadBucket: String, recordsUploadBucket: String, metadataFileName: String)
 
   case class Sns(snsEndpoint: String, notificationsTopicArn: String)
   case class Sfn(sfnEndpoint: String, dataLoadStepFunctionArn: String)
