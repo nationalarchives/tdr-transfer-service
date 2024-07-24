@@ -1,11 +1,11 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api.auth
 
 import cats.effect.unsafe.implicits.global
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 
-class TokenAuthenticatorSpec extends AnyFlatSpec with Matchers {
+class TokenAuthenticatorSpec extends BaseSpec {
+
   "'authenticateUserToken'" should "return authenticated token when token valid" in {
     val validToken = validUserToken()
     val response = TokenAuthenticator().authenticateUserToken(validToken.token).unsafeRunSync()
