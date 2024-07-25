@@ -5,14 +5,14 @@ object Dependencies {
   private val mockitoVersion = "1.17.37"
   private val pureConfigVersion = "0.17.7"
   private val tapirVersion = "1.10.13"
-  private val tdrAWSUtilsVersion = "0.1.197-SNAPSHOT"
+  private val tdrAWSUtilsVersion = "0.1.197"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.207"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.4"
 
   lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.377"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.168"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.172"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
