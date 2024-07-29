@@ -6,11 +6,13 @@ import graphql.codegen.AddConsignment
 import graphql.codegen.AddConsignment.{addConsignment => ac}
 import graphql.codegen.StartUpload.{startUpload => su}
 import graphql.codegen.types.{AddConsignmentInput, StartUploadInput}
-import sttp.client3.{Identity, SttpBackend}
+import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import uk.gov.nationalarchives.tdr.GraphQLClient
 import uk.gov.nationalarchives.tdr.keycloak.Token
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class GraphQlApiService(addConsignmentClient: GraphQLClient[ac.Data, ac.Variables], startUploadClient: GraphQLClient[su.Data, su.Variables])(implicit
@@ -37,6 +39,14 @@ class GraphQlApiService(addConsignmentClient: GraphQLClient[ac.Data, ac.Variable
 }
 
 object GraphQlApiService {
+  implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
+  private val apiUrl = appConfig.consignmentApi.url
+
+  val service: GraphQlApiService = GraphQlApiService.apply(
+    new GraphQLClient[ac.Data, ac.Variables](apiUrl),
+    new GraphQLClient[su.Data, su.Variables](apiUrl)
+  )
+
   def apply(
       addConsignmentClient: GraphQLClient[ac.Data, ac.Variables],
       startUploadClient: GraphQLClient[su.Data, su.Variables]
