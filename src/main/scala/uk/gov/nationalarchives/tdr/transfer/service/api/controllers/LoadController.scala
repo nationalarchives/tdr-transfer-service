@@ -16,6 +16,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContex
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 
 import java.util.UUID
@@ -24,15 +25,16 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class LoadController(graphqlApiService: GraphQlApiService) extends BaseController {
   private val s3Config = ApplicationConfig.appConfig.s3
 
-  def endpoints: List[Endpoint[String, Unit, BackendException.AuthenticationError, LoadDetails, Any]] = List(initiateLoadEndpoint.endpoint)
+  def endpoints: List[Endpoint[String, SourceSystem, BackendException.AuthenticationError, LoadDetails, Any]] = List(initiateLoadEndpoint.endpoint)
 
   def routes: HttpRoutes[IO] = initiateLoadRoute
 
-  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, Unit, BackendException.AuthenticationError, LoadDetails, Any, IO] = securedWithBearer
-    .summary("Initiate the load of records and metadata")
-    .post
-    .in("load" / "sharepoint" / "initiate")
-    .out(jsonBody[LoadDetails])
+  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, LoadDetails, Any, IO] =
+    securedWithBearer
+      .summary("Initiate the load of records and metadata")
+      .post
+      .in("load" / sourceSystem / "initiate")
+      .out(jsonBody[LoadDetails])
 
   private def loadDetails(consignmentId: UUID, userId: UUID): IO[LoadDetails] = {
     val recordsS3Bucket = AWSS3LoadDestination(s"${s3Config.recordsUploadBucket}", s"$userId/$consignmentId")
