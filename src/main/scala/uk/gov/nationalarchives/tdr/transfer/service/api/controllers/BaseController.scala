@@ -4,10 +4,12 @@ import cats.effect.IO
 import sttp.model.StatusCode
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
-import sttp.tapir.{Endpoint, auth, endpoint, statusCode}
+import sttp.tapir.{Endpoint, EndpointInput, auth, endpoint, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
+
+import java.util.UUID
 
 trait BaseController {
 
@@ -17,6 +19,8 @@ trait BaseController {
     .securityIn(auth.bearer[String]())
     .errorOut(statusCode(StatusCode.Unauthorized))
     .errorOut(jsonBody[AuthenticationError])
+
+  val transferId: EndpointInput[UUID] = path("transferId")
 
   val securedWithBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
     .serverSecurityLogic(
