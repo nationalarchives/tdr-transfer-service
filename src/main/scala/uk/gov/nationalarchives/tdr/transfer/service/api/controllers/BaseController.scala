@@ -10,6 +10,8 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 
+import java.util.UUID
+
 trait BaseController {
 
   val sourceSystem: EndpointInput[SourceSystem] = path("sourceSystem")
@@ -20,6 +22,8 @@ trait BaseController {
     .securityIn(auth.bearer[String]())
     .errorOut(statusCode(StatusCode.Unauthorized))
     .errorOut(jsonBody[AuthenticationError])
+
+  val transferId: EndpointInput[UUID] = path("transferId")
 
   val securedWithBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
     .serverSecurityLogic(

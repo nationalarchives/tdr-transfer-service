@@ -11,7 +11,7 @@ jobs:
       repo-name: tdr-transfer-service
       image-name: transfer-service
       build-command: |
-        sbt dist
+        sbt assembly
     secrets:
       MANAGEMENT_ACCOUNT: ${{ secrets.MANAGEMENT_ACCOUNT }}
       WORKFLOW_PAT: ${{ secrets.WORKFLOW_PAT }}
