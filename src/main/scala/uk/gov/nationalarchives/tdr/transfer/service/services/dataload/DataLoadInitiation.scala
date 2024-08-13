@@ -3,9 +3,10 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 import cats.effect.IO
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.s3Config
+import uk.gov.nationalarchives.tdr.transfer.service.services.schema.MetadataConfiguration
 
 import java.util.UUID
 
@@ -22,7 +23,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService) {
   private def loadDetails(transferId: UUID, userId: UUID): IO[LoadDetails] = {
     val recordsS3Bucket = AWSS3LoadDestination(s"${s3Config.recordsUploadBucket}", s"$userId/$transferId")
     val metadataS3Bucket = AWSS3LoadDestination(s"${s3Config.metadataUploadBucket}", s"$transferId/dataload")
-    IO(LoadDetails(transferId, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
+    val metadataProperties = MetadataConfiguration.metadataConfiguration()
+    val transferConfiguration = TransferConfiguration(metadataProperties)
+    IO(LoadDetails(transferId, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket, transferConfiguration))
   }
 }
 

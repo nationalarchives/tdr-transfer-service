@@ -12,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.MetadataPropertyDetails
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{MetadataPropertyDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
@@ -55,13 +55,11 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       "bucketKeyPrefix" := s"$transferId/dataload"
     )
 
-    val metadataProperties: List[MetadataPropertyDetails] = List()
-
     val expectedResponse = Json.obj(
       "transferId" := transferId,
       "recordsLoadDestination" := recordsDestination,
       "metadataLoadDestination" := metadataLoadDestination,
-      "metadataProperties" := metadataProperties
+      "transferConfiguration" := expectedTransferConfiguration
     )
 
     response.status shouldBe Status.Ok
