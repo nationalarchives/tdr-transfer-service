@@ -16,11 +16,10 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
   implicit val tdrKeycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment("authUrl", "realm", 60)
 
   val expectedMetadataPropertyDetails: Set[MetadataPropertyDetails] = Set(
+    MetadataPropertyDetails("Modified", true),
     MetadataPropertyDetails("SHA256ClientSideChecksum", true),
-    MetadataPropertyDetails("ClientSideFileSize", true),
-    MetadataPropertyDetails("ClientSideFileLastModifiedDate", true),
-    MetadataPropertyDetails("ClientSideOriginalFilepath", true),
-    MetadataPropertyDetails("UUID", true)
+    MetadataPropertyDetails("File_x0020_Size", true),
+    MetadataPropertyDetails("FileRef", true)
   )
 
   val expectedTransferConfiguration: TransferConfiguration = TransferConfiguration(expectedMetadataPropertyDetails)

@@ -10,7 +10,7 @@ object SchemaHandler {
     mapper.readTree(content)
   }
 
-  def schema(schemaLocation: String = "/metadata-schema/dataLoadSharePointSchema.schema.json"): JsonNode = {
+  def schema(schemaLocation: String): JsonNode = {
     getJsonNodeFromStreamContent(getClass.getResourceAsStream(schemaLocation))
   }
 }
