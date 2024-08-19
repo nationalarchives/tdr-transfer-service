@@ -8,10 +8,13 @@ import sttp.tapir.{Endpoint, EndpointInput, auth, endpoint, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 
 import java.util.UUID
 
 trait BaseController {
+
+  val sourceSystem: EndpointInput[SourceSystem] = path("sourceSystem")
 
   private val tokenAuthenticator = TokenAuthenticator()
 
