@@ -111,4 +111,39 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     response.status shouldBe Status.Unauthorized
     response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
   }
+
+  "unknown source system in endpoint" should "return 400 response with correct authorisation header" in {
+    graphqlOkJson()
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .initiateLoadRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/unknown/initiate", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.BadRequest
+  }
+
+  "unknown source system in endpoint endpoint" should "return 400 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .initiateLoadRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/unknown/initiate", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.BadRequest
+  }
 }
