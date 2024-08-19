@@ -3,7 +3,6 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.MetadataPropertyDetails
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
-import uk.gov.nationalarchives.tdr.transfer.service.services.schema.SchemaHandler
 
 class MetadataLoadConfigurationSpec extends BaseSpec {
   "'metadataLoadConfiguration'" should "return the correct metadata configuration for the given source system" in {
