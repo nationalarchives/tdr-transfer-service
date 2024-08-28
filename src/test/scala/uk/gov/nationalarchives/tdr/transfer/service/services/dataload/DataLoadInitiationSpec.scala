@@ -7,6 +7,7 @@ import graphql.codegen.AddConsignment.addConsignment.AddConsignment
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 
 import java.util.UUID
@@ -31,11 +32,11 @@ class DataLoadInitiationSpec extends BaseSpec {
       consignmentId,
       AWSS3LoadDestination("s3BucketNameRecords", s"$userId/$consignmentId"),
       AWSS3LoadDestination("s3BucketNameMetadata", s"$consignmentId/dataload"),
-      List()
+      expectedTransferConfiguration
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
-    val result = service.initiateConsignmentLoad(mockToken).unsafeRunSync()
+    val result = service.initiateConsignmentLoad(mockToken, SourceSystemEnum.SharePoint).unsafeRunSync()
     result shouldBe expectedResult
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
     verify(mockGraphQlApiService, times(1)).startUpload(mockToken, consignmentId, None)
@@ -48,7 +49,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val service = new DataLoadInitiation(mockGraphQlApiService)
 
     val exception = intercept[RuntimeException] {
-      service.initiateConsignmentLoad(mockToken).attempt.unsafeRunSync()
+      service.initiateConsignmentLoad(mockToken, SourceSystemEnum.SharePoint).attempt.unsafeRunSync()
     }
     exception.getMessage shouldBe "Error adding consignment"
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
@@ -63,7 +64,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     when(mockGraphQlApiService.startUpload(mockToken, consignmentId)).thenThrow(new RuntimeException("Error starting upload"))
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
-    val response = service.initiateConsignmentLoad(mockToken).attempt.unsafeRunSync()
+    val response = service.initiateConsignmentLoad(mockToken, SourceSystemEnum.SharePoint).attempt.unsafeRunSync()
 
     response.isLeft should equal(true)
     response.left.value.getMessage should equal("Error starting upload")

@@ -18,6 +18,7 @@ lazy val root = (project in file("."))
       keycloakMock % Test,
       logbackClassic,
       logBackEncoder,
+      metadataSchema,
       mockito % Test,
       pekkoTestKitHttp % Test,
       pureConfig,

@@ -11,8 +11,9 @@ object ApplicationConfig {
   case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String)
   case class S3(metadataUploadBucket: String, recordsUploadBucket: String)
+  case class Schema(dataLoadSharePointLocation: String)
 
-  case class Configuration(auth: Auth, transferServiceApi: TransferServiceApi, consignmentApi: ConsignmentApi, s3: S3)
+  case class Configuration(auth: Auth, transferServiceApi: TransferServiceApi, consignmentApi: ConsignmentApi, s3: S3, schema: Schema)
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
     case Left(value)  => throw new RuntimeException(s"Failed to load transfer service application configuration ${value.prettyPrint()}")

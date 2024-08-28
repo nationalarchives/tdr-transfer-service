@@ -3,7 +3,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.api
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.circe.Json
-import io.circe.generic.auto.exportEncoder
+import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
 import io.circe.syntax.KeyOps
 import org.http4s.circe.jsonDecoder
 import org.http4s.implicits.http4sLiteralsSyntax
@@ -12,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.MetadataPropertyDetails
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
@@ -45,27 +45,17 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       )
       .unsafeRunSync()
 
-    val recordsDestination = Json.obj(
-      "bucketName" := "s3BucketNameRecords",
-      "bucketKeyPrefix" := s"$userId/$transferId"
-    )
-
-    val metadataLoadDestination = Json.obj(
-      "bucketName" := "s3BucketNameMetadata",
-      "bucketKeyPrefix" := s"$transferId/dataload"
-    )
-
-    val metadataProperties: List[MetadataPropertyDetails] = List()
-
-    val expectedResponse = Json.obj(
-      "transferId" := transferId,
-      "recordsLoadDestination" := recordsDestination,
-      "metadataLoadDestination" := metadataLoadDestination,
-      "metadataProperties" := metadataProperties
-    )
+    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"$userId/$transferId")
+    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"$transferId/dataload")
 
     response.status shouldBe Status.Ok
-    response.as[Json].unsafeRunSync() shouldEqual expectedResponse
+    val body = response.as[Json].unsafeRunSync()
+    val loadDetails = body.as[LoadDetails].toOption.get
+    loadDetails.transferId.toString shouldBe transferId
+    loadDetails.metadataLoadDestination shouldEqual expectedMetadataLoadDestination
+    loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
+    loadDetails.transferConfiguration.customMetadataConfiguration.required shouldBe false
+    loadDetails.transferConfiguration.metadataPropertyDetails.size shouldBe 4
   }
 
   "'load/sharepoint/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {

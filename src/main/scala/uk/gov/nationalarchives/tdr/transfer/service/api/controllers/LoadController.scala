@@ -40,7 +40,7 @@ class LoadController(dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: 
       .out(jsonBody[String])
 
   val initiateLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO]().toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => _ => dataLoadInitiation.initiateConsignmentLoad(ac.token)))
+    Http4sServerInterpreter[IO]().toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input)))
 
   val completeLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO]().toRoutes(completeLoadEndpoint.serverLogicSuccess(ac => ci => dataLoadProcessor.trigger(ci._2, ac.token)))
