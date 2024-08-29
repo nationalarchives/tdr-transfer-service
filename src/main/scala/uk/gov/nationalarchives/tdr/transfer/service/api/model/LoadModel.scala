@@ -10,6 +10,7 @@ object LoadModel {
   case class CustomMetadataConfiguration(required: Boolean = false) extends MetadataPropertyModel
   case class MetadataPropertyDetails(propertyName: String, required: Boolean) extends MetadataPropertyModel
   case class TransferConfiguration(
+      maxNumberRecords: Int,
       metadataPropertyDetails: Set[MetadataPropertyDetails] = Set(),
       customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration()
   )
@@ -18,6 +19,6 @@ object LoadModel {
       transferId: UUID,
       recordsLoadDestination: AWSS3LoadDestination,
       metadataLoadDestination: AWSS3LoadDestination,
-      transferConfiguration: TransferConfiguration = TransferConfiguration()
+      transferConfiguration: TransferConfiguration
   ) extends LoadModel
 }

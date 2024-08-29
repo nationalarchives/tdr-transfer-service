@@ -17,6 +17,7 @@ class DataLoadInitiationSpec extends BaseSpec {
   private val mockBearerAccessToken = mock[BearerAccessToken]
   private val consignmentId = UUID.fromString("6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
   private val userId = UUID.randomUUID()
+  private val sourceSystem = SourceSystemEnum.SharePoint
 
   "'initiateConsignmentLoad'" should "create a consignment and return expected 'LoadDetails' object" in {
     val addConsignmentResponse = AddConsignment(Some(consignmentId), None)
@@ -30,13 +31,13 @@ class DataLoadInitiationSpec extends BaseSpec {
 
     val expectedResult = LoadDetails(
       consignmentId,
-      AWSS3LoadDestination("s3BucketNameRecords", s"$userId/$consignmentId"),
-      AWSS3LoadDestination("s3BucketNameMetadata", s"$consignmentId/dataload"),
+      AWSS3LoadDestination("s3BucketNameRecords", s"$sourceSystem/$consignmentId/records"),
+      AWSS3LoadDestination("s3BucketNameMetadata", s"$sourceSystem/$consignmentId/metadata"),
       expectedTransferConfiguration
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
-    val result = service.initiateConsignmentLoad(mockToken, SourceSystemEnum.SharePoint).unsafeRunSync()
+    val result = service.initiateConsignmentLoad(mockToken, sourceSystem).unsafeRunSync()
     result shouldBe expectedResult
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
     verify(mockGraphQlApiService, times(1)).startUpload(mockToken, consignmentId, None)
@@ -49,7 +50,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val service = new DataLoadInitiation(mockGraphQlApiService)
 
     val exception = intercept[RuntimeException] {
-      service.initiateConsignmentLoad(mockToken, SourceSystemEnum.SharePoint).attempt.unsafeRunSync()
+      service.initiateConsignmentLoad(mockToken, sourceSystem).attempt.unsafeRunSync()
     }
     exception.getMessage shouldBe "Error adding consignment"
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
@@ -64,7 +65,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     when(mockGraphQlApiService.startUpload(mockToken, consignmentId)).thenThrow(new RuntimeException("Error starting upload"))
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
-    val response = service.initiateConsignmentLoad(mockToken, SourceSystemEnum.SharePoint).attempt.unsafeRunSync()
+    val response = service.initiateConsignmentLoad(mockToken, sourceSystem).attempt.unsafeRunSync()
 
     response.isLeft should equal(true)
     response.left.value.getMessage should equal("Error starting upload")
