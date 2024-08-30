@@ -16,12 +16,12 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService) {
       addConsignmentResult <- graphQlApiService.addConsignment(token)
       consignmentId = addConsignmentResult.consignmentid.get
       _ <- graphQlApiService.startUpload(token, consignmentId)
-      result <- loadDetails(consignmentId, sourceSystem)
+      result <- loadDetails(consignmentId, token.userId, sourceSystem)
     } yield result
   }
 
-  private def loadDetails(transferId: UUID, sourceSystem: SourceSystem): IO[LoadDetails] = {
-    val s3KeyPrefix = s"$sourceSystem/$transferId"
+  private def loadDetails(transferId: UUID, userId: UUID, sourceSystem: SourceSystem): IO[LoadDetails] = {
+    val s3KeyPrefix = s"$userId/$sourceSystem/$transferId"
     val maxNumberRecords = transferConfigurationConfig.maxNumberRecords
     val recordsS3Bucket = AWSS3LoadDestination(s"${s3Config.recordsUploadBucket}", s"$s3KeyPrefix/records")
     val metadataS3Bucket = AWSS3LoadDestination(s"${s3Config.metadataUploadBucket}", s"$s3KeyPrefix/metadata")

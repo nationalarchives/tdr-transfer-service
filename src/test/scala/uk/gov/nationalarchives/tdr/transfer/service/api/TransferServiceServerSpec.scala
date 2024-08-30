@@ -10,7 +10,7 @@ import org.http4s.implicits.http4sLiteralsSyntax
 import org.http4s.{Header, Headers, Method, Request, Status}
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
-import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, validUserToken}
+import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
@@ -45,8 +45,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       )
       .unsafeRunSync()
 
-    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"sharepoint/$transferId/records")
-    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"sharepoint/$transferId/metadata")
+    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"$userId/sharepoint/$transferId/records")
+    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"$userId/sharepoint/$transferId/metadata")
 
     response.status shouldBe Status.Ok
     val body = response.as[Json].unsafeRunSync()
