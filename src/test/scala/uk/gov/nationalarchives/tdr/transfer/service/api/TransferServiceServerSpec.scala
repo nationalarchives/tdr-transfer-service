@@ -57,6 +57,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     loadDetails.transferConfiguration.maxNumberRecords shouldBe 3000
     loadDetails.transferConfiguration.customMetadataConfiguration.required shouldBe false
     loadDetails.transferConfiguration.metadataPropertyDetails.size shouldBe 4
+    loadDetails.transferConfiguration.display.size shouldBe 0
   }
 
   "'load/sharepoint/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {

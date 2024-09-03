@@ -9,10 +9,12 @@ sealed trait MetadataPropertyModel
 object LoadModel {
   case class CustomMetadataConfiguration(required: Boolean = false) extends MetadataPropertyModel
   case class MetadataPropertyDetails(propertyName: String, required: Boolean) extends MetadataPropertyModel
+  case class DisplayMessage(viewName: String, message: String)
   case class TransferConfiguration(
       maxNumberRecords: Int,
       metadataPropertyDetails: Set[MetadataPropertyDetails] = Set(),
-      customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration()
+      customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration(),
+      display: Set[DisplayMessage] = Set()
   )
   case class AWSS3LoadDestination(bucketName: String, bucketKeyPrefix: String) extends LoadDestinationModel
   case class LoadDetails(

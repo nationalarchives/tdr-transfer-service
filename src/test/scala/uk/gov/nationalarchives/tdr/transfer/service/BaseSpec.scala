@@ -22,5 +22,5 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     MetadataPropertyDetails("FileRef", required = true)
   )
 
-  val expectedTransferConfiguration: TransferConfiguration = TransferConfiguration(3000, expectedMetadataPropertyDetails)
+  val expectedTransferConfiguration: TransferConfiguration = TransferConfiguration(3000, expectedMetadataPropertyDetails, display = Set())
 }
