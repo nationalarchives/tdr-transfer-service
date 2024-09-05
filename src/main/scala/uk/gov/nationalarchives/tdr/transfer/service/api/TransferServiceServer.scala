@@ -27,7 +27,7 @@ object TransferServiceServer extends IOApp {
   private val apiPort: Port = Port.fromInt(appConfig.transferServiceApi.port).getOrElse(port"8080")
 
   private val infoTitle = "TDR Transfer Service API"
-  private val infoVersion = "0.0.1"
+  private val infoVersion = "0.0.2"
   private val infoDescription = Some("APIs to allow client services to transfer records to TDR")
 
   private val openApiInfo: Info = Info(infoTitle, infoVersion, description = infoDescription)
