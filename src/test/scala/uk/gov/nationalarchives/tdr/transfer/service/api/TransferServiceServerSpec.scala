@@ -12,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
@@ -46,7 +46,12 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .unsafeRunSync()
 
     response.status shouldBe Status.Ok
-    response.as[String].unsafeRunSync() shouldEqual "\"Hello World\""
+    val body = response.as[Json].unsafeRunSync()
+    val transferConfiguration = body.as[TransferConfiguration].toOption.get
+    transferConfiguration.maxNumberRecords shouldBe 3000
+    transferConfiguration.customMetadataConfiguration.required shouldBe false
+    transferConfiguration.metadataPropertyDetails.size shouldBe 4
+    transferConfiguration.display.size shouldBe 0
   }
 
   "'load/sharepoint/configuration' endpoint" should "return 401 response with incorrect authorisation header" in {
@@ -91,10 +96,6 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     loadDetails.transferId.toString shouldBe transferId
     loadDetails.metadataLoadDestination shouldEqual expectedMetadataLoadDestination
     loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
-    loadDetails.transferConfiguration.maxNumberRecords shouldBe 3000
-    loadDetails.transferConfiguration.customMetadataConfiguration.required shouldBe false
-    loadDetails.transferConfiguration.metadataPropertyDetails.size shouldBe 4
-    loadDetails.transferConfiguration.display.size shouldBe 0
   }
 
   "'load/sharepoint/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {
