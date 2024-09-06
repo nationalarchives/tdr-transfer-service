@@ -8,10 +8,10 @@ class MetadataLoadConfigurationSpec extends BaseSpec {
   "'metadataLoadConfiguration'" should "return the correct metadata configuration for the given source system" in {
     val result = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.SharePoint)
     result.size shouldBe 4
-    result.contains(MetadataPropertyDetails("FileRef", true)) shouldBe true
-    result.contains(MetadataPropertyDetails("File_x0020_Size", true)) shouldBe true
-    result.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", true)) shouldBe true
-    result.contains(MetadataPropertyDetails("Modified", true)) shouldBe true
+    result.contains(MetadataPropertyDetails("FileRef", required = true)) shouldBe true
+    result.contains(MetadataPropertyDetails("File_x0020_Size", required = true)) shouldBe true
+    result.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", required = true)) shouldBe true
+    result.contains(MetadataPropertyDetails("Modified", required = true)) shouldBe true
   }
 
   "'metadataLoadConfiguration'" should "return an error if source system not mapped to a schema" in {

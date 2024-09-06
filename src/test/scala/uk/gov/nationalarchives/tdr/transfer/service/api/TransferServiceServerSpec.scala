@@ -82,8 +82,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       )
       .unsafeRunSync()
 
-    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"$userId/$transferId")
-    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"$transferId/dataload")
+    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"$userId/sharepoint/$transferId/records")
+    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"$userId/sharepoint/$transferId/metadata")
 
     response.status shouldBe Status.Ok
     val body = response.as[Json].unsafeRunSync()
@@ -91,8 +91,10 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     loadDetails.transferId.toString shouldBe transferId
     loadDetails.metadataLoadDestination shouldEqual expectedMetadataLoadDestination
     loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
+    loadDetails.transferConfiguration.maxNumberRecords shouldBe 3000
     loadDetails.transferConfiguration.customMetadataConfiguration.required shouldBe false
     loadDetails.transferConfiguration.metadataPropertyDetails.size shouldBe 4
+    loadDetails.transferConfiguration.display.size shouldBe 0
   }
 
   "'load/sharepoint/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {
