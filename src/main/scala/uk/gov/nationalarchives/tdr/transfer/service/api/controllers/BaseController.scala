@@ -1,6 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api.controllers
 
 import cats.effect.IO
+import org.http4s.HttpRoutes
 import sttp.model.StatusCode
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
@@ -29,4 +30,6 @@ trait BaseController {
     .serverSecurityLogic(
       tokenAuthenticator.authenticateUserToken
     )
+
+  def routes: HttpRoutes[IO]
 }

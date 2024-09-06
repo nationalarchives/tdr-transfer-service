@@ -30,6 +30,43 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     response.as[String].unsafeRunSync() shouldEqual "Healthy"
   }
 
+  "'load/sharepoint/configuration' endpoint" should "return 200 with correct authorisation header" in {
+    graphqlOkJson()
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .configurationRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Ok
+    response.as[String].unsafeRunSync() shouldEqual "\"Hello World\""
+  }
+
+  "'load/sharepoint/configuration' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .configurationRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+  }
+
   "'load/sharepoint/initiate' endpoint" should "return 200 with correct authorisation header" in {
     graphqlOkJson()
     val validToken = validUserToken()
@@ -130,7 +167,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     response.status shouldBe Status.BadRequest
   }
 
-  "unknown source system in endpoint endpoint" should "return 400 response with incorrect authorisation header" in {
+  "unknown source system in endpoint" should "return 400 response with incorrect authorisation header" in {
     val token = invalidToken
     val bearer = CIString("Authorization")
     val authHeader = Header.Raw.apply(bearer, s"$token")

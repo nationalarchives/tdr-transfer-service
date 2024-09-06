@@ -22,7 +22,15 @@ class LoadController(dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: 
   ] =
     List(initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint)
 
-  def routes: HttpRoutes[IO] = initiateLoadRoute <+> completeLoadRoute
+  override def routes: HttpRoutes[IO] = initiateLoadRoute <+> completeLoadRoute
+
+  private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, String, Any, IO] =
+    securedWithBearer
+      .summary("Configuration for client transfer")
+      .description("Provides configuration for calling client before starting an operation")
+      .post
+      .in("load" / sourceSystem / "configuration")
+      .out(jsonBody[String])
 
   private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, LoadDetails, Any, IO] =
     securedWithBearer
@@ -38,6 +46,9 @@ class LoadController(dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: 
       .post
       .in("load" / sourceSystem / "complete" / transferId)
       .out(jsonBody[String])
+
+  val configurationRoute: HttpRoutes[IO] =
+    Http4sServerInterpreter[IO]().toRoutes(configurationEndpoint.serverLogicSuccess(ac => _ => IO("Hello World")))
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO]().toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input)))
