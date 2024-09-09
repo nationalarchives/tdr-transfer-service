@@ -15,12 +15,11 @@ object LoadModel {
       metadataPropertyDetails: Set[MetadataPropertyDetails] = Set(),
       customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration(),
       display: Set[DisplayMessage] = Set()
-  )
+  ) extends LoadModel
   case class AWSS3LoadDestination(bucketName: String, bucketKeyPrefix: String) extends LoadDestinationModel
   case class LoadDetails(
       transferId: UUID,
       recordsLoadDestination: AWSS3LoadDestination,
-      metadataLoadDestination: AWSS3LoadDestination,
-      transferConfiguration: TransferConfiguration
+      metadataLoadDestination: AWSS3LoadDestination
   ) extends LoadModel
 }
