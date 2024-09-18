@@ -1,6 +1,6 @@
 import Dependencies.*
 
-ThisBuild / version      := "0.0.1-SNAPSHOT"
+ThisBuild / version := "0.0.1-SNAPSHOT"
 ThisBuild / scalaVersion := "2.13.14"
 ThisBuild / organization := "uk.gov.nationalarchives"
 
