@@ -8,6 +8,8 @@ import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.middleware.Logger
 import org.http4s.{HttpRoutes, Request, Response}
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.apispec.openapi.Info
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
@@ -17,6 +19,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
 object TransferServiceServer extends IOApp {
+  implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
   private val appConfig = ApplicationConfig.appConfig
   private val authUrl = appConfig.auth.url
   private val realm = appConfig.auth.realm

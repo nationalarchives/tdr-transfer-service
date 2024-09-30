@@ -3,6 +3,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.controllers
 import cats.effect.IO
 import cats.implicits.toSemigroupKOps
 import org.http4s.HttpRoutes
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
@@ -65,5 +66,5 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 }
 
 object LoadController {
-  def apply() = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor())
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor())
 }

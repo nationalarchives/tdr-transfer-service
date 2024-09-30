@@ -5,7 +5,6 @@ import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 
 class TokenAuthenticatorSpec extends BaseSpec {
-
   "'authenticateUserToken'" should "return authenticated token when token valid" in {
     val validToken = validUserToken()
     val response = TokenAuthenticator().authenticateUserToken(validToken.token).unsafeRunSync()

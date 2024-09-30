@@ -1,6 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
+import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
@@ -10,11 +11,13 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadIn
 
 import java.util.UUID
 
-class DataLoadInitiation(graphQlApiService: GraphQlApiService) {
+class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem): IO[LoadDetails] = {
+    logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
     for {
       addConsignmentResult <- graphQlApiService.addConsignment(token)
       consignmentId = addConsignmentResult.consignmentid.get
+      _ <- logger.info(s"Starting upload for consignment $consignmentId")
       _ <- graphQlApiService.startUpload(token, consignmentId)
       result <- loadDetails(consignmentId, token.userId, sourceSystem)
     } yield result
@@ -31,5 +34,5 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService) {
 object DataLoadInitiation {
   val s3Config: ApplicationConfig.S3 = ApplicationConfig.appConfig.s3
   val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = ApplicationConfig.appConfig.transferConfiguration
-  def apply() = new DataLoadInitiation(GraphQlApiService.service)
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new DataLoadInitiation(GraphQlApiService.service)(logger)
 }
