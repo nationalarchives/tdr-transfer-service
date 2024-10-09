@@ -6,7 +6,7 @@ import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s.{IpLiteralSyntax, Port}
 import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.Logger
+import org.http4s.server.middleware.{CORS, Logger}
 import org.http4s.{HttpRoutes, Request, Response}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -50,11 +50,14 @@ object TransferServiceServer extends IOApp {
 
   private val finalApp = Logger.httpApp(logHeaders = true, logBody = false)(app)
 
+  private val corsService = CORS.policy
+    .withAllowOriginAll(finalApp)
+
   private val transferServiceServer = EmberServerBuilder
     .default[IO]
     .withHost(ipv4"0.0.0.0")
     .withPort(apiPort)
-    .withHttpApp(finalApp)
+    .withHttpApp(corsService)
     .build
 
   override def run(args: List[String]): IO[ExitCode] = {
