@@ -25,8 +25,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
 
   private def loadDetails(transferId: UUID, userId: UUID, sourceSystem: SourceSystem): IO[LoadDetails] = {
     val s3KeyPrefix = s"$userId/$sourceSystem/$transferId"
-    val recordsS3Bucket = AWSS3LoadDestination(s"${s3Config.recordsUploadBucket}", s"$s3KeyPrefix/records")
-    val metadataS3Bucket = AWSS3LoadDestination(s"${s3Config.metadataUploadBucket}", s"$s3KeyPrefix/metadata")
+    val awsRegion = s3Config.awsRegion
+    val recordsS3Bucket = AWSS3LoadDestination(s"$awsRegion", s"${s3Config.recordsUploadBucketArn}", s"${s3Config.recordsUploadBucketName}", s"$s3KeyPrefix/records")
+    val metadataS3Bucket = AWSS3LoadDestination(s"$awsRegion", s"${s3Config.metadataUploadBucketArn}", s"${s3Config.metadataUploadBucketName}", s"$s3KeyPrefix/metadata")
     IO(LoadDetails(transferId, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
   }
 }
