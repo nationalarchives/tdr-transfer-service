@@ -31,8 +31,8 @@ class DataLoadInitiationSpec extends BaseSpec {
 
     val expectedResult = LoadDetails(
       consignmentId,
-      AWSS3LoadDestination("s3BucketNameRecords", s"$userId/$sourceSystem/$consignmentId/records"),
-      AWSS3LoadDestination("s3BucketNameMetadata", s"$userId/$sourceSystem/$consignmentId/metadata")
+      AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/$sourceSystem/$consignmentId/records"),
+      AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/$sourceSystem/$consignmentId/metadata")
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService)

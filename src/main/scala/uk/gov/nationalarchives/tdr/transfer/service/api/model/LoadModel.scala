@@ -16,7 +16,7 @@ object LoadModel {
       customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration(),
       display: Set[DisplayMessage] = Set()
   ) extends LoadModel
-  case class AWSS3LoadDestination(bucketName: String, bucketKeyPrefix: String) extends LoadDestinationModel
+  case class AWSS3LoadDestination(awsRegion: String, bucketArn: String, bucketName: String, bucketKeyPrefix: String) extends LoadDestinationModel
   case class LoadDetails(
       transferId: UUID,
       recordsLoadDestination: AWSS3LoadDestination,
