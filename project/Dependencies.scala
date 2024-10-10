@@ -4,7 +4,7 @@ object Dependencies {
   private val http4sVersion = "0.23.28"
   private val mockitoVersion = "1.17.37"
   private val pureConfigVersion = "0.17.7"
-  private val tapirVersion = "1.11.5"
+  private val tapirVersion = "1.11.7"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.215"
 
@@ -20,7 +20,7 @@ object Dependencies {
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.16.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.8"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.9"
 
   lazy val metadataSchema = "uk.gov.nationalarchives" % "da-metadata-schema_3" % "0.0.33"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
