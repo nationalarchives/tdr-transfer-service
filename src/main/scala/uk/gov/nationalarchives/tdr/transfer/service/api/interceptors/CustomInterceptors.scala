@@ -1,4 +1,4 @@
-package uk.gov.nationalarchives.tdr.transfer.service.api.cors
+package uk.gov.nationalarchives.tdr.transfer.service.api.interceptors
 
 import cats.effect.IO
 import sttp.model.{Method, StatusCode}
@@ -6,7 +6,7 @@ import sttp.tapir.server.interceptor.cors.CORSConfig._
 import sttp.tapir.server.interceptor.cors.{CORSConfig, CORSInterceptor}
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 
-object CustomCORSInterceptor {
+object CustomInterceptors {
   private val permittedOrigins = ApplicationConfig.appConfig.cors.permittedOrigins
 
   private val corsConfig = CORSConfig.apply(
@@ -23,5 +23,5 @@ object CustomCORSInterceptor {
     permittedOrigins.exists(origin.contains)
   }
 
-  def apply(): CORSInterceptor[IO] = CORSInterceptor.customOrThrow[IO](corsConfig)
+  val customCorsInterceptor: CORSInterceptor[IO] = CORSInterceptor.customOrThrow[IO](corsConfig)
 }
