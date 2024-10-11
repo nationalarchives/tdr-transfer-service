@@ -54,7 +54,7 @@ object TransferServiceServer extends IOApp {
 
   private val app: Kleisli[IO, Request[IO], Response[IO]] = allRoutes.orNotFound
 
-  private val finalApp = Logger.httpApp(logHeaders = true, logBody = true)(app)
+  private val finalApp = Logger.httpApp(logHeaders = true, logBody = false)(app)
 
   private val transferServiceServer = EmberServerBuilder
     .default[IO]
