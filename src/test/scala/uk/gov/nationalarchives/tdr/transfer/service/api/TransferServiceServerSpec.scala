@@ -86,8 +86,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       )
       .unsafeRunSync()
 
-    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"$userId/sharepoint/$transferId/records")
-    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"$userId/sharepoint/$transferId/metadata")
+    val expectedRecordsDestination = AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/sharepoint/$transferId/records")
+    val expectedMetadataLoadDestination = AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/sharepoint/$transferId/metadata")
 
     response.status shouldBe Status.Ok
     val body = response.as[Json].unsafeRunSync()

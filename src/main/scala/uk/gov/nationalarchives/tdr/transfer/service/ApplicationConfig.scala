@@ -10,7 +10,7 @@ object ApplicationConfig {
   case class TransferServiceApi(port: Int)
   case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String)
-  case class S3(metadataUploadBucket: String, recordsUploadBucket: String)
+  case class S3(awsRegion: String, metadataUploadBucketArn: String, metadataUploadBucketName: String, recordsUploadBucketArn: String, recordsUploadBucketName: String)
   case class Schema(dataLoadSharePointLocation: String)
   case class TransferConfiguration(maxNumberRecords: Int)
 
