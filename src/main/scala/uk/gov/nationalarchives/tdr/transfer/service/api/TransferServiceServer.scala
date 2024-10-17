@@ -6,17 +6,18 @@ import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s.{IpLiteralSyntax, Port}
 import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.{CORS, Logger}
+import org.http4s.server.middleware.Logger
 import org.http4s.{HttpRoutes, Request, Response}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.apispec.openapi.Info
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
-import sttp.tapir.server.http4s.Http4sServerInterpreter
+import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
+import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 
 object TransferServiceServer extends IOApp {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
@@ -43,21 +44,23 @@ object TransferServiceServer extends IOApp {
     Ok("Healthy")
   }
 
+  private val customServerOptions: Http4sServerOptions[IO] = Http4sServerOptions
+    .customiseInterceptors[IO]
+    .corsInterceptor(CustomInterceptors.customCorsInterceptor)
+    .options
+
   private val allRoutes =
-    Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> healthCheckRoute
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(documentationEndpoints) <+> loadController.routes <+> healthCheckRoute
 
   private val app: Kleisli[IO, Request[IO], Response[IO]] = allRoutes.orNotFound
 
   private val finalApp = Logger.httpApp(logHeaders = true, logBody = false)(app)
 
-  private val corsService = CORS.policy
-    .withAllowOriginAll(finalApp)
-
   private val transferServiceServer = EmberServerBuilder
     .default[IO]
     .withHost(ipv4"0.0.0.0")
     .withPort(apiPort)
-    .withHttpApp(corsService)
+    .withHttpApp(finalApp)
     .build
 
   override def run(args: List[String]): IO[ExitCode] = {
