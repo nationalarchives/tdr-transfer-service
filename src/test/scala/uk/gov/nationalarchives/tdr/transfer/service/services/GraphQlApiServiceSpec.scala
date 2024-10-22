@@ -23,6 +23,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
   val addConsignmentClient: GraphQLClient[ac.Data, ac.Variables] = mock[GraphQLClient[ac.Data, ac.Variables]]
   val startUploadClient: GraphQLClient[su.Data, su.Variables] = mock[GraphQLClient[su.Data, su.Variables]]
   val consignmentId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
+  val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
 
   "'addConsignment'" should "return the consignment id of the created consignment" in {
     val addConsignmentData = AddConsignment(Some(UUID.fromString(consignmentId)), None)
@@ -40,10 +41,12 @@ class GraphQlApiServiceSpec extends BaseSpec {
     mockKeycloak()
     mockAddConsignmentClient(None)
 
+    when(mockKeycloakToken.userId).thenReturn(userId)
+
     val exception = intercept[RuntimeException] {
       GraphQlApiService.apply(addConsignmentClient, startUploadClient).addConsignment(mockKeycloakToken).unsafeRunSync()
     }
-    exception.getMessage should equal(s"Consignment not added")
+    exception.getMessage should equal(s"Consignment not added for user 4ab14990-ed63-4615-8336-56fbb9960300")
   }
 
   "'startUpload'" should "return parent folder name if provided" in {

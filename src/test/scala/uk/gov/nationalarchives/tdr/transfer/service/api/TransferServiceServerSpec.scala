@@ -16,7 +16,6 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3Lo
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
-
   val transferId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
   private val invalidTokenExpectedResponse = Json.obj(
     "message" := "Invalid token issuer. Expected 'http://localhost:8000/auth/realms/tdr'"
@@ -87,8 +86,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       )
       .unsafeRunSync()
 
-    val expectedRecordsDestination = AWSS3LoadDestination("s3BucketNameRecords", s"$userId/sharepoint/$transferId/records")
-    val expectedMetadataLoadDestination = AWSS3LoadDestination("s3BucketNameMetadata", s"$userId/sharepoint/$transferId/metadata")
+    val expectedRecordsDestination = AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/sharepoint/$transferId/records")
+    val expectedMetadataLoadDestination = AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/sharepoint/$transferId/metadata")
 
     response.status shouldBe Status.Ok
     val body = response.as[Json].unsafeRunSync()

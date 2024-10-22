@@ -2,6 +2,8 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.controllers
 
 import cats.effect.IO
 import org.http4s.HttpRoutes
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.model.StatusCode
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
@@ -14,6 +16,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.Sourc
 import java.util.UUID
 
 trait BaseController {
+  implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
   val sourceSystem: EndpointInput[SourceSystem] = path("sourceSystem")
 

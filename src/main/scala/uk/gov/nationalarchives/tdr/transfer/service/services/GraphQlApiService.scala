@@ -26,7 +26,7 @@ class GraphQlApiService(addConsignmentClient: GraphQLClient[ac.Data, ac.Variable
   def addConsignment(token: Token): IO[AddConsignment.addConsignment.AddConsignment] = {
     for {
       result <- addConsignmentClient.getResult(token.bearerAccessToken, ac.document, ac.Variables(AddConsignmentInput(None, "standard")).some).toIO
-      data <- IO.fromOption(result.data)(new RuntimeException("Consignment not added"))
+      data <- IO.fromOption(result.data)(new RuntimeException(s"Consignment not added for user ${token.userId}"))
     } yield data.addConsignment
   }
 
