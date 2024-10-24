@@ -7,9 +7,10 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
-import sttp.tapir.server.http4s.Http4sServerInterpreter
+import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
+import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -18,6 +19,11 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadC
 import java.util.UUID
 
 class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor) extends BaseController {
+  private val customServerOptions: Http4sServerOptions[IO] = Http4sServerOptions
+    .customiseInterceptors[IO]
+    .corsInterceptor(CustomInterceptors.customCorsInterceptor)
+    .options
+
   def endpoints: List[Endpoint[
     String,
     _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean]) <: Serializable,
@@ -56,13 +62,13 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .out(jsonBody[String])
 
   val configurationRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO]().toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
 
   val initiateLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO]().toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input)))
 
   val completeLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO]().toRoutes(completeLoadEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.trigger(input._2, ac.token)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(completeLoadEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.trigger(input._2, ac.token)))
 }
 
 object LoadController {
