@@ -7,7 +7,9 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.Sourc
 class MetadataLoadConfigurationSpec extends BaseSpec {
   "'metadataLoadConfiguration'" should "return the correct metadata configuration for the given source system" in {
     val result = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.SharePoint)
-    result.size shouldBe 4
+    result.size shouldBe 6
+    result.contains(MetadataPropertyDetails("transferId", required = true)) shouldBe true
+    result.contains(MetadataPropertyDetails("matchId", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("FileRef", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("File_x0020_Size", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", required = true)) shouldBe true

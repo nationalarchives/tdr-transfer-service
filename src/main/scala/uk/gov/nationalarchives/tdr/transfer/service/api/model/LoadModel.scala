@@ -12,6 +12,9 @@ object LoadModel {
   case class DisplayMessage(viewName: String, message: String)
   case class TransferConfiguration(
       maxNumberRecords: Int,
+      maxIndividualFileSizeMb: Int,
+      maxTransferSizeMb: Int,
+      disallowedFileExtensions: Set[String] = Set(),
       metadataPropertyDetails: Set[MetadataPropertyDetails] = Set(),
       customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration(),
       display: Set[DisplayMessage] = Set()
@@ -22,4 +25,7 @@ object LoadModel {
       recordsLoadDestination: AWSS3LoadDestination,
       metadataLoadDestination: AWSS3LoadDestination
   ) extends LoadModel
+
+  case class LoadError(message: String)
+  case class LoadCompletion(expectedNumberFiles: Int, loadedNumberFiles: Int, loadErrors: Option[Set[LoadError]] = None)
 }
