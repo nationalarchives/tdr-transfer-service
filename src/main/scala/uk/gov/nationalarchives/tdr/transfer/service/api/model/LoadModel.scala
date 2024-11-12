@@ -27,5 +27,5 @@ object LoadModel {
   ) extends LoadModel
 
   case class LoadError(message: String)
-  case class LoadCompletion(expectedNumberFiles: Int, loadedNumberFiles: Int, loadErrors: Option[Set[LoadError]] = None)
+  case class LoadCompletion(expectedNumberFiles: Int, loadedNumberFiles: Int, loadErrors: Set[LoadError] = Set())
 }
