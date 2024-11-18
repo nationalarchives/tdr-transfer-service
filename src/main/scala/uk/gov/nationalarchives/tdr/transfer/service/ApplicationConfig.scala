@@ -12,7 +12,7 @@ object ApplicationConfig {
   case class Auth(url: String, realm: String)
   case class S3(awsRegion: String, metadataUploadBucketArn: String, metadataUploadBucketName: String, recordsUploadBucketArn: String, recordsUploadBucketName: String)
   case class Schema(dataLoadSharePointLocation: String)
-  case class TransferConfiguration(maxNumberRecords: Int)
+  case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])
 
   case class Configuration(

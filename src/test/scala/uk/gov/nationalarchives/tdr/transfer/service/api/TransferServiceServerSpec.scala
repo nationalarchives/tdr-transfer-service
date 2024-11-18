@@ -4,15 +4,15 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.circe.Json
 import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
-import io.circe.syntax.KeyOps
-import org.http4s.circe.jsonDecoder
-import org.http4s.implicits.http4sLiteralsSyntax
+import io.circe.syntax.{KeyOps, _}
+import org.http4s.circe._
+import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status}
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails, TransferConfiguration}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadCompletion, LoadDetails, LoadError, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
@@ -49,7 +49,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     val transferConfiguration = body.as[TransferConfiguration].toOption.get
     transferConfiguration.maxNumberRecords shouldBe 3000
     transferConfiguration.customMetadataConfiguration.required shouldBe false
-    transferConfiguration.metadataPropertyDetails.size shouldBe 4
+    transferConfiguration.metadataPropertyDetails.size shouldBe 6
     transferConfiguration.display.size shouldBe 0
   }
 
@@ -116,6 +116,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
   }
 
   "'load/sharepoint/complete' endpoint" should "return 200 with correct authorisation header" in {
+    val loadCompletionBody = LoadCompletion(3, 3, Set(LoadError("There was an error"))).asJson
+
     val validToken = validUserToken()
     val bearer = CIString("Authorization")
     val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -125,7 +127,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .completeLoadRoute
       .orNotFound
       .run(
-        Request(method = Method.POST, uri = uri"/load/sharepoint/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+        Request(method = Method.POST, uri = uri"/load/sharepoint/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders).withEntity(loadCompletionBody)
       )
       .unsafeRunSync()
 

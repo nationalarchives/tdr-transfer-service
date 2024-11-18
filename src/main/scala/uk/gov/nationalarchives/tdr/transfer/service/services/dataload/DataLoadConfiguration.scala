@@ -8,8 +8,11 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadIn
 class DataLoadConfiguration {
   def configuration(sourceSystem: SourceSystem): IO[TransferConfiguration] = {
     val maxNumberRecords = transferConfigurationConfig.maxNumberRecords
-    val metadataProperties = MetadataLoadConfiguration.metadataLoadConfiguration(sourceSystem)
-    IO(TransferConfiguration(maxNumberRecords, metadataProperties))
+    val maxIndividualFileSizeMb = transferConfigurationConfig.maxIndividualFileSizeMb
+    val maxTransferSizeMb = transferConfigurationConfig.maxTransferSizeMb
+    val metadataPropertyDetails = MetadataLoadConfiguration.metadataLoadConfiguration(sourceSystem)
+    val disallowedFileExtensions = Set[String]()
+    IO(TransferConfiguration(maxNumberRecords, maxIndividualFileSizeMb, maxTransferSizeMb, disallowedFileExtensions, metadataPropertyDetails))
   }
 }
 
