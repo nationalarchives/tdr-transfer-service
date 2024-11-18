@@ -24,11 +24,12 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
     IO {
       KeycloakUtils().token(bearer) match {
         case Right(t) if t.isStandardUser => Right(AuthenticatedContext(t))
-        case Right(t) => Left {
-          val errorMessage = s"User ${t.userId} is not a standard user"
-          logger.info(s"Authorisation error: $errorMessage")
-          AuthenticationError(errorMessage)
-        }
+        case Right(t) =>
+          Left {
+            val errorMessage = s"User ${t.userId} is not a standard user"
+            logger.info(s"Authorisation error: $errorMessage")
+            AuthenticationError(errorMessage)
+          }
         case Left(e) =>
           Left {
             logger.info(s"Authentication error: ${e.getMessage}")
