@@ -11,7 +11,7 @@ import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadDetails, TransferConfiguration}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
@@ -26,7 +26,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   def endpoints: List[Endpoint[
     String,
-    _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean]) <: Serializable,
+    _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
     BackendException.AuthenticationError,
     _ >: TransferConfiguration with LoadDetails with String <: Serializable,
     Any
@@ -53,12 +53,13 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .out(jsonBody[LoadDetails])
 
   private val completeLoadEndpoint
-      : PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID, Option[Boolean]), BackendException.AuthenticationError, String, Any, IO] =
+      : PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID, Option[Boolean], LoadCompletion), BackendException.AuthenticationError, String, Any, IO] =
     securedWithStandardUserBearer
       .summary("Notify that loading has completed")
       .description("Triggers the processing of the transfer's loaded metadata and records in TDR")
       .post
       .in("load" / sourceSystem / "complete" / transferId / metadataOnly)
+      .in(jsonBody[LoadCompletion])
       .out(jsonBody[String])
 
   val configurationRoute: HttpRoutes[IO] =
