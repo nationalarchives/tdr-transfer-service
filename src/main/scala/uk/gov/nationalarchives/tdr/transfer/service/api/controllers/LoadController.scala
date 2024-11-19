@@ -39,7 +39,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
     securedWithBearer
       .summary("Configuration for client transfer")
       .description("Provides configuration for calling client before starting an operation")
-      .post
+      .get
       .in("load" / sourceSystem / "configuration")
       .out(jsonBody[TransferConfiguration])
 
