@@ -40,7 +40,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .configurationRoute
       .orNotFound
       .run(
-        Request(method = Method.POST, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
+        Request(method = Method.GET, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
       )
       .unsafeRunSync()
 
@@ -63,7 +63,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .configurationRoute
       .orNotFound
       .run(
-        Request(method = Method.POST, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
+        Request(method = Method.GET, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
       )
       .unsafeRunSync()
 

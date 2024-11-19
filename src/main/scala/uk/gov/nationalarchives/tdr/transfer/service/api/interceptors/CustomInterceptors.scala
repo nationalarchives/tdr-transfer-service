@@ -12,7 +12,7 @@ object CustomInterceptors {
   private val corsConfig = CORSConfig.apply(
     AllowedOrigin.Matching(checkOrigins),
     AllowedCredentials.Allow,
-    AllowedMethods.Some(Set(Method.GET, Method.HEAD, Method.POST, Method.PUT, Method.DELETE)),
+    AllowedMethods.Some(Set(Method.GET, Method.HEAD, Method.POST, Method.PUT)),
     AllowedHeaders.Reflect,
     ExposedHeaders.None,
     maxAge = MaxAge.Default,
