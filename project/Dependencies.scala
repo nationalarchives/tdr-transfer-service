@@ -23,7 +23,6 @@ object Dependencies {
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.12"
 
   lazy val metadataSchema = "uk.gov.nationalarchives" % "da-metadata-schema_3" % "0.0.41"
-
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
