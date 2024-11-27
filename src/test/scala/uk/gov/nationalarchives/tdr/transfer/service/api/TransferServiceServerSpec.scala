@@ -17,6 +17,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpe
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
   val transferId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
+  val transferRef = "Consignment-Ref"
   private val invalidTokenExpectedResponse = Json.obj(
     "message" := "Invalid token issuer. Expected 'http://localhost:8000/auth/realms/tdr'"
   )
@@ -93,6 +94,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     val body = response.as[Json].unsafeRunSync()
     val loadDetails = body.as[LoadDetails].toOption.get
     loadDetails.transferId.toString shouldBe transferId
+    loadDetails.transferReference shouldBe transferRef
     loadDetails.metadataLoadDestination shouldEqual expectedMetadataLoadDestination
     loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
   }
