@@ -8,7 +8,7 @@ object Dependencies {
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.220"
 
-  lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.6"
+  lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.7"
 
   lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.391"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.194"
