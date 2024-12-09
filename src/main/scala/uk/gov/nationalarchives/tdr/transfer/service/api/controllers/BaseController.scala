@@ -29,9 +29,9 @@ trait BaseController {
 
   val transferId: EndpointInput[UUID] = path("transferId")
 
-  val securedWithBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
+  val securedWithStandardUserBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
     .serverSecurityLogic(
-      tokenAuthenticator.authenticateUserToken
+      tokenAuthenticator.authenticateStandardUserToken
     )
 
   def routes: HttpRoutes[IO]

@@ -36,7 +36,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
   override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute
 
   private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, TransferConfiguration, Any, IO] =
-    securedWithBearer
+    securedWithStandardUserBearer
       .summary("Configuration for client transfer")
       .description("Provides configuration for calling client before starting an operation")
       .get
@@ -46,7 +46,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
   private val metadataOnly: EndpointInput[Option[Boolean]] = query("metadataOnly")
 
   private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, LoadDetails, Any, IO] =
-    securedWithBearer
+    securedWithStandardUserBearer
       .summary("Initiate the load of records and metadata")
       .post
       .in("load" / sourceSystem / "initiate")
@@ -54,7 +54,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   private val completeLoadEndpoint
       : PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID, Option[Boolean], LoadCompletion), BackendException.AuthenticationError, String, Any, IO] =
-    securedWithBearer
+    securedWithStandardUserBearer
       .summary("Notify that loading has completed")
       .description("Triggers the processing of the transfer's loaded metadata and records in TDR")
       .post

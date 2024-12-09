@@ -26,7 +26,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
 
   "'addConsignment'" should "return the consignment id of the created consignment" in {
-    val addConsignmentData = AddConsignment(Some(UUID.fromString(consignmentId)), None)
+    val addConsignmentData = AddConsignment(Some(UUID.fromString(consignmentId)), None, "Consignment-Ref")
 
     mockKeycloak()
     mockAddConsignmentClient(Some(ac.Data(addConsignmentData)))

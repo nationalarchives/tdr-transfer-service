@@ -1,6 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
+import graphql.codegen.AddConsignment.addConsignment.AddConsignment
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
@@ -19,16 +20,18 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
       consignmentId = addConsignmentResult.consignmentid.get
       _ <- logger.info(s"Starting upload for consignment $consignmentId")
       _ <- graphQlApiService.startUpload(token, consignmentId)
-      result <- loadDetails(consignmentId, token.userId, sourceSystem)
+      result <- loadDetails(addConsignmentResult, token.userId, sourceSystem)
     } yield result
   }
 
-  private def loadDetails(transferId: UUID, userId: UUID, sourceSystem: SourceSystem): IO[LoadDetails] = {
+  private def loadDetails(transferDetails: AddConsignment, userId: UUID, sourceSystem: SourceSystem): IO[LoadDetails] = {
+    val transferId = transferDetails.consignmentid.get
+    val transferReference = transferDetails.consignmentReference
     val s3KeyPrefix = s"$userId/$sourceSystem/$transferId"
     val awsRegion = s3Config.awsRegion
     val recordsS3Bucket = AWSS3LoadDestination(s"$awsRegion", s"${s3Config.recordsUploadBucketArn}", s"${s3Config.recordsUploadBucketName}", s"$s3KeyPrefix/records")
     val metadataS3Bucket = AWSS3LoadDestination(s"$awsRegion", s"${s3Config.metadataUploadBucketArn}", s"${s3Config.metadataUploadBucketName}", s"$s3KeyPrefix/metadata")
-    IO(LoadDetails(transferId, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
+    IO(LoadDetails(transferId, transferReference, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
   }
 }
 
