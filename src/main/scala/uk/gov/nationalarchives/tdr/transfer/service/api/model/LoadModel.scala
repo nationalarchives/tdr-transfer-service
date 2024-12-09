@@ -22,6 +22,7 @@ object LoadModel {
   case class AWSS3LoadDestination(awsRegion: String, bucketArn: String, bucketName: String, bucketKeyPrefix: String) extends LoadDestinationModel
   case class LoadDetails(
       transferId: UUID,
+      transferReference: String,
       recordsLoadDestination: AWSS3LoadDestination,
       metadataLoadDestination: AWSS3LoadDestination
   ) extends LoadModel
