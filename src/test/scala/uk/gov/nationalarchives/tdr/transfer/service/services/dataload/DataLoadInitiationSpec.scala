@@ -20,7 +20,7 @@ class DataLoadInitiationSpec extends BaseSpec {
   private val sourceSystem = SourceSystemEnum.SharePoint
 
   "'initiateConsignmentLoad'" should "create a consignment and return expected 'LoadDetails' object" in {
-    val addConsignmentResponse = AddConsignment(Some(consignmentId), None)
+    val addConsignmentResponse = AddConsignment(Some(consignmentId), None, "Consignment-Ref")
     val mockGraphQlApiService = mock[GraphQlApiService]
 
     when(mockGraphQlApiService.addConsignment(mockToken)).thenReturn(IO(addConsignmentResponse))
@@ -31,6 +31,7 @@ class DataLoadInitiationSpec extends BaseSpec {
 
     val expectedResult = LoadDetails(
       consignmentId,
+      "Consignment-Ref",
       AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/$sourceSystem/$consignmentId/records"),
       AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/$sourceSystem/$consignmentId/metadata")
     )
@@ -57,7 +58,7 @@ class DataLoadInitiationSpec extends BaseSpec {
   }
 
   "'initiateConsignmentLoad'" should "throw an error if 'startUpload' GraphQl service call fails" in {
-    val addConsignmentResponse = AddConsignment(Some(consignmentId), None)
+    val addConsignmentResponse = AddConsignment(Some(consignmentId), None, "Consignment-Ref")
     val mockGraphQlApiService = mock[GraphQlApiService]
 
     when(mockGraphQlApiService.addConsignment(mockToken)).thenReturn(IO(addConsignmentResponse))
