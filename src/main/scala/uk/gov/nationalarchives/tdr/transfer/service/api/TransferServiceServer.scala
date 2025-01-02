@@ -1,13 +1,12 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api
 
-import cats.data.Kleisli
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s.{IpLiteralSyntax, Port}
 import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.Logger
-import org.http4s.{HttpRoutes, Request, Response}
+import org.http4s.server.middleware.{Logger, Throttle, Timeout}
+import org.http4s.{HttpApp, HttpRoutes}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.apispec.openapi.Info
@@ -17,6 +16,8 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
+
+import scala.concurrent.duration.DurationInt
 
 object TransferServiceServer extends IOApp {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
@@ -46,16 +47,21 @@ object TransferServiceServer extends IOApp {
   private val allRoutes =
     Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> healthCheckRoute
 
-  private val app: Kleisli[IO, Request[IO], Response[IO]] = allRoutes.orNotFound
+  private def throttleService(service: HttpApp[IO]): IO[HttpApp[IO]] = Throttle.httpApp[IO](
+    amount = appConfig.transferServiceApi.throttleAmount,
+    per = appConfig.transferServiceApi.throttlePerMs.milliseconds
+  )(service)
 
-  private val finalApp = Logger.httpApp(logHeaders = true, logBody = false)(app)
-
-  private val transferServiceServer = EmberServerBuilder
-    .default[IO]
-    .withHost(ipv4"0.0.0.0")
-    .withPort(apiPort)
-    .withHttpApp(finalApp)
-    .build
+  private val transferServiceServer = for {
+    httpApp <- Resource.eval(throttleService(allRoutes.orNotFound))
+    finalApp = Logger.httpApp(logHeaders = true, logBody = false)(httpApp)
+    server <- EmberServerBuilder
+      .default[IO]
+      .withHost(ipv4"0.0.0.0")
+      .withPort(apiPort)
+      .withHttpApp(finalApp)
+      .build
+  } yield server
 
   override def run(args: List[String]): IO[ExitCode] = {
     transferServiceServer.use(_ => IO.never).as(ExitCode.Success)
