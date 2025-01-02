@@ -5,7 +5,7 @@ import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s.{IpLiteralSyntax, Port}
 import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.{Logger, Throttle, Timeout}
+import org.http4s.server.middleware.{Logger, Throttle}
 import org.http4s.{HttpApp, HttpRoutes}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger

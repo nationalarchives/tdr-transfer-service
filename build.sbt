@@ -13,7 +13,6 @@ lazy val root = (project in file("."))
       generatedGraphql,
       graphqlClient,
       http4sCirce,
-      http4sClient,
       http4sDsl,
       http4sEmberServer,
       keycloakMock % Test,
