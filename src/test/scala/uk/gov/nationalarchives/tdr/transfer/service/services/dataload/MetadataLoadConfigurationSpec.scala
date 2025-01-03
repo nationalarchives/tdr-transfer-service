@@ -11,8 +11,8 @@ class MetadataLoadConfigurationSpec extends BaseSpec {
     result.contains(MetadataPropertyDetails("transferId", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("matchId", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("FileRef", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("Length", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("FileLeafRef", required = true)) shouldBe true
+    result.contains(MetadataPropertyDetails("Length", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", required = true)) shouldBe true
     result.contains(MetadataPropertyDetails("Modified", required = true)) shouldBe true
   }
