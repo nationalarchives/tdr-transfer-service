@@ -4,14 +4,14 @@ object Dependencies {
   private val http4sVersion = "0.23.30"
   private val mockitoVersion = "1.17.37"
   private val pureConfigVersion = "0.17.8"
-  private val tapirVersion = "1.11.13"
+  private val tapirVersion = "1.11.14"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.228"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.229"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.5.7"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.400"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.205"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.401"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.208"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
