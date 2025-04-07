@@ -4,7 +4,7 @@ object Dependencies {
   private val http4sVersion = "0.23.30"
   private val mockitoVersion = "1.17.37"
   private val pureConfigVersion = "0.17.8"
-  private val tapirVersion = "1.11.21"
+  private val tapirVersion = "1.11.23"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.236"
 
@@ -17,7 +17,7 @@ object Dependencies {
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 
-  lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.17.0"
+  lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.18.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.18"
