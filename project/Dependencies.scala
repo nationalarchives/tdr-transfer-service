@@ -3,14 +3,14 @@ import sbt.*
 object Dependencies {
   private val http4sVersion = "0.23.30"
   private val mockitoVersion = "1.17.37"
-  private val pureConfigVersion = "0.17.8"
+  private val pureConfigVersion = "0.17.9"
   private val tapirVersion = "1.11.25"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.237"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.239"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.6.1"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.408"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.409"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.221"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -22,7 +22,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.18"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" % "da-metadata-schema_3" % "0.0.52"
+  lazy val metadataSchema = "uk.gov.nationalarchives" % "da-metadata-schema_3" % "0.0.53"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
