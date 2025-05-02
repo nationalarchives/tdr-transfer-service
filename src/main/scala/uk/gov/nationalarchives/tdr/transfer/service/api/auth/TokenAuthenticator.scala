@@ -38,6 +38,25 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
       }
     }
   }
+
+  def authenticateTransferServiceClientToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] = {
+    IO {
+      KeycloakUtils().token(bearer) match {
+        case Right(t) if t.transferServiceRoles.contains("data-load") => Right(AuthenticatedContext(t))
+        case Right(t) =>
+          Left {
+            val errorMessage = s"${t.userId} does have data load role"
+            logger.info(s"Authorisation error: $errorMessage")
+            AuthenticationError(errorMessage)
+          }
+        case Left(e) =>
+          Left {
+            logger.info(s"Authentication error: ${e.getMessage}")
+            AuthenticationError(e.getMessage)
+          }
+      }
+    }
+  }
 }
 
 object TokenAuthenticator {

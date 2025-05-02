@@ -10,6 +10,8 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.{Endpoint, EndpointInput, auth, endpoint, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.ProcessingState.ProcessingStateEnum.ProcessingState
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.ProcessingType.ProcessingTypeEnum.ProcessingType
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 
@@ -18,7 +20,10 @@ import java.util.UUID
 trait BaseController {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
 
+  val transferId: EndpointInput[UUID] = path("transferId")
   val sourceSystem: EndpointInput[SourceSystem] = path("sourceSystem")
+  val processingType: EndpointInput[ProcessingType] = path("processingType")
+  val processingState: EndpointInput[ProcessingState] = path("processingState")
 
   private val tokenAuthenticator = TokenAuthenticator()
 
@@ -27,11 +32,14 @@ trait BaseController {
     .errorOut(statusCode(StatusCode.Unauthorized))
     .errorOut(jsonBody[AuthenticationError])
 
-  val transferId: EndpointInput[UUID] = path("transferId")
-
   val securedWithStandardUserBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
     .serverSecurityLogic(
       tokenAuthenticator.authenticateStandardUserToken
+    )
+
+  val securedWithTransferServiceRoleBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
+    .serverSecurityLogic(
+      tokenAuthenticator.authenticateTransferServiceClientToken
     )
 
   def routes: HttpRoutes[IO]

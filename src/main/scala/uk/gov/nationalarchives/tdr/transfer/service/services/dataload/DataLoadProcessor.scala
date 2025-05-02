@@ -8,6 +8,7 @@ import java.util.UUID
 class DataLoadProcessor {
   def trigger(transferId: UUID, token: Token): IO[String] = {
     // Trigger data load processing
+    // Send custom EventBridge event
     IO("Data Load Processor: Stubbed Response")
   }
 }
