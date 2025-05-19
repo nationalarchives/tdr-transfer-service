@@ -26,7 +26,7 @@ object Dependencies {
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
-  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.1.0"
+  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.2.0"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
 
