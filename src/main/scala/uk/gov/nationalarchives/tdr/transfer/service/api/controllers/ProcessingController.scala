@@ -26,8 +26,8 @@ class ProcessingController() extends BaseController {
 
   private val processingCompleteEndpoint =
     securedWithTransferServiceRoleBearer
-      .summary("TO DO")
-      .description("TO DO")
+      .summary("Triggers relevant processing")
+      .description("Depending on the provided type and state will start the necessary processing of the transfer")
       .post
       .in("processing" / sourceSystem / processingType / processingState / transferId)
 
