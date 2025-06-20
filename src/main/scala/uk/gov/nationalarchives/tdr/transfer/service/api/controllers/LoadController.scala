@@ -11,6 +11,7 @@ import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.CustomMetadataModel.CustomPropertyDetails
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -26,14 +27,14 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   def endpoints: List[Endpoint[
     String,
-    _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
+    _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean], LoadCompletion) with (SourceSystem, UUID, Set[CustomPropertyDetails]) <: Serializable,
     BackendException.AuthenticationError,
     _ >: TransferConfiguration with LoadDetails with String <: Serializable,
     Any
   ]] =
-    List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint)
+    List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint, customMetadataDetailsEndpoint.endpoint)
 
-  override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute
+  override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute <+> customMetadataDetailsRoute
 
   private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, TransferConfiguration, Any, IO] =
     securedWithStandardUserBearer
@@ -62,6 +63,16 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .in(jsonBody[LoadCompletion])
       .out(jsonBody[String])
 
+  private val customMetadataDetailsEndpoint
+      : PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID, Set[CustomPropertyDetails]), BackendException.AuthenticationError, String, Any, IO] =
+    securedWithStandardUserBearer
+      .summary("Details of any custom metadata properties for the transfer")
+      .description("Provide details of custom metadata properties that are to be included as part of the transfer")
+      .post
+      .in("load" / sourceSystem / "custom-metadata" / "details" / transferId)
+      .in(jsonBody[Set[CustomPropertyDetails]])
+      .out(jsonBody[String])
+
   val configurationRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
 
@@ -70,6 +81,11 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   val completeLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(completeLoadEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.trigger(input._2, ac.token)))
+
+  val customMetadataDetailsRoute: HttpRoutes[IO] =
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(
+      customMetadataDetailsEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.customMetadataDetails(input._1, input._2, ac.token, input._3))
+    )
 }
 
 object LoadController {

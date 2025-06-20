@@ -5,6 +5,7 @@ import cats.effect.unsafe.implicits.global
 import io.circe.Json
 import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
 import io.circe.syntax.{KeyOps, _}
+import org.http4s.circe.CirceEntityCodec.circeEntityEncoder
 import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status}
@@ -12,7 +13,7 @@ import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadCompletion, LoadDetails, LoadError, TransferConfiguration}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
@@ -148,6 +149,44 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .orNotFound
       .run(
         Request(method = Method.POST, uri = uri"/load/sharepoint/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+  }
+
+  "'load/sharepoint/custom-metadata/details' endpoint" should "return 200 with correct authorisation header" in {
+    val mockCustomMetadataDetail = Set().asJson
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .customMetadataDetailsRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/sharepoint/custom-metadata/details/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+          .withEntity(mockCustomMetadataDetail)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Ok
+    response.as[String].unsafeRunSync() shouldEqual "\"Custom Metadata Details: Stubbed Response\""
+  }
+
+  "'load/sharepoint/custom-metadata/details' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .customMetadataDetailsRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/sharepoint/custom-metadata/details/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
       )
       .unsafeRunSync()
 
