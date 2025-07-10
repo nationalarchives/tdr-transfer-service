@@ -12,6 +12,6 @@ object Serializers extends AutoDerivation with SchemaDerivation {
   implicit val schemaConfiguration: TapirConfiguration = TapirConfiguration.default.withDiscriminator("type")
 
   implicit val sourceSystemEnc: Encoder[SourceSystem] = Encoder.encodeEnumeration(SourceSystemEnum)
-  implicit val genderDec: Decoder[SourceSystem] = Decoder.decodeEnumeration(SourceSystemEnum)
-  implicit val genderSch: Schema[SourceSystem] = Schema.derivedEnumerationValue[SourceSystem]
+  implicit val sourceSystemDec: Decoder[SourceSystem] = Decoder.decodeEnumeration(SourceSystemEnum)
+  implicit val sourceSystemSch: Schema[SourceSystem] = Schema.derivedEnumerationValue[SourceSystem]
 }
