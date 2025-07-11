@@ -3,7 +3,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.users
 import uk.gov.nationalarchives.tdr.transfer.service.{ApplicationConfig, BaseSpec}
 
 class UserDetailsSpec extends BaseSpec {
-  private val authConfig = ApplicationConfig.Auth("http://localhost:9002/auth", "tdr", "auth-client-id", "auth-client-secret")
+  private val authConfig = ApplicationConfig.Auth("http://localhost:9002/auth", "tdr", "user-read-client-id", "user-read-client-secret")
   "'getUserDetails'" should "return the correct user details" in {
     authOk
     keycloakGetUser
