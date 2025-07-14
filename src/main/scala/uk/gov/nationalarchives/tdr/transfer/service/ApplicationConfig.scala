@@ -9,11 +9,12 @@ object ApplicationConfig {
 
   case class TransferServiceApi(port: Int, throttleAmount: Int, throttlePerMs: Int)
   case class ConsignmentApi(url: String)
-  case class Auth(url: String, realm: String)
+  case class Auth(url: String, realm: String, userReadClientId: String, userReadClientSecret: String)
   case class S3(awsRegion: String, metadataUploadBucketArn: String, metadataUploadBucketName: String, recordsUploadBucketArn: String, recordsUploadBucketName: String)
   case class Schema(dataLoadSharePointLocation: String)
   case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])
+  case class Sns(endpoint: String, userEmailSnsTopicArn: String)
 
   case class Configuration(
       auth: Auth,
@@ -22,7 +23,8 @@ object ApplicationConfig {
       s3: S3,
       schema: Schema,
       transferConfiguration: TransferConfiguration,
-      cors: Cors
+      cors: Cors,
+      sns: Sns
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {

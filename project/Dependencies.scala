@@ -17,6 +17,7 @@ object Dependencies {
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 
+  lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.6"
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.18.2"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
@@ -35,4 +36,5 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
+  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.282"
 }

@@ -1,8 +1,14 @@
 package uk.gov.nationalarchives.tdr.transfer.service
 
 import cats.effect.IO
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.{okJson, post, urlEqualTo}
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
+import org.keycloak.OAuth2Constants
+import org.keycloak.admin.client.{Keycloak, KeycloakBuilder}
 import org.mockito.MockitoSugar
-import org.scalatest.EitherValues
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, EitherValues}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.log4cats.SelfAwareStructuredLogger
@@ -12,8 +18,9 @@ import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{MetadataPropertyDetails, TransferConfiguration}
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.io.Source.fromResource
 
-trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherValues {
+trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherValues with BeforeAndAfterEach with BeforeAndAfterAll {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
   implicit val executionContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
@@ -30,4 +37,45 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
   )
 
   val expectedTransferConfiguration: TransferConfiguration = TransferConfiguration(3000, 2000, 5000, Set(), expectedMetadataPropertyDetails, display = Set())
+
+  val keycloakUserId = "b2657adf-6e93-424f-b0f1-aadd26762a96"
+  val authPath = "/auth/realms/tdr/protocol/openid-connect/token"
+  val keycloakGetRealmPath = "/auth/admin/realms/tdr"
+  val keycloakGetUserPath: String = s"/auth/admin/realms/tdr/users/$keycloakUserId"
+
+  val keycloakAdminClient: Keycloak = KeycloakBuilder
+    .builder()
+    .serverUrl("http://localhost:9002/auth")
+    .realm("tdr")
+    .clientId("auth-client-id")
+    .clientSecret("auth-client-secret")
+    .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
+    .build()
+
+  val wiremockAuthServer = new WireMockServer(9002)
+
+  def keycloakCreateAdminClient: Keycloak = keycloakAdminClient
+
+  def authOk: StubMapping = wiremockAuthServer.stubFor(
+    post(urlEqualTo(authPath))
+      .willReturn(okJson(fromResource(s"json/access_token.json").mkString))
+  )
+
+  def keycloakGetUser: StubMapping = wiremockAuthServer.stubFor(
+    WireMock
+      .get(urlEqualTo(keycloakGetUserPath))
+      .willReturn(okJson(fromResource(s"json/get_keycloak_user.json").mkString))
+  )
+
+  override def beforeAll(): Unit = {
+    wiremockAuthServer.start()
+  }
+
+  override def afterAll(): Unit = {
+    wiremockAuthServer.stop()
+  }
+
+  override def afterEach(): Unit = {
+    wiremockAuthServer.resetAll()
+  }
 }
