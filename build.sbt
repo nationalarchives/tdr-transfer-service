@@ -15,6 +15,7 @@ lazy val root = (project in file("."))
       http4sCirce,
       http4sDsl,
       http4sEmberServer,
+      keycloakAdminClient,
       keycloakMock % Test,
       logbackClassic,
       logBackEncoder,
@@ -24,6 +25,7 @@ lazy val root = (project in file("."))
       pureConfig,
       pureConfigCatsEffect,
       scalaTest % Test,
+      snsUtils,
       tapirHttp4sServer,
       tapirJsonCirce,
       tapirSwaggerUI
