@@ -10,8 +10,8 @@ import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status}
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIString
-import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
-import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
+import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validClientToken, validUserToken}
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferManagementController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadCompletion, LoadDetails, LoadError, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 
@@ -156,7 +156,6 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
   }
 
   "unknown source system in endpoint" should "return 400 response with correct authorisation header" in {
-    graphqlOkJson()
     val validToken = validUserToken()
     val bearer = CIString("Authorization")
     val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -184,6 +183,76 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .orNotFound
       .run(
         Request(method = Method.POST, uri = uri"/load/unknown/initiate", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.BadRequest
+  }
+
+  "'processing/sharepoint/upload/completed' endpoint" should "return 200 with correct authorisation header" in {
+    val validToken = validClientToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = TransferManagementController
+      .apply()
+      .uploadProcessingRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/processing/sharepoint/upload/completed/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Ok
+    response.as[String].unsafeRunSync() shouldEqual "\"Upload Processing: Stubbed Response\""
+  }
+
+  "'processing/sharepoint/upload/completed' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = TransferManagementController
+      .apply()
+      .uploadProcessingRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/processing/sharepoint/upload/completed/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+  }
+
+  "unknown state value in endpoint" should "return 400 response with correct authorisation header" in {
+    val validToken = validClientToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = TransferManagementController
+      .apply()
+      .uploadProcessingRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/processing/sharepoint/upload/unknownStateValue/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.BadRequest
+  }
+
+  "unknown state value in endpoint" should "return 400 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = TransferManagementController
+      .apply()
+      .uploadProcessingRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/processing/sharepoint/upload/unknownStateValue/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
       )
       .unsafeRunSync()
 

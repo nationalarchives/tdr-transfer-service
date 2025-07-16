@@ -7,9 +7,11 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.model.StatusCode
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
+import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir.{Endpoint, EndpointInput, auth, endpoint, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 
@@ -33,6 +35,16 @@ trait BaseController {
     .serverSecurityLogic(
       tokenAuthenticator.authenticateStandardUserToken
     )
+
+  val securedWithTransferServiceClientBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
+    .serverSecurityLogic(
+      tokenAuthenticator.authenticateClientToken
+    )
+
+  val customServerOptions: Http4sServerOptions[IO] = Http4sServerOptions
+    .customiseInterceptors[IO]
+    .corsInterceptor(CustomInterceptors.customCorsInterceptor)
+    .options
 
   def routes: HttpRoutes[IO]
 }

@@ -7,10 +7,9 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
-import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
+import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
-import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -19,10 +18,6 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadC
 import java.util.UUID
 
 class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor) extends BaseController {
-  private val customServerOptions: Http4sServerOptions[IO] = Http4sServerOptions
-    .customiseInterceptors[IO]
-    .corsInterceptor(CustomInterceptors.customCorsInterceptor)
-    .options
 
   def endpoints: List[Endpoint[
     String,
