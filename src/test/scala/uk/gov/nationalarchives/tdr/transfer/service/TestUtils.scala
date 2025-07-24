@@ -11,6 +11,7 @@ object TestUtils {
   private val testKeycloakMock: KeycloakMock = createServer("test", 8001)
 
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
+  val transferServiceUserId = UUID.fromString("f67d1337-cbd0-4fd1-9eac-611489e7113f")
 
   def validUserToken(userId: UUID = userId, body: String = "Code", standardUser: String = "true"): OAuth2BearerToken =
     OAuth2BearerToken(
@@ -21,6 +22,16 @@ object TestUtils {
           .withClaim("user_id", userId)
           .withClaim("standard_user", standardUser)
           .build
+      )
+    )
+
+  def validClientToken(clientId: String = "tdr-transfer-service", role: String = "data-load"): OAuth2BearerToken =
+    OAuth2BearerToken(
+      tdrKeycloakMock.getAccessToken(
+        aTokenConfig()
+          .withResourceRole(clientId, role)
+          .withClaim("user_id", transferServiceUserId)
+          .build()
       )
     )
 
