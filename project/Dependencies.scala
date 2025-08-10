@@ -36,5 +36,5 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
-  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.288"
+  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.289"
 }
