@@ -1,15 +1,21 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
+import com.fasterxml.jackson.databind.JsonNode
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.MetadataPropertyDetails
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.schema.SchemaHandler
+import uk.gov.nationalarchives.tdr.schemautils.ConfigUtils
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 object MetadataLoadConfiguration {
   private val schemaConfig: ApplicationConfig.Schema = ApplicationConfig.appConfig.schema
+  private val config = ConfigUtils.loadConfiguration
+  private val sharePointTagToPropertyMapper = config.inputToPropertyMapper("sharePointTag")
+  private val tdrPropertyMapper = config.propertyToOutputMapper("tdrFileHeader")
 
   private def sourceSystemSchemaMapping(sourceSystem: SourceSystem): String = sourceSystem match {
     case SourceSystemEnum.SharePoint => schemaConfig.dataLoadSharePointLocation
@@ -20,10 +26,17 @@ object MetadataLoadConfiguration {
     val schemaLocation = sourceSystemSchemaMapping(sourceSystem)
     val schema = SchemaHandler.schema(schemaLocation)
     val properties = schema.get("properties").properties().asScala
+    val propertyDescriptions = properties.map(n => n.getKey -> n.getValue.get("description")).toMap
     val requiredProperties = schema.get("required").asScala.map(_.asText()).toSet
     properties
       .map(p => {
-        MetadataPropertyDetails(p.getKey, requiredProperties.contains(p.getKey))
+        val propertyName = sharePointTagToPropertyMapper(p.getKey)
+        val displayName = tdrPropertyMapper(propertyName)
+        val description: String = propertyDescriptions.get(propertyName) match {
+          case Some(value) if value != null => value.asText()
+          case _                            => ""
+        }
+        MetadataPropertyDetails(p.getKey, requiredProperties.contains(p.getKey), displayName, description)
       })
       .toSet
   }
