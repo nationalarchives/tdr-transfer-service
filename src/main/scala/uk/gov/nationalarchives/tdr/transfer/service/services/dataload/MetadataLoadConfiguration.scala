@@ -1,14 +1,12 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
-import com.fasterxml.jackson.databind.JsonNode
+import uk.gov.nationalarchives.tdr.schemautils.ConfigUtils
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.MetadataPropertyDetails
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.schema.SchemaHandler
-import uk.gov.nationalarchives.tdr.schemautils.ConfigUtils
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 object MetadataLoadConfiguration {
