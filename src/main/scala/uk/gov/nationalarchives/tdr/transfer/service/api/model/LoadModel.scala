@@ -8,7 +8,7 @@ sealed trait MetadataPropertyModel
 
 object LoadModel {
   case class CustomMetadataConfiguration(required: Boolean = false) extends MetadataPropertyModel
-  case class MetadataPropertyDetails(propertyName: String, required: Boolean, displayName: String = "") extends MetadataPropertyModel
+  case class MetadataPropertyDetails(propertyName: String, required: Boolean, displayName: String = "", description: String = "") extends MetadataPropertyModel
   case class DisplayMessage(viewName: String, message: String)
   case class TransferConfiguration(
       maxNumberRecords: Int,
