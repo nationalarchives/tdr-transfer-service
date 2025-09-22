@@ -6,7 +6,7 @@ object Dependencies {
   private val pureConfigVersion = "0.17.9"
   private val tapirVersion = "1.11.44"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.258"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.259"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.6.3"
 
@@ -36,5 +36,5 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
-  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.301"
+  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.303"
 }
