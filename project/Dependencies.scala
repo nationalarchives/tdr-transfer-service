@@ -1,7 +1,7 @@
 import sbt.*
 
 object Dependencies {
-  private val http4sVersion = "0.23.30"
+  private val http4sVersion = "0.23.32"
   private val mockitoVersion = "2.0.0"
   private val pureConfigVersion = "0.17.9"
   private val tapirVersion = "1.11.44"
@@ -36,5 +36,5 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
-  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.303"
+  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.304"
 }
