@@ -23,7 +23,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.18"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" % "da-metadata-schema_3" % "0.0.57"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.88"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
@@ -36,5 +36,5 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
-  lazy val snsUtils = "uk.gov.nationalarchives" %% "sns-utils" % "0.1.305"
+  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % "0.1.305"
 }

@@ -29,4 +29,5 @@ object LoadModel {
 
   case class LoadError(message: String)
   case class LoadCompletion(expectedNumberFiles: Int, loadedNumberFiles: Int, loadErrors: Set[LoadError] = Set())
+  case class LoadCompletionResponse(transferId: UUID, success: Boolean)
 }

@@ -15,7 +15,7 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferManagementController}
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
 
 import scala.concurrent.duration.DurationInt
 
@@ -36,17 +36,16 @@ object TransferServiceServer extends IOApp {
 
   private val openApiInfo: Info = Info(infoTitle, infoVersion, description = infoDescription)
   private val loadController = LoadController()
-  private val transferManagementController = TransferManagementController()
 
   private val documentationEndpoints =
-    SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints ++ transferManagementController.endpoints, openApiInfo)
+    SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints, openApiInfo)
 
   val healthCheckRoute: HttpRoutes[IO] = HttpRoutes.of[IO] { case GET -> Root / "healthcheck" =>
     Ok("Healthy")
   }
 
   private val allRoutes =
-    Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> transferManagementController.routes <+> healthCheckRoute
+    Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> healthCheckRoute
 
   private def throttleService(service: HttpApp[IO]): IO[HttpApp[IO]] = Throttle.httpApp[IO](
     amount = appConfig.transferServiceApi.throttleAmount,
