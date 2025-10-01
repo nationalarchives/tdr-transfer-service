@@ -18,7 +18,7 @@ object Dependencies {
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 
   lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.6"
-  lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.18.2"
+  lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.19.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.19"
