@@ -24,7 +24,7 @@ class DataLoadProcessor(messageService: Messages, s3Config: ApplicationConfig.S3
 
     if (!clientSideErrors) {
       logger.info(s"Triggering aggregate processing for transfer: $transferId")
-      val eventMessage = AggregateProcessingEvent(event.source.toString, metadataSourceBucket, metadataSourceObjectPrefix, dataLoadErrors) //pass event source
+      val eventMessage = AggregateProcessingEvent(event.source.toString, metadataSourceBucket, metadataSourceObjectPrefix, dataLoadErrors)
       messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
     }
     IO(LoadCompletionResponse(transferId, !clientSideErrors && !dataLoadErrors))
