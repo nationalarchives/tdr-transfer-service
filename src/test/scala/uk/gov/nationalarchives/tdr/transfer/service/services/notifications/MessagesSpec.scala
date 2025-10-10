@@ -13,8 +13,9 @@ class MessagesSpec extends BaseSpec {
     val mockSqsUtils = mock[SQSUtils]
     when(mockSqsConfig.aggregateProcessingQueueUrl).thenReturn("sqs/url")
     val service = new Messages(mockSqsUtils, mockSqsConfig)
-    val event = AggregateProcessingEvent("source-bucket", "metadata/source/prefix")
+    val event = AggregateProcessingEvent("event-source", "source-bucket", "metadata/source/prefix")
     val expectedMessageString = """{
+                                  |  "eventSource" : "event-source",
                                   |  "metadataSourceBucket" : "source-bucket",
                                   |  "metadataSourceObjectPrefix" : "metadata/source/prefix",
                                   |  "dataLoadErrors" : false

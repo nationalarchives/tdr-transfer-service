@@ -32,7 +32,7 @@ class Messages(sqsUtils: SQSUtils, sqsConfig: ApplicationConfig.Sqs)(implicit lo
 object Messages {
   private val sqsConfig = ApplicationConfig.appConfig.sqs
   private val sqsClient: SqsClient = sqs(sqsConfig.endpoint)
-  case class AggregateProcessingEvent(metadataSourceBucket: String, metadataSourceObjectPrefix: String, dataLoadErrors: Boolean = false)
+  case class AggregateProcessingEvent(eventSource: String, metadataSourceBucket: String, metadataSourceObjectPrefix: String, dataLoadErrors: Boolean = false)
   val sqsUtils: SQSUtils = SQSUtils(sqsClient)
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new Messages(sqsUtils, sqsConfig)(logger)
 }
