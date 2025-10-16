@@ -37,6 +37,12 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
 
     wiremockGraphqlServer.stubFor(
       post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing("addOrUpdateConsignmentMetadata"))
+        .willReturn(okJson(fromResource(s"json/consignment_metadata_response.json").mkString))
+    )
+
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("startUpload"))
         .willReturn(okJson(fromResource(s"json/start_upload_response.json").mkString))
     )

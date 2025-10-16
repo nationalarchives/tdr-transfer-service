@@ -23,7 +23,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val addConsignmentResponse = AddConsignment(Some(consignmentId), None, "Consignment-Ref")
     val mockGraphQlApiService = mock[GraphQlApiService]
 
-    when(mockGraphQlApiService.addConsignment(mockToken)).thenReturn(IO(addConsignmentResponse))
+    when(mockGraphQlApiService.addConsignment(mockToken, sourceSystem)).thenReturn(IO(addConsignmentResponse))
     when(mockGraphQlApiService.startUpload(mockToken, consignmentId)).thenReturn(IO("response string"))
     when(mockToken.bearerAccessToken).thenReturn(mockBearerAccessToken)
     when(mockToken.bearerAccessToken.getValue).thenReturn("some value")
@@ -39,13 +39,13 @@ class DataLoadInitiationSpec extends BaseSpec {
     val service = new DataLoadInitiation(mockGraphQlApiService)
     val result = service.initiateConsignmentLoad(mockToken, sourceSystem).unsafeRunSync()
     result shouldBe expectedResult
-    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
+    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, sourceSystem)
     verify(mockGraphQlApiService, times(1)).startUpload(mockToken, consignmentId, None)
   }
 
   "'initiateConsignmentLoad'" should "throw an error if 'addConsignment' GraphQl service call fails" in {
     val mockGraphQlApiService = mock[GraphQlApiService]
-    when(mockGraphQlApiService.addConsignment(mockToken)).thenThrow(new RuntimeException("Error adding consignment"))
+    when(mockGraphQlApiService.addConsignment(mockToken, sourceSystem)).thenThrow(new RuntimeException("Error adding consignment"))
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
 
@@ -53,7 +53,7 @@ class DataLoadInitiationSpec extends BaseSpec {
       service.initiateConsignmentLoad(mockToken, sourceSystem).attempt.unsafeRunSync()
     }
     exception.getMessage shouldBe "Error adding consignment"
-    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
+    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, sourceSystem)
     verify(mockGraphQlApiService, times(0)).startUpload(mockToken, consignmentId, None)
   }
 
@@ -61,7 +61,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val addConsignmentResponse = AddConsignment(Some(consignmentId), None, "Consignment-Ref")
     val mockGraphQlApiService = mock[GraphQlApiService]
 
-    when(mockGraphQlApiService.addConsignment(mockToken)).thenReturn(IO(addConsignmentResponse))
+    when(mockGraphQlApiService.addConsignment(mockToken, sourceSystem)).thenReturn(IO(addConsignmentResponse))
     when(mockGraphQlApiService.startUpload(mockToken, consignmentId)).thenThrow(new RuntimeException("Error starting upload"))
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
@@ -69,7 +69,7 @@ class DataLoadInitiationSpec extends BaseSpec {
 
     response.isLeft should equal(true)
     response.left.value.getMessage should equal("Error starting upload")
-    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken)
+    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, sourceSystem)
     verify(mockGraphQlApiService, times(1)).startUpload(mockToken, consignmentId, None)
   }
 }

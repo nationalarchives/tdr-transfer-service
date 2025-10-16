@@ -16,7 +16,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem): IO[LoadDetails] = {
     logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
     for {
-      addConsignmentResult <- graphQlApiService.addConsignment(token)
+      addConsignmentResult <- graphQlApiService.addConsignment(token, sourceSystem)
       consignmentId = addConsignmentResult.consignmentid.get
       _ <- logger.info(s"Starting upload for consignment $consignmentId")
       _ <- graphQlApiService.startUpload(token, consignmentId)
