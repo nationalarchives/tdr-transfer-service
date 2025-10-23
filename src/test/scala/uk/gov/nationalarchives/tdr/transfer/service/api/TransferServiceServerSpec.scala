@@ -50,7 +50,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     val transferConfiguration = body.as[TransferConfiguration].toOption.get
     transferConfiguration.maxNumberRecords shouldBe 3000
     transferConfiguration.customMetadataConfiguration.required shouldBe false
-    transferConfiguration.metadataPropertyDetails.size shouldBe 7
+    transferConfiguration.metadataPropertyDetails.size shouldBe 8
     transferConfiguration.display.size shouldBe 0
   }
 

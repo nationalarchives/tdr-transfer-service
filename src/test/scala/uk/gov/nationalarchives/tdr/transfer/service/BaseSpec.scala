@@ -15,6 +15,7 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{MetadataPropertyDetails, TransferConfiguration}
 
 import scala.concurrent.ExecutionContextExecutor
@@ -33,7 +34,8 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     MetadataPropertyDetails("Modified", required = true),
     MetadataPropertyDetails("Length", required = true),
     MetadataPropertyDetails("FileRef", required = true),
-    MetadataPropertyDetails("FileLeafRef", required = true)
+    MetadataPropertyDetails("FileLeafRef", required = true),
+    MetadataPropertyDetails("File_x0020_Type", required = true)
   )
 
   val expectedTransferConfiguration: TransferConfiguration = TransferConfiguration(3000, 2000, 5000, Set(), expectedMetadataPropertyDetails, display = Set())
