@@ -25,7 +25,7 @@ lazy val root = (project in file("."))
       pureConfig,
       pureConfigCatsEffect,
       scalaTest % Test,
-      snsUtils,
+      sqsUtils,
       tapirHttp4sServer,
       tapirJsonCirce,
       tapirSwaggerUI

@@ -10,9 +10,10 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadDetails, TransferConfiguration}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 
 import java.util.UUID
@@ -23,7 +24,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
     String,
     _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
     BackendException.AuthenticationError,
-    _ >: TransferConfiguration with LoadDetails with String <: Serializable,
+    _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse <: Product,
     Any
   ]] =
     List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint)
@@ -47,15 +48,22 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .in("load" / sourceSystem / "initiate")
       .out(jsonBody[LoadDetails])
 
-  private val completeLoadEndpoint
-      : PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID, Option[Boolean], LoadCompletion), BackendException.AuthenticationError, String, Any, IO] =
+  private val completeLoadEndpoint: PartialServerEndpoint[
+    String,
+    AuthenticatedContext,
+    (SourceSystem, UUID, Option[Boolean], LoadCompletion),
+    BackendException.AuthenticationError,
+    LoadCompletionResponse,
+    Any,
+    IO
+  ] =
     securedWithStandardUserBearer
       .summary("Notify that loading has completed")
       .description("Triggers the processing of the transfer's loaded metadata and records in TDR")
       .post
       .in("load" / sourceSystem / "complete" / transferId / metadataOnly)
       .in(jsonBody[LoadCompletion])
-      .out(jsonBody[String])
+      .out(jsonBody[LoadCompletionResponse])
 
   val configurationRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
@@ -64,7 +72,9 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input)))
 
   val completeLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(completeLoadEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.trigger(input._2, ac.token)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(
+      completeLoadEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.trigger(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), ac.token))
+    )
 }
 
 object LoadController {

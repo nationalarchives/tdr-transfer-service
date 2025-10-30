@@ -14,7 +14,7 @@ object ApplicationConfig {
   case class Schema(dataLoadSharePointLocation: String)
   case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])
-  case class Sns(endpoint: String, userEmailSnsTopicArn: String)
+  case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
 
   case class Configuration(
       auth: Auth,
@@ -24,7 +24,7 @@ object ApplicationConfig {
       schema: Schema,
       transferConfiguration: TransferConfiguration,
       cors: Cors,
-      sns: Sns
+      sqs: Sqs
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
