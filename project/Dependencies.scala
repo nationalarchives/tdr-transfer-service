@@ -20,7 +20,7 @@ object Dependencies {
   lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.7"
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.19.0"
 
-  lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
+  lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.20"
 
   lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.97"
