@@ -1,10 +1,10 @@
 import sbt.*
 
 object Dependencies {
-  private val http4sVersion = "0.23.32"
+  private val http4sVersion = "0.23.33"
   private val mockitoVersion = "2.0.0"
   private val pureConfigVersion = "0.17.9"
-  private val tapirVersion = "1.11.50"
+  private val tapirVersion = "1.12.1"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.260"
 
@@ -20,14 +20,14 @@ object Dependencies {
   lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.7"
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.19.0"
 
-  lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "8.1"
+  lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.20"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.97"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.99"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
-  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.2.0"
+  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.3.0"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
 
