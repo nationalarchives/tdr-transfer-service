@@ -54,6 +54,30 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     transferConfiguration.display.size shouldBe 0
   }
 
+  "'load/harddrive/configuration' endpoint" should "return 200 with correct authorisation header" in {
+    graphqlOkJson()
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .configurationRoute
+      .orNotFound
+      .run(
+        Request(method = Method.GET, uri = uri"/load/harddrive/configuration", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Ok
+    val body = response.as[Json].unsafeRunSync()
+    val transferConfiguration = body.as[TransferConfiguration].toOption.get
+    transferConfiguration.maxNumberRecords shouldBe 3000
+    transferConfiguration.customMetadataConfiguration.required shouldBe false
+    transferConfiguration.metadataPropertyDetails.size shouldBe 0
+    transferConfiguration.display.size shouldBe 0
+  }
+
   "'load/sharepoint/configuration' endpoint" should "return 401 response with incorrect authorisation header" in {
     val token = invalidToken
     val bearer = CIString("Authorization")
@@ -65,6 +89,24 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .orNotFound
       .run(
         Request(method = Method.GET, uri = uri"/load/sharepoint/configuration", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+  }
+
+  "'load/harddrive/configuration' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .configurationRoute
+      .orNotFound
+      .run(
+        Request(method = Method.GET, uri = uri"/load/harddrive/configuration", headers = fakeHeaders)
       )
       .unsafeRunSync()
 
@@ -99,6 +141,33 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
   }
 
+  "'load/harddrive/initiate' endpoint" should "return 200 with correct authorisation header" in {
+    graphqlOkJson()
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .initiateLoadRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/harddrive/initiate", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    val expectedRecordsDestination = AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/harddrive/$transferId/records")
+    val expectedMetadataLoadDestination = AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/harddrive/$transferId/metadata")
+
+    response.status shouldBe Status.Ok
+    val body = response.as[Json].unsafeRunSync()
+    val loadDetails = body.as[LoadDetails].toOption.get
+    loadDetails.transferId.toString shouldBe transferId
+    loadDetails.transferReference shouldBe transferRef
+    loadDetails.metadataLoadDestination shouldEqual expectedMetadataLoadDestination
+    loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
+  }
+
   "'load/sharepoint/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {
     val token = invalidToken
     val bearer = CIString("Authorization")
@@ -110,6 +179,24 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .orNotFound
       .run(
         Request(method = Method.POST, uri = uri"/load/sharepoint/initiate", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+  }
+
+  "'load/harddrive/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .initiateLoadRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/harddrive/initiate", headers = fakeHeaders)
       )
       .unsafeRunSync()
 
@@ -137,6 +224,26 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
     response.as[String].unsafeRunSync() shouldEqual "{\"transferId\":\"6e3b76c4-1745-4467-8ac5-b4dd736e1b3e\",\"success\":false}"
   }
 
+  "'load/harddrive/complete' endpoint" should "return 200 with correct authorisation header" in {
+    val loadCompletionBody = LoadCompletion(3, 3, Set(LoadError("There was an error"))).asJson
+
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .completeLoadRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/harddrive/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders).withEntity(loadCompletionBody)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Ok
+    response.as[String].unsafeRunSync() shouldEqual "{\"transferId\":\"6e3b76c4-1745-4467-8ac5-b4dd736e1b3e\",\"success\":false}"
+  }
+
   "'load/sharepoint/complete' endpoint" should "return 401 response with incorrect authorisation header" in {
     val token = invalidToken
     val bearer = CIString("Authorization")
@@ -148,6 +255,24 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers {
       .orNotFound
       .run(
         Request(method = Method.POST, uri = uri"/load/sharepoint/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+  }
+
+  "'load/harddrive/complete' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+    val response = LoadController
+      .apply()
+      .completeLoadRoute
+      .orNotFound
+      .run(
+        Request(method = Method.POST, uri = uri"/load/harddrive/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e", headers = fakeHeaders)
       )
       .unsafeRunSync()
 
