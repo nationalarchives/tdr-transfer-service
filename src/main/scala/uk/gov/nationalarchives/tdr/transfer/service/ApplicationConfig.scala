@@ -11,7 +11,7 @@ object ApplicationConfig {
   case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String, userReadClientId: String, userReadClientSecret: String)
   case class S3(awsRegion: String, metadataUploadBucketArn: String, metadataUploadBucketName: String, recordsUploadBucketArn: String, recordsUploadBucketName: String)
-  case class Schema(dataLoadSharePointLocation: String)
+  case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String)
   case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
