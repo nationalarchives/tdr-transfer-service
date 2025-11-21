@@ -9,8 +9,16 @@ object ApplicationConfig {
 
   case class TransferServiceApi(port: Int, throttleAmount: Int, throttlePerMs: Int)
   case class ConsignmentApi(url: String)
-  case class Auth(url: String, realm: String, userReadClientId: String, userReadClientSecret: String)
-  case class S3(awsRegion: String, metadataUploadBucketArn: String, metadataUploadBucketName: String, recordsUploadBucketArn: String, recordsUploadBucketName: String)
+  case class Auth(url: String, realm: String)
+  case class S3(
+      awsRegion: String,
+      metadataUploadBucketArn: String,
+      metadataUploadBucketName: String,
+      recordsUploadBucketArn: String,
+      recordsUploadBucketName: String,
+      aclHeaderValue: String,
+      ifNoneMatchHeaderValue: String
+  )
   case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String)
   case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])

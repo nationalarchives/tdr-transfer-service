@@ -16,7 +16,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{MetadataPropertyDetails, TransferConfiguration}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{Header, MetadataPropertyDetails, TransferConfiguration}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.io.Source.fromResource
@@ -26,6 +26,11 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
   implicit val executionContext: ExecutionContextExecutor = scala.concurrent.ExecutionContext.global
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
   implicit val tdrKeycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment("authUrl", "realm", 60)
+
+  val expectedS3PutRequestHeaders: Set[Header] = Set(
+    Header("ACL", "acl-header-value"),
+    Header("If-None-Match", "if-none-match-header-value")
+  )
 
   val expectedMetadataPropertyDetails: Set[MetadataPropertyDetails] = Set(
     MetadataPropertyDetails("SHA256ClientSideChecksum", required = true),
@@ -38,7 +43,8 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     MetadataPropertyDetails("File_x0020_Type", required = true)
   )
 
-  val expectedTransferConfiguration: TransferConfiguration = TransferConfiguration(3000, 2000, 5000, Set(), expectedMetadataPropertyDetails, display = Set())
+  val expectedTransferConfiguration: TransferConfiguration =
+    TransferConfiguration(3000, 2000, 5000, Set(), expectedMetadataPropertyDetails, display = Set(), s3PutRequestHeaders = expectedS3PutRequestHeaders)
 
   val keycloakUserId = "b2657adf-6e93-424f-b0f1-aadd26762a96"
   val authPath = "/auth/realms/tdr/protocol/openid-connect/token"
