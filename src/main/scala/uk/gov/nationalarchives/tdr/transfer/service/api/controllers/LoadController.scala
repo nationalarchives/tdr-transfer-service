@@ -22,7 +22,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   def endpoints: List[Endpoint[
     String,
-    _ >: SourceSystem with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
+    _ >: SourceSystem with (SourceSystem, Option[Boolean]) with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
     BackendException.AuthenticationError,
     _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse <: Product,
     Any
@@ -40,12 +40,14 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .out(jsonBody[TransferConfiguration])
 
   private val metadataOnly: EndpointInput[Option[Boolean]] = query("metadataOnly")
+  private val dryRun: EndpointInput[Option[Boolean]] = query("dryrun")
 
-  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, LoadDetails, Any, IO] =
+  private val initiateLoadEndpoint
+      : PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, Option[Boolean]), BackendException.AuthenticationError, LoadDetails, Any, IO] =
     securedWithStandardUserBearer
       .summary("Initiate the load of records and metadata")
       .post
-      .in("load" / sourceSystem / "initiate")
+      .in("load" / sourceSystem / "initiate" / dryRun)
       .out(jsonBody[LoadDetails])
 
   private val completeLoadEndpoint: PartialServerEndpoint[
@@ -69,7 +71,9 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
 
   val initiateLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(
+      initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input._1, input._2))
+    )
 
   val completeLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
