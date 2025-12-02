@@ -10,7 +10,7 @@ object Dependencies {
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.6.3"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.442"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.443"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.256"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -23,7 +23,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.21"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.101"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.102"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
