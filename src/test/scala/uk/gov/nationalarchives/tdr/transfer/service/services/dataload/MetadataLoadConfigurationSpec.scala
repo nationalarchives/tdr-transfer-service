@@ -6,15 +6,18 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.Sourc
 
 class MetadataLoadConfigurationSpec extends BaseSpec {
   "'metadataLoadConfiguration'" should "return the correct metadata configuration for the given source system" in {
-    val result = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.SharePoint)
-    result.size shouldBe 8
-    result.contains(MetadataPropertyDetails("transferId", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("matchId", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("FileRef", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("FileLeafRef", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("Length", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", required = true)) shouldBe true
-    result.contains(MetadataPropertyDetails("Modified", required = true)) shouldBe true
+    val sharePointResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.SharePoint)
+    sharePointResult.size shouldBe 8
+    sharePointResult.contains(MetadataPropertyDetails("transferId", required = true)) shouldBe true
+    sharePointResult.contains(MetadataPropertyDetails("matchId", required = true)) shouldBe true
+    sharePointResult.contains(MetadataPropertyDetails("FileRef", required = true)) shouldBe true
+    sharePointResult.contains(MetadataPropertyDetails("FileLeafRef", required = true)) shouldBe true
+    sharePointResult.contains(MetadataPropertyDetails("Length", required = true)) shouldBe true
+    sharePointResult.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", required = true)) shouldBe true
+    sharePointResult.contains(MetadataPropertyDetails("Modified", required = true)) shouldBe true
+
+    val hardDriveResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.HardDrive)
+    hardDriveResult.size shouldBe 0
   }
 
   "'metadataLoadConfiguration'" should "return an error if source system not mapped to a schema" in {
