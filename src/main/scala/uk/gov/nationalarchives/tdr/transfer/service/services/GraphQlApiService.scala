@@ -2,9 +2,11 @@ package uk.gov.nationalarchives.tdr.transfer.service.services
 
 import cats.effect.IO
 import cats.implicits.catsSyntaxOptionId
-import graphql.codegen.AddConsignment
 import graphql.codegen.AddConsignment.{addConsignment => ac}
 import graphql.codegen.AddOrUpdateConsignmenetMetadata.{addOrUpdateConsignmentMetadata => acm}
+import graphql.codegen.GetConsignmentStatus.{getConsignmentStatus => getStatus}
+import graphql.codegen.{AddConsignment, GetConsignmentStatus, GetConsignmentSummary}
+import graphql.codegen.GetConsignmentSummary.{getConsignmentSummary => getSummary}
 import graphql.codegen.StartUpload.{startUpload => su}
 import graphql.codegen.types.{AddConsignmentInput, AddOrUpdateConsignmentMetadata, AddOrUpdateConsignmentMetadataInput, StartUploadInput}
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
@@ -20,13 +22,29 @@ import scala.concurrent.Future
 class GraphQlApiService(
     addConsignmentClient: GraphQLClient[ac.Data, ac.Variables],
     consignmentMetadataClient: GraphQLClient[acm.Data, acm.Variables],
-    startUploadClient: GraphQLClient[su.Data, su.Variables]
+    startUploadClient: GraphQLClient[su.Data, su.Variables],
+    existingConsignmentClient: GraphQLClient[getSummary.Data, getSummary.Variables],
+    consignmentStateClient: GraphQLClient[getStatus.Data, getStatus.Variables]
 )(implicit
     backend: SttpBackend[Identity, Any]
 ) {
 
   implicit class FutureUtils[T](f: Future[T]) {
     def toIO: IO[T] = IO.fromFuture(IO(f))
+  }
+
+  def existingConsignment(token: Token, consignmentId: UUID): IO[GetConsignmentSummary.getConsignmentSummary.GetConsignment] = {
+    for {
+      summaryResult <- existingConsignmentClient.getResult(token.bearerAccessToken, getSummary.document, getSummary.Variables(consignmentId).some).toIO
+      summaryData <- IO.fromOption(summaryResult.data)(new RuntimeException(s"Failed to retrieve summary information for consignment: $consignmentId"))
+    } yield summaryData.getConsignment.get
+  }
+
+  def consignmentState(token: Token, consignmentId: UUID): IO[GetConsignmentStatus.getConsignmentStatus.GetConsignment] = {
+    for {
+      consignmentState <- consignmentStateClient.getResult(token.bearerAccessToken, getStatus.document, getStatus.Variables(consignmentId).some).toIO
+      stateData <- IO.fromOption(consignmentState.data)(new RuntimeException(s"Failed to retrieve state for consignment: $consignmentId"))
+    } yield stateData.getConsignment.get
   }
 
   def addConsignment(token: Token, sourceSystem: SourceSystem): IO[AddConsignment.addConsignment.AddConsignment] = {
@@ -57,12 +75,17 @@ object GraphQlApiService {
   val service: GraphQlApiService = GraphQlApiService.apply(
     new GraphQLClient[ac.Data, ac.Variables](apiUrl),
     new GraphQLClient[acm.Data, acm.Variables](apiUrl),
-    new GraphQLClient[su.Data, su.Variables](apiUrl)
+    new GraphQLClient[su.Data, su.Variables](apiUrl),
+    new GraphQLClient[getSummary.Data, getSummary.Variables](apiUrl),
+    new GraphQLClient[getStatus.Data, getStatus.Variables](apiUrl)
   )
 
   def apply(
       addConsignmentClient: GraphQLClient[ac.Data, ac.Variables],
       consignmentMetadataClient: GraphQLClient[acm.Data, acm.Variables],
-      startUploadClient: GraphQLClient[su.Data, su.Variables]
-  )(implicit backend: SttpBackend[Identity, Any]) = new GraphQlApiService(addConsignmentClient, consignmentMetadataClient, startUploadClient)
+      startUploadClient: GraphQLClient[su.Data, su.Variables],
+      getConsignmentSummaryClient: GraphQLClient[getSummary.Data, getSummary.Variables],
+      getConsignmentStatus: GraphQLClient[getStatus.Data, getStatus.Variables]
+  )(implicit backend: SttpBackend[Identity, Any]) =
+    new GraphQlApiService(addConsignmentClient, consignmentMetadataClient, startUploadClient, getConsignmentSummaryClient, getConsignmentStatus)
 }

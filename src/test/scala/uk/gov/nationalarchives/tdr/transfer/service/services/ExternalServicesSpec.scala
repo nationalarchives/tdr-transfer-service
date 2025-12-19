@@ -28,7 +28,19 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
 
   val graphQlPath = "/graphql"
 
-  def graphqlOkJson(): Unit = {
+  def graphqlOkJson(uploadStatusValue: String = "InProgress", consignmentExists: Boolean = true): Unit = {
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing("getConsignmentSummary"))
+        .willReturn(okJson(consignmentSummary(consignmentExists)))
+    )
+
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing("getConsignmentStatus"))
+        .willReturn(okJson(uploadStatusResponse(uploadStatusValue)))
+    )
+
     wiremockGraphqlServer.stubFor(
       post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("addConsignment"))
@@ -46,5 +58,43 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
         .withRequestBody(containing("startUpload"))
         .willReturn(okJson(fromResource(s"json/start_upload_response.json").mkString))
     )
+  }
+
+  private def uploadStatusResponse(uploadStatusValue: String): String = {
+    s"""
+       | {
+       |  "data": {
+       |    "getConsignment": {
+       |      "consignmentStatuses": [
+       |        {
+       |          "consignmentStatusId": "31657058-a8f7-4b1a-b2d7-529d212a7718",
+       |          "consignmentId": "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e",
+       |          "statusType": "Upload",
+       |          "value": "$uploadStatusValue",
+       |          "createdDatetime": "2020-01-01T09:00:00Z"
+       |        }
+       |      ]
+       |    }
+       |  }
+       | }
+       |""".stripMargin
+  }
+
+  private def consignmentSummary(consignmentExists: Boolean): String = {
+    if (consignmentExists) {
+      s"""
+         | {
+         |  "data": {
+         |    "getConsignment": {
+         |      "seriesName": "series-name",
+         |      "transferringBodyName": "transferring-body-name",
+         |      "totalFiles": 0,
+         |      "consignmentReference": "Consignment-Ref"
+         |    }
+         |  }
+         |}
+         |""".stripMargin
+    } else ""
+
   }
 }

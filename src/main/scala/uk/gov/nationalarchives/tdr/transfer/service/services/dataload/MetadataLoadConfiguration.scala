@@ -12,13 +12,14 @@ object MetadataLoadConfiguration {
   private val schemaConfig: ApplicationConfig.Schema = ApplicationConfig.appConfig.schema
 
   private def sourceSystemSchemaMapping(sourceSystem: SourceSystem): String = sourceSystem match {
-    case SourceSystemEnum.SharePoint => schemaConfig.dataLoadSharePointLocation
-    case SourceSystemEnum.HardDrive  => schemaConfig.hardDriveLocation
-    case _                           => throw new RuntimeException(s"Source System '$sourceSystem' not mapped to schema")
+    case SourceSystemEnum.SharePoint   => schemaConfig.dataLoadSharePointLocation
+    case SourceSystemEnum.HardDrive    => schemaConfig.hardDriveLocation
+    case SourceSystemEnum.NetworkDrive => schemaConfig.networkDriveLocation
+    case _                             => throw new RuntimeException(s"Source System '$sourceSystem' not mapped to schema")
   }
 
   def metadataLoadConfiguration(sourceSystem: SourceSystem): Set[MetadataPropertyDetails] = {
-    if (sourceSystem == SourceSystemEnum.HardDrive) {
+    if (sourceSystem == SourceSystemEnum.HardDrive || sourceSystem == SourceSystemEnum.NetworkDrive) {
       Set()
     } else {
       val schemaLocation = sourceSystemSchemaMapping(sourceSystem)
