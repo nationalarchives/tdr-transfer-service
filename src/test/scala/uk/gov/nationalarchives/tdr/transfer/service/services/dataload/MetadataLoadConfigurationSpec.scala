@@ -18,6 +18,9 @@ class MetadataLoadConfigurationSpec extends BaseSpec {
 
     val hardDriveResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.HardDrive)
     hardDriveResult.size shouldBe 0
+
+    val networkDriveResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.NetworkDrive)
+    networkDriveResult.size shouldBe 0
   }
 
   "'metadataLoadConfiguration'" should "return an error if source system not mapped to a schema" in {
