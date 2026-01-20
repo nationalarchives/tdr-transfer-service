@@ -36,9 +36,12 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     MetadataPropertyDetails("SHA256ClientSideChecksum", required = true),
     MetadataPropertyDetails("transferId", required = true),
     MetadataPropertyDetails("matchId", required = true),
+    MetadataPropertyDetails("source", required = true),
+    MetadataPropertyDetails("userId", required = true),
     MetadataPropertyDetails("Modified", required = true),
     MetadataPropertyDetails("Length", required = true),
     MetadataPropertyDetails("FileRef", required = true),
+    MetadataPropertyDetails("userId", required = true),
     MetadataPropertyDetails("FileLeafRef", required = true),
     MetadataPropertyDetails("File_x0020_Type", required = true)
   )
