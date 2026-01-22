@@ -9,7 +9,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ConsignmentStatusType.Upload
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ObjectCategory.{MetadataCategory, RecordsCategory}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.InProgress
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.{Completed, InProgress}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
@@ -23,11 +23,11 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
-  def getErrorsFromS3(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
+ /* def getErrorsFromS3(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
     for {
-      // Check if uploaded has finished before retrieving errors
-
-      // if upload is finished, retrieve errors from S3 else return an error message
+      consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
+      loadState = isUploadFinished(consignmentState.consignmentStatuses)
+      _ <- if (loadState) IO.unit else IO.raiseError(new Exception("Upload has not finished"))
       s3Objects <- IO.blocking(s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
       _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
       jsons <- s3Objects.traverse { s3Object =>
@@ -46,12 +46,27 @@ class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: Self
         }
       }
     } yield jsons
+  }*/
+
+  def getErrorsFromS3(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
+    for {
+      consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
+      loadState = isUploadFinished(consignmentState.consignmentStatuses)
+      _ <- if (loadState) IO.unit else IO.raiseError(new Exception("Upload has not finished"))
+      s3Objects <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
+      _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
+      jsons <- fetchErrorsFromS3(existingTransferId.get)
+    } yield jsons
   }
 
-  def getErrorsFromS3v2(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
+  private def isUploadFinished(state: List[ConsignmentStatuses]): Boolean = {
+    val uploadState: Option[ConsignmentStatuses] = state.find(_.statusType == Upload.toString)
+    uploadState.nonEmpty && uploadState.get.value == Completed.toString
+  }
+
+  private def fetchErrorsFromS3(transferId: UUID): IO[List[Json]] = {
     for {
-      s3ObjectsJ <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
-      s3Objects = s3ObjectsJ
+      s3Objects <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${transferId}"))
       _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
       jsons <- s3Objects.traverse { s3Object =>
         val streamRes: Resource[IO, java.io.InputStream] =
