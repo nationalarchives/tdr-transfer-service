@@ -1,54 +1,25 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.errors
 
 import cats.effect.{IO, Resource}
+import cats.implicits._
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
+import io.circe.Json
+import io.circe.parser.parse
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.aws.utils.s3.{S3Clients, S3Utils}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ConsignmentStatusType.Upload
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ObjectCategory.{MetadataCategory, RecordsCategory}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.{Completed, InProgress}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.Completed
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.s3Config
-import uk.gov.nationalarchives.tdr.transfer.service.services.errors.RetrieveErrors.s3Utils
-import cats.implicits._
-import io.circe.Json
-import io.circe.parser.parse
 
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
- /* def getErrorsFromS3(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
-    for {
-      consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
-      loadState = isUploadFinished(consignmentState.consignmentStatuses)
-      _ <- if (loadState) IO.unit else IO.raiseError(new Exception("Upload has not finished"))
-      s3Objects <- IO.blocking(s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
-      _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
-      jsons <- s3Objects.traverse { s3Object =>
-        IO.blocking {
-          val stream = s3Utils.getObjectAsStream(appConfig.s3.transferErrorsBucketName, s3Object.key())
-          try {
-            val bytes = stream.readAllBytes()
-            new String(bytes, StandardCharsets.UTF_8)
-          } finally {
-            stream.close()
-          }
-        }.flatMap { str =>
-          IO.fromEither(
-            parse(str).leftMap(err => new Exception(s"Failed to parse JSON from ${s3Object.key()}: ${err.message}"))
-          )
-        }
-      }
-    } yield jsons
-  }*/
 
-  def getErrorsFromS3(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
+  def getErrorsFromS3(token: Token, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
     for {
       consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
       loadState = isUploadFinished(consignmentState.consignmentStatuses)
@@ -66,7 +37,7 @@ class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: Self
 
   private def fetchErrorsFromS3(transferId: UUID): IO[List[Json]] = {
     for {
-      s3Objects <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${transferId}"))
+      s3Objects <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"$transferId"))
       _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
       jsons <- s3Objects.traverse { s3Object =>
         val streamRes: Resource[IO, java.io.InputStream] =

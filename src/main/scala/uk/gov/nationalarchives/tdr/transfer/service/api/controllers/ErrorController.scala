@@ -8,7 +8,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
-import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, AuthorisationService}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.RetrieveErrors
@@ -41,7 +41,13 @@ class ErrorController(retrieveErrors: RetrieveErrors)(implicit logger: SelfAware
 
   private val getErrorsRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      getErrorsEndpoint.serverLogicSuccess(ac => input => retrieveErrors.getErrorsFromS3(ac.token, input._1, input._2))
+      getErrorsEndpoint.serverLogicSuccess { ac => input =>
+        val transferId = input._2
+        for {
+          _ <- AuthorisationService().validateUserHasAccessToConsignment(ac.token, transferId.get)
+          result <- retrieveErrors.getErrorsFromS3(ac.token, transferId)
+        } yield result
+      }
     )
 }
 
