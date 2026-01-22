@@ -5,6 +5,7 @@ object Dependencies {
   private val mockitoVersion = "2.0.0"
   private val pureConfigVersion = "0.17.9"
   private val tapirVersion = "1.13.5"
+  private val awsUtilsVersion = "0.1.315"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.267"
 
@@ -35,6 +36,7 @@ object Dependencies {
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
+  lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
   lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % "0.1.314"
 }
