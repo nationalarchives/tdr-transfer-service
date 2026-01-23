@@ -13,7 +13,6 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)), interval = scaled(Span(100, Millis)))
 
   val wiremockGraphqlServer = new WireMockServer(9001)
-  val wiremockS3 = new WireMockServer(8003)
 
   override def beforeAll(): Unit = {
     wiremockGraphqlServer.start()

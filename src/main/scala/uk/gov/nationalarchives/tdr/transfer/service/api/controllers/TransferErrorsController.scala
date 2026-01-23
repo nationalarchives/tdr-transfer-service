@@ -24,8 +24,8 @@ class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: 
 
   private val getErrorsEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID), BackendException.AuthenticationError, List[Json], Any, IO] =
     securedWithStandardUserBearer
-      .summary("Triggers relevant processing")
-      .description("Depending on the provided type and state will start the necessary processing of the transfer")
+      .summary("Retrieve transfer errors for a given transfer")
+      .description("Returns a list of transfer errors for the specified transfer ID")
       .in("load" / sourceSystem / "errors" / transferId)
       .out(jsonBody[List[Json]])
 
