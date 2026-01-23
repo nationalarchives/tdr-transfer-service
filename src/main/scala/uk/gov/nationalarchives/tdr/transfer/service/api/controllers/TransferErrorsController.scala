@@ -16,22 +16,12 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErro
 import java.util.UUID
 
 class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: SelfAwareStructuredLogger[IO]) extends BaseController {
-//  private val existingTransferId: EndpointInput[Option[UUID]] = query("transferId")
 
   override def routes: HttpRoutes[IO] = getErrorsRoute
 
   def endpoints: List[Endpoint[String, (SourceSystem, UUID), BackendException.AuthenticationError, List[Json], Any]] =
     List(getErrorsEndpoint.endpoint)
 
-  /*
-    SecurityIn (String) the raw security input type (here a bearer token string).
-    SecuredContext (AuthenticatedContext) the authenticated principal/context produced by the security logic and passed to handlers.
-    RequestIn ((SourceSystem, UUID)) the request input captured from the endpoint path/body — here a tuple of SourceSystem and UUID (transferId).
-    ErrorOut (BackendException.AuthenticationError) the error type returned on failures (authentication/business errors) for this partial endpoint.
-    SuccessOut (List[Json]) the success response type (here returned as stringBody).
-    Streams (Any) placeholder for streaming/effect-agnostic endpoints (common to leave as Any).
-    Effect (IO) the effect type the server logic runs in (Cats-Effect IO).
-   */
   private val getErrorsEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID), BackendException.AuthenticationError, List[Json], Any, IO] =
     securedWithStandardUserBearer
       .summary("Triggers relevant processing")

@@ -12,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
-import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
@@ -244,6 +244,50 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         response.status shouldBe Status.Unauthorized
         response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
       }
+    }
+  }
+
+  forAll(sources) { (source, _) =>
+    val uri = generateUri(s"/load/$source/errors/$transferId")
+
+    s"'load/$source/errors/' endpoint" should "return 200 with correct authorisation header" in {
+      graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
+      val validToken = validUserToken()
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$validToken")
+      val fakeHeaders = Headers.apply(authHeader)
+
+      val response = TransferErrorsController
+        .apply()
+        .getErrorsRoute
+        .orNotFound
+        .run(
+          Request(method = Method.GET, uri = uri, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      response.status shouldBe Status.Ok
+      val body = response.as[Json].unsafeRunSync()
+      body.isNull shouldBe false
+    }
+
+    s"'load/$source/errors/' endpoint" should "return 401 response with incorrect authorisation header" in {
+      val token = invalidToken
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$token")
+      val fakeHeaders = Headers.apply(authHeader)
+
+      val response = TransferErrorsController
+        .apply()
+        .getErrorsRoute
+        .orNotFound
+        .run(
+          Request(method = Method.GET, uri = uri, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      response.status shouldBe Status.Unauthorized
+      response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
     }
   }
 
