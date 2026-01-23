@@ -17,14 +17,14 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 
-class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
+class TransferErrors(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
 
   def getErrorsFromS3(token: Token, existingTransferId: Option[UUID] = None): IO[List[Json]] = {
     for {
       consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
       loadState = isUploadFinished(consignmentState.consignmentStatuses)
       _ <- if (loadState) IO.unit else IO.raiseError(new Exception("Upload has not finished"))
-      s3Objects <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
+      s3Objects <- IO.blocking(TransferErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
       _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
       jsons <- fetchErrorsFromS3(existingTransferId.get)
     } yield jsons
@@ -37,11 +37,11 @@ class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: Self
 
   private def fetchErrorsFromS3(transferId: UUID): IO[List[Json]] = {
     for {
-      s3Objects <- IO.blocking(RetrieveErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"$transferId"))
+      s3Objects <- IO.blocking(TransferErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"$transferId"))
       _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
       jsons <- s3Objects.traverse { s3Object =>
         val streamRes: Resource[IO, java.io.InputStream] =
-          Resource.fromAutoCloseable(IO.blocking(RetrieveErrors.s3Utils.getObjectAsStream(appConfig.s3.transferErrorsBucketName, s3Object.key())))
+          Resource.fromAutoCloseable(IO.blocking(TransferErrors.s3Utils.getObjectAsStream(appConfig.s3.transferErrorsBucketName, s3Object.key())))
         streamRes.use { stream =>
           for {
             bytes <- IO.blocking(stream.readAllBytes())
@@ -54,8 +54,8 @@ class RetrieveErrors(graphQlApiService: GraphQlApiService)(implicit logger: Self
   }
 }
 
-object RetrieveErrors {
+object TransferErrors {
   val s3Config: ApplicationConfig.S3 = ApplicationConfig.appConfig.s3
   val s3Utils: S3Utils = S3Utils(S3Clients.s3Async(appConfig.s3.endpoint))
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new RetrieveErrors(GraphQlApiService.service)(logger)
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new TransferErrors(GraphQlApiService.service)(logger)
 }

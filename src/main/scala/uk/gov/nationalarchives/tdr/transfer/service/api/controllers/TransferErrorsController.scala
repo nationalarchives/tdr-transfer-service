@@ -8,19 +8,19 @@ import sttp.tapir._
 import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
-import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, AuthorisationService}
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
-import uk.gov.nationalarchives.tdr.transfer.service.services.errors.RetrieveErrors
+import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
 import java.util.UUID
 
-class ErrorController(retrieveErrors: RetrieveErrors)(implicit logger: SelfAwareStructuredLogger[IO]) extends BaseController {
-  private val existingTransferId: EndpointInput[Option[UUID]] = query("transferId")
+class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: SelfAwareStructuredLogger[IO]) extends BaseController {
+//  private val existingTransferId: EndpointInput[Option[UUID]] = query("transferId")
 
   override def routes: HttpRoutes[IO] = getErrorsRoute
 
-  def endpoints: List[Endpoint[String, (SourceSystem, Option[UUID]), BackendException.AuthenticationError, List[Json], Any]] =
+  def endpoints: List[Endpoint[String, (SourceSystem, UUID), BackendException.AuthenticationError, List[Json], Any]] =
     List(getErrorsEndpoint.endpoint)
 
   /*
@@ -32,26 +32,26 @@ class ErrorController(retrieveErrors: RetrieveErrors)(implicit logger: SelfAware
     Streams (Any) placeholder for streaming/effect-agnostic endpoints (common to leave as Any).
     Effect (IO) the effect type the server logic runs in (Cats-Effect IO).
    */
-  private val getErrorsEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, Option[UUID]), BackendException.AuthenticationError, List[Json], Any, IO] =
+  private val getErrorsEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, UUID), BackendException.AuthenticationError, List[Json], Any, IO] =
     securedWithStandardUserBearer
       .summary("Triggers relevant processing")
       .description("Depending on the provided type and state will start the necessary processing of the transfer")
-      .in("load" / sourceSystem / "errors" / existingTransferId)
+      .in("load" / sourceSystem / "errors" / transferId)
       .out(jsonBody[List[Json]])
 
-  private val getErrorsRoute: HttpRoutes[IO] =
+  val getErrorsRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
       getErrorsEndpoint.serverLogicSuccess { ac => input =>
         val transferId = input._2
         for {
-          _ <- AuthorisationService().validateUserHasAccessToConsignment(ac.token, transferId.get)
-          result <- retrieveErrors.getErrorsFromS3(ac.token, transferId)
+          _ <- Authorisation().validateUserHasAccessToConsignment(ac.token, transferId)
+          result <- transferErrors.getErrorsFromS3(ac.token, Some(transferId))
         } yield result
       }
     )
 }
 
-object ErrorController {
+object TransferErrorsController {
 
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new ErrorController(RetrieveErrors())
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new TransferErrorsController(TransferErrors())
 }

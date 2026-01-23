@@ -15,7 +15,7 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{ErrorController, LoadController}
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{TransferErrorsController, LoadController}
 
 import scala.concurrent.duration.DurationInt
 
@@ -36,7 +36,7 @@ object TransferServiceServer extends IOApp {
 
   private val openApiInfo: Info = Info(infoTitle, infoVersion, description = infoDescription)
   private val loadController = LoadController()
-  private val errorController = ErrorController()
+  private val errorController = TransferErrorsController()
 
   private val documentationEndpoints =
     SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints ++ errorController.endpoints, openApiInfo)
