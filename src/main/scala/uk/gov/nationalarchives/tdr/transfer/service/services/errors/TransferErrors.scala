@@ -24,8 +24,6 @@ class TransferErrors(graphQlApiService: GraphQlApiService)(implicit logger: Self
       consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
       loadState = isUploadFinished(consignmentState.consignmentStatuses)
       _ <- if (loadState) IO.unit else IO.raiseError(new Exception("Upload has not finished"))
-//      s3Objects <- IO.blocking(TransferErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"${existingTransferId.get}"))
-//      _ <- IO.whenA(s3Objects.isEmpty)(IO.raiseError(new Exception("No error objects found")))
       jsons <- fetchErrorsFromS3(existingTransferId.get)
     } yield jsons
   }
@@ -38,18 +36,20 @@ class TransferErrors(graphQlApiService: GraphQlApiService)(implicit logger: Self
   private def fetchErrorsFromS3(transferId: UUID): IO[List[Json]] = {
     for {
       s3Objects <- IO.blocking(TransferErrors.s3Utils.listAllObjectsWithPrefix(appConfig.s3.transferErrorsBucketName, s"$transferId"))
-      jsons <- if (s3Objects.isEmpty) IO.pure(List.empty[Json])
-      else s3Objects.traverse { s3Object =>
-        val streamRes: Resource[IO, java.io.InputStream] =
-          Resource.fromAutoCloseable(IO.blocking(TransferErrors.s3Utils.getObjectAsStream(appConfig.s3.transferErrorsBucketName, s3Object.key())))
-        streamRes.use { stream =>
-          for {
-            bytes <- IO.blocking(stream.readAllBytes())
-            str = new String(bytes, StandardCharsets.UTF_8)
-            json <- IO.fromEither(parse(str).leftMap(err => new Exception(s"Failed to parse JSON from ${s3Object.key()}: ${err.message}")))
-          } yield json
-        }
-      }
+      jsons <-
+        if (s3Objects.isEmpty) IO.pure(List.empty[Json])
+        else
+          s3Objects.traverse { s3Object =>
+            val streamRes: Resource[IO, java.io.InputStream] =
+              Resource.fromAutoCloseable(IO.blocking(TransferErrors.s3Utils.getObjectAsStream(appConfig.s3.transferErrorsBucketName, s3Object.key())))
+            streamRes.use { stream =>
+              for {
+                bytes <- IO.blocking(stream.readAllBytes())
+                str = new String(bytes, StandardCharsets.UTF_8)
+                json <- IO.fromEither(parse(str).leftMap(err => new Exception(s"Failed to parse JSON from ${s3Object.key()}: ${err.message}")))
+              } yield json
+            }
+          }
     } yield jsons
   }
 }
