@@ -36,17 +36,17 @@ object TransferServiceServer extends IOApp {
 
   private val openApiInfo: Info = Info(infoTitle, infoVersion, description = infoDescription)
   private val loadController = LoadController()
-  private val errorController = TransferErrorsController()
+  private val transferErrorsController = TransferErrorsController()
 
   private val documentationEndpoints =
-    SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints ++ errorController.endpoints, openApiInfo)
+    SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints ++ transferErrorsController.endpoints, openApiInfo)
 
   val healthCheckRoute: HttpRoutes[IO] = HttpRoutes.of[IO] { case GET -> Root / "healthcheck" =>
     Ok("Healthy")
   }
 
   private val allRoutes =
-    Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> errorController.routes <+> healthCheckRoute
+    Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> transferErrorsController.routes <+> healthCheckRoute
 
   private def throttleService(service: HttpApp[IO]): IO[HttpApp[IO]] = Throttle.httpApp[IO](
     amount = appConfig.transferServiceApi.throttleAmount,

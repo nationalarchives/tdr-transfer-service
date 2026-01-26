@@ -4,4 +4,5 @@ sealed trait BackendException extends Exception
 
 object BackendException {
   case class AuthenticationError(message: String) extends BackendException
+  case class AuthorisationError(message: String) extends BackendException
 }
