@@ -19,7 +19,7 @@ object ApplicationConfig {
       aclHeaderValue: String,
       ifNoneMatchHeaderValue: String
   )
-  case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String)
+  case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String, networkDriveLocation: String)
   case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
