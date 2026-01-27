@@ -8,15 +8,18 @@ import io.circe.syntax.{KeyOps, _}
 import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status, Uri}
+import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
+import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
+import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
 import java.util.UUID
 
@@ -247,48 +250,74 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     }
   }
 
-  forAll(sources) { (source, _) =>
-    val uri = generateUri(s"/load/$source/errors/$transferId")
+  s"'errors/load/' endpoint" should "return 200 with correct authorisation header" in {
+    graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
 
-    s"'load/$source/errors/' endpoint" should "return 200 with correct authorisation header" in {
-      graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
-      val validToken = validUserToken()
-      val bearer = CIString("Authorization")
-      val authHeader = Header.Raw.apply(bearer, s"$validToken")
-      val fakeHeaders = Headers.apply(authHeader)
+    val jsonResponse = Json.obj(
+      "consignmentId" := s"$transferId",
+      "errorCode" := "AGGREGATE_PROCESSING.CLIENT_DATA_LOAD.FAILURE",
+      "errorMessage" := s"Client data load errors for consignment: $transferId"
+    )
 
-      val response = TransferErrorsController
-        .apply()
-        .getErrorsRoute
-        .orNotFound
-        .run(
-          Request(method = Method.GET, uri = uri, headers = fakeHeaders)
-        )
-        .unsafeRunSync()
+    val mockedTransferErrors = mock[TransferErrors]
+    when(mockedTransferErrors.getErrorsFromS3(any[Token](), any[Option[UUID]]()))
+      .thenReturn(IO.pure(List(jsonResponse)))
 
-      response.status shouldBe Status.Ok
-      val body = response.as[Json].unsafeRunSync()
-      body.isNull shouldBe false
-    }
+    val controller = new TransferErrorsController(mockedTransferErrors)
 
-    s"'load/$source/errors/' endpoint" should "return 401 response with incorrect authorisation header" in {
-      val token = invalidToken
-      val bearer = CIString("Authorization")
-      val authHeader = Header.Raw.apply(bearer, s"$token")
-      val fakeHeaders = Headers.apply(authHeader)
+    val response = controller.getErrorsRoute.orNotFound
+      .run(
+        Request(method = Method.GET, uri = generateUri(s"/errors/load/$transferId"), headers = fakeHeaders)
+      )
+      .unsafeRunSync()
 
-      val response = TransferErrorsController
-        .apply()
-        .getErrorsRoute
-        .orNotFound
-        .run(
-          Request(method = Method.GET, uri = uri, headers = fakeHeaders)
-        )
-        .unsafeRunSync()
+    response.status shouldBe Status.Ok
+    val body = response.as[Json].unsafeRunSync()
+    body shouldEqual Json.arr(jsonResponse)
+  }
 
-      response.status shouldBe Status.Unauthorized
-      response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
-    }
+  s"'errors/load/' endpoint" should "return 401 response when an exception is thrown" in {
+    graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+
+    val response = TransferErrorsController
+      .apply()
+      .getErrorsRoute
+      .orNotFound
+      .run(
+        Request(method = Method.GET, uri = generateUri(s"/errors/load/$transferId"), headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    val body = response.as[Json].unsafeRunSync()
+    body.isNull shouldBe false
+  }
+
+  s"'errors/load/' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+
+    val response = TransferErrorsController
+      .apply()
+      .getErrorsRoute
+      .orNotFound
+      .run(
+        Request(method = Method.GET, uri = generateUri(s"/errors/load/$transferId"), headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
   }
 
   "unknown source system in endpoint" should "return 400 response with correct authorisation header" in {
