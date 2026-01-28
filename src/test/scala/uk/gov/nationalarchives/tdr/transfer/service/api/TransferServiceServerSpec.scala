@@ -264,7 +264,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     )
 
     val mockedTransferErrors = mock[TransferErrors]
-    when(mockedTransferErrors.getErrorsFromS3(any[Token](), any[Option[UUID]]()))
+    when(mockedTransferErrors.getTransferErrors(any[Token](), any[Option[UUID]]()))
       .thenReturn(IO.pure(List(jsonResponse)))
 
     val controller = new TransferErrorsController(mockedTransferErrors)

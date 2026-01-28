@@ -33,7 +33,7 @@ class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: 
       getErrorsEndpoint.serverLogic { ac => transferId =>
         (for {
           _ <- Authorisation().validateUserHasAccessToConsignment(ac.token, transferId)
-          result <- transferErrors.getErrorsFromS3(ac.token, Some(transferId))
+          result <- transferErrors.getTransferErrors(ac.token, Some(transferId))
         } yield Right(result)).handleErrorWith {
           case ex: BackendException.AuthenticationError => IO.pure(Left(ex))
           case ex                                       => IO.pure(Left(BackendException.AuthenticationError(ex.getMessage)))
