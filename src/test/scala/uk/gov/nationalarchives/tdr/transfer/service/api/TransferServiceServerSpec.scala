@@ -18,6 +18,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadControl
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
@@ -265,7 +266,15 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     val mockedTransferErrors = mock[TransferErrors]
     when(mockedTransferErrors.getTransferErrors(any[Token](), any[Option[UUID]]()))
-      .thenReturn(IO.pure(List(jsonResponse)))
+      .thenReturn(
+        IO.pure(
+          TransferErrorsResults(
+            uploadCompleted = true,
+            errors = List(jsonResponse),
+            transferId = UUID.fromString(transferId)
+          )
+        )
+      )
 
     val controller = new TransferErrorsController(mockedTransferErrors)
 
@@ -277,7 +286,12 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     response.status shouldBe Status.Ok
     val body = response.as[Json].unsafeRunSync()
-    body shouldEqual Json.arr(jsonResponse)
+    val expectedJson = Json.obj(
+      "uploadCompleted" -> Json.fromBoolean(true),
+      "errors" -> Json.arr(jsonResponse),
+      "transferId" -> Json.fromString(transferId)
+    )
+    body shouldEqual expectedJson
   }
 
   s"'errors/load/' endpoint" should "return 401 response when an exception is thrown" in {
