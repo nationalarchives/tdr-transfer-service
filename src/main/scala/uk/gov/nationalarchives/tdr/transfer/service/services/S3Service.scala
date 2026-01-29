@@ -4,7 +4,6 @@ import cats.effect.{IO, Resource}
 import cats.implicits._
 import io.circe.Json
 import io.circe.parser.parse
-import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.aws.utils.s3.{S3Clients, S3Utils}
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 
@@ -12,7 +11,7 @@ import java.nio.charset.StandardCharsets
 
 class S3Service(s3Utils: S3Utils) {
 
-  def getJsonObjectsWithPrefix(objectPrefix: String, bucketName: String)(implicit logger: SelfAwareStructuredLogger[IO]): IO[List[Json]] = {
+  def getAllJsonObjectsWithPrefix(objectPrefix: String, bucketName: String): IO[List[Json]] = {
     for {
       s3Objects <- IO.blocking(s3Utils.listAllObjectsWithPrefix(bucketName, objectPrefix))
       jsons <-

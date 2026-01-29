@@ -19,7 +19,7 @@ class AuthorisationSpec extends BaseSpec {
   val consignmentId: UUID = UUID.fromString("6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
 
-  "validateUserHasAccessToConsignment" should "succeed when token user id matches consignment userid" in {
+  "validateUserHasAccessToConsignment" should "succeed when user has access to consignment" in {
     val consignmentObj = mock[gc.GetConsignment]
     when(consignmentObj.userid).thenReturn(userId)
     when(token.userId).thenReturn(userId)
@@ -30,7 +30,7 @@ class AuthorisationSpec extends BaseSpec {
     }
   }
 
-  it should "raise AuthenticationError when token user id does not match consignment userid" in {
+  it should "raise AuthenticationError when user does not have access to consignment" in {
     val consignmentObj = mock[gc.GetConsignment]
     when(consignmentObj.userid).thenReturn(UUID.randomUUID())
     when(token.userId).thenReturn(userId)
@@ -40,7 +40,7 @@ class AuthorisationSpec extends BaseSpec {
       authorisation.validateUserHasAccessToConsignment(token, consignmentId).unsafeRunSync()
     }
 
-    ex.message should include("User does not have access to this consignment")
+    ex.message should include(s"User does not have access to consignment: $consignmentId")
     ex.getClass shouldBe classOf[BackendException.AuthenticationError]
   }
 }

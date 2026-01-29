@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.circe.Json
 import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
-import io.circe.syntax.{KeyOps, _}
+import io.circe.syntax._
 import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status, Uri}
@@ -18,7 +18,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadControl
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorModel.TransferErrorsResults
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
@@ -265,7 +265,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     )
 
     val mockedTransferErrors = mock[TransferErrors]
-    when(mockedTransferErrors.getTransferErrors(any[Token](), any[Option[UUID]]()))
+    when(mockedTransferErrors.getTransferErrors(any[Token](), any[UUID], any[String]()))
       .thenReturn(
         IO.pure(
           TransferErrorsResults(
@@ -294,7 +294,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     body shouldEqual expectedJson
   }
 
-  s"'errors/load/' endpoint" should "return 401 response when an exception is thrown" in {
+  s"'errors/load/' endpoint" should "return 500 response when a user is authenticated but an exception is thrown" in {
     graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
     val validToken = validUserToken()
     val bearer = CIString("Authorization")
@@ -310,9 +310,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       )
       .unsafeRunSync()
 
-    response.status shouldBe Status.Unauthorized
-    val body = response.as[Json].unsafeRunSync()
-    body.isNull shouldBe false
+    response.status shouldBe Status.InternalServerError
   }
 
   s"'errors/load/' endpoint" should "return 401 response with incorrect authorisation header" in {

@@ -16,7 +16,7 @@ class S3ServiceSpec extends BaseSpec {
     when(s3Utils.listAllObjectsWithPrefix("bucket", "prefix")).thenReturn(List.empty)
     val service = new S3Service(s3Utils)
 
-    val result = service.getJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
+    val result = service.getAllJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
 
     result shouldBe empty
     verify(s3Utils, times(1)).listAllObjectsWithPrefix("bucket", "prefix")
@@ -35,7 +35,7 @@ class S3ServiceSpec extends BaseSpec {
 
     val service = new S3Service(s3Utils)
 
-    val result = service.getJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
+    val result = service.getAllJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
 
     result should contain theSameElementsAs List(Json.obj("a" -> Json.fromInt(1)), Json.obj("b" -> Json.fromInt(2)))
     verify(s3Utils, times(1)).listAllObjectsWithPrefix("bucket", "prefix")
@@ -52,6 +52,28 @@ class S3ServiceSpec extends BaseSpec {
 
     val service = new S3Service(s3Utils)
 
-    an[Exception] should be thrownBy service.getJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
+    an[Exception] should be thrownBy service.getAllJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
+  }
+
+  "getJsonObjectsWithPrefix" should "fail when S3 listAllObjectsWithPrefix throws exception" in {
+    val s3Utils = mock[S3Utils]
+    when(s3Utils.listAllObjectsWithPrefix("bucket", "prefix"))
+      .thenThrow(new RuntimeException("S3 connection failed"))
+
+    val service = new S3Service(s3Utils)
+
+    an[Exception] should be thrownBy service.getAllJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
+  }
+
+  "getJsonObjectsWithPrefix" should "fail when S3 getObjectAsStream throws exception" in {
+    val s3Utils = mock[S3Utils]
+    val obj = S3Object.builder().key("k1").build()
+    when(s3Utils.listAllObjectsWithPrefix("bucket", "prefix")).thenReturn(List(obj))
+    when(s3Utils.getObjectAsStream("bucket", "k1"))
+      .thenThrow(new RuntimeException("Failed to read object"))
+
+    val service = new S3Service(s3Utils)
+
+    an[Exception] should be thrownBy service.getAllJsonObjectsWithPrefix("prefix", "bucket").unsafeRunSync()
   }
 }

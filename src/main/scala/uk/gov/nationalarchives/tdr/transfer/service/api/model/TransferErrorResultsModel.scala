@@ -7,7 +7,7 @@ import sttp.tapir.Schema
 import java.util.UUID
 import scala.util.Try
 
-object TransferErrorModel {
+object TransferErrorResultsModel {
   case class TransferErrorsResults(uploadCompleted: Boolean, errors: List[Json], transferId: UUID)
 
   object TransferErrorsResults {

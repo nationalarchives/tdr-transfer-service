@@ -3,28 +3,23 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.errors
 import cats.effect.IO
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import io.circe._
-import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ConsignmentStatusType.Upload
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.Completed
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorModel.TransferErrorsResults
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.{GraphQlApiService, S3Service}
 
 import java.util.UUID
 
-class TransferErrors(graphQlApiService: GraphQlApiService, s3Service: S3Service)(implicit logger: SelfAwareStructuredLogger[IO]) {
+class TransferErrors(graphQlApiService: GraphQlApiService, s3Service: S3Service) {
 
-  def getTransferErrors(token: Token, existingTransferId: Option[UUID] = None): IO[TransferErrorsResults] = {
-    existingTransferId match {
-      case None             => IO.raiseError(new IllegalArgumentException("existingTransferId is required"))
-      case Some(transferId) =>
-        for {
-          consignmentState <- graphQlApiService.consignmentState(token, transferId)
-          loadState = isUploadFinished(consignmentState.consignmentStatuses)
-          errorJsons <- if (loadState) s3Service.getJsonObjectsWithPrefix(s"$transferId", appConfig.s3.transferErrorsBucketName) else IO.pure(List.empty[Json])
-        } yield TransferErrorsResults(loadState, errorJsons, transferId)
-    }
+  def getTransferErrors(token: Token, existingTransferId: UUID, objectPrefix: String): IO[TransferErrorsResults] = {
+    for {
+      consignmentState <- graphQlApiService.consignmentState(token, existingTransferId)
+      loadState = isUploadFinished(consignmentState.consignmentStatuses)
+      errorJsons <- if (loadState) s3Service.getAllJsonObjectsWithPrefix(objectPrefix, appConfig.s3.transferErrorsBucketName) else IO.pure(List.empty[Json])
+    } yield TransferErrorsResults(loadState, errorJsons, existingTransferId)
   }
 
   private def isUploadFinished(state: List[ConsignmentStatuses]): Boolean =
@@ -32,5 +27,5 @@ class TransferErrors(graphQlApiService: GraphQlApiService, s3Service: S3Service)
 }
 
 object TransferErrors {
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new TransferErrors(GraphQlApiService.service, S3Service())(logger)
+  def apply() = new TransferErrors(GraphQlApiService.service, S3Service())
 }

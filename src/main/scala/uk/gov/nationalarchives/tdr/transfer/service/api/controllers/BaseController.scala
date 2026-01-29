@@ -36,11 +36,6 @@ trait BaseController {
       tokenAuthenticator.authenticateStandardUserToken
     )
 
-  val validateUserHasAccessToConsignment: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
-    .serverSecurityLogic(
-      tokenAuthenticator.authenticateStandardUserToken
-    )
-
   val customServerOptions: Http4sServerOptions[IO] = Http4sServerOptions
     .customiseInterceptors[IO]
     .corsInterceptor(CustomInterceptors.customCorsInterceptor)
