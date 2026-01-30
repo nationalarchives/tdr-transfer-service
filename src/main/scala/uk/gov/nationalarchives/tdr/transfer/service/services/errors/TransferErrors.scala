@@ -17,9 +17,9 @@ class TransferErrors(graphQlApiService: GraphQlApiService, s3Service: S3Service)
   def getTransferErrors(token: Token, existingTransferId: UUID, objectPrefix: String): IO[TransferErrorsResults] = {
     for {
       consignmentState <- graphQlApiService.consignmentState(token, existingTransferId)
-      loadState = isUploadFinished(consignmentState.consignmentStatuses)
-      errorJsons <- if (loadState) s3Service.getAllJsonObjectsWithPrefix(objectPrefix, appConfig.s3.transferErrorsBucketName) else IO.pure(List.empty[Json])
-    } yield TransferErrorsResults(loadState, errorJsons, existingTransferId)
+      uploadCompleted = isUploadFinished(consignmentState.consignmentStatuses)
+      errorJsons <- if (uploadCompleted) s3Service.getAllJsonObjectsWithPrefix(objectPrefix, appConfig.s3.transferErrorsBucketName) else IO.pure(List.empty[Json])
+    } yield TransferErrorsResults(uploadCompleted, errorJsons, existingTransferId)
   }
 
   private def isUploadFinished(state: List[ConsignmentStatuses]): Boolean =
