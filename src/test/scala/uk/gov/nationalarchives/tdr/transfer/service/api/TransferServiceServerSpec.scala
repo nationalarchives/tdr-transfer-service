@@ -39,6 +39,12 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     response.as[String].unsafeRunSync() shouldEqual "Healthy"
   }
 
+  "'docs' endpoint" should "return 404 if the feature is blocked" in {
+    val getDocs = Request[IO](Method.GET, uri"/docs/")
+    val response = TransferServiceServer.allRoutes.orNotFound(getDocs).unsafeRunSync()
+    response.status shouldBe Status.NotFound
+  }
+
   def generateUri(uriString: String): Uri = {
     Uri.fromString(uriString).fold(e => throw new RuntimeException(e.message), uri => uri)
   }
