@@ -46,7 +46,7 @@ object TransferServiceServer extends IOApp {
   }
 
   val allRoutes = if (appConfig.featureAccessBlocks.blockApiDocumentation) {
-    loadController.routes <+> healthCheckRoute
+    loadController.routes <+> transferErrorsController.routes <+> healthCheckRoute
   } else Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> transferErrorsController.routes <+> healthCheckRoute
 
   private def throttleService(service: HttpApp[IO]): IO[HttpApp[IO]] = Throttle.httpApp[IO](
