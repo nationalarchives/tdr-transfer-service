@@ -17,4 +17,9 @@ object Common {
     val MetadataCategory: Value = Value("metadata")
     val RecordsCategory: Value = Value("records")
   }
+
+  object TransferFunction extends Enumeration {
+    type TransferFunction = Value
+    val Load: Value = Value("load")
+  }
 }

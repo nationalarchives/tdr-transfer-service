@@ -16,6 +16,8 @@ object ApplicationConfig {
       metadataUploadBucketName: String,
       recordsUploadBucketArn: String,
       recordsUploadBucketName: String,
+      endpoint: String,
+      transferErrorsBucketName: String,
       aclHeaderValue: String,
       ifNoneMatchHeaderValue: String
   )

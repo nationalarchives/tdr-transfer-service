@@ -13,6 +13,7 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)), interval = scaled(Span(100, Millis)))
 
   val wiremockGraphqlServer = new WireMockServer(9001)
+  val wiremockS3 = new WireMockServer(8003)
 
   override def beforeAll(): Unit = {
     wiremockGraphqlServer.start()
@@ -29,6 +30,12 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
   val graphQlPath = "/graphql"
 
   def graphqlOkJson(uploadStatusValue: String = "InProgress", consignmentExists: Boolean = true): Unit = {
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing("getConsignment"))
+        .willReturn(ok(getConsignmentResponse))
+    )
+
     wiremockGraphqlServer.stubFor(
       post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("getConsignmentSummary"))
@@ -58,6 +65,19 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
         .withRequestBody(containing("startUpload"))
         .willReturn(okJson(fromResource(s"json/start_upload_response.json").mkString))
     )
+  }
+
+  def getConsignmentResponse: String = {
+    s"""{
+         |  "data": {
+         |    "getConsignment": {
+         |      "consignmentId": "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e",
+         |      "userid": "4ab14990-ed63-4615-8336-56fbb9960300",
+         |      "consignmentReference": "Consignment-Ref",
+         |      "consignmentStatuses": []
+         |    }
+         |  }
+         |}""".stripMargin
   }
 
   private def uploadStatusResponse(uploadStatusValue: String): String = {

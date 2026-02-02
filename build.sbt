@@ -24,6 +24,7 @@ lazy val root = (project in file("."))
       pekkoTestKitHttp % Test,
       pureConfig,
       pureConfigCatsEffect,
+      s3Utils,
       scalaTest % Test,
       sqsUtils,
       tapirHttp4sServer,
