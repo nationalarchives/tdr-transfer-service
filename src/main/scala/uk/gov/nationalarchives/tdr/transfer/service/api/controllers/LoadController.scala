@@ -10,6 +10,7 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -36,7 +37,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .summary("Configuration for client transfer")
       .description("Provides configuration for calling client before starting an operation")
       .get
-      .in("load" / sourceSystem / "configuration")
+      .in(s"${TransferFunction.Load}" / sourceSystem / "configuration")
       .out(jsonBody[TransferConfiguration])
 
   private val metadataOnly: EndpointInput[Option[Boolean]] = query("metadataOnly")
@@ -46,7 +47,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
     securedWithStandardUserBearer
       .summary("Initiate the load of records and metadata")
       .post
-      .in("load" / sourceSystem / "initiate" / existingTransferId)
+      .in(s"${TransferFunction.Load}" / sourceSystem / "initiate" / existingTransferId)
       .out(jsonBody[LoadDetails])
 
   private val completeLoadEndpoint: PartialServerEndpoint[
@@ -62,7 +63,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
       .summary("Notify that loading has completed")
       .description("Triggers the processing of the transfer's loaded metadata and records in TDR")
       .post
-      .in("load" / sourceSystem / "complete" / transferId / metadataOnly)
+      .in(s"${TransferFunction.Load}" / sourceSystem / "complete" / transferId / metadataOnly)
       .in(jsonBody[LoadCompletion])
       .out(jsonBody[LoadCompletionResponse])
 

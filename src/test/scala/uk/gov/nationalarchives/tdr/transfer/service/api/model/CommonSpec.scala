@@ -27,4 +27,12 @@ object CommonSpec extends BaseSpec {
     objectCategory.values.size shouldBe 2
     objectCategory.values.map(_.toString).toList shouldEqual expectedValues
   }
+
+  "TransferFunction" should "contain the correct enums" in {
+    val transferFunction = TransferFunction
+    val expectedValues = List("errors", "load")
+
+    transferFunction.values.size shouldBe 2
+    transferFunction.values.map(_.toString).toList shouldEqual expectedValues
+  }
 }
