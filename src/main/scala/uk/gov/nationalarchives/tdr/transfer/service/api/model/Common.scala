@@ -21,6 +21,7 @@ object Common {
 
   object TransferFunction extends Enumeration {
     type TransferFunction = Value
+    val Errors: Value = Value("errors")
     val Load: Value = Value("load")
   }
 }
