@@ -53,7 +53,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     ("Source", "Number of metadata property details"),
     (SourceSystemEnum.NetworkDrive.toString.toLowerCase, 0),
     (SourceSystemEnum.HardDrive.toString.toLowerCase, 0),
-    (SourceSystemEnum.SharePoint.toString.toLowerCase, 13)
+    (SourceSystemEnum.SharePoint.toString.toLowerCase, 14)
   )
 
   forAll(sources) { (source, numberPropertyDetails) =>
