@@ -30,7 +30,7 @@ object MetadataLoadConfiguration {
         .map(p => {
           MetadataPropertyDetails(p.getKey, requiredProperties.contains(p.getKey))
         })
-        .toSet
+        .toSet + MetadataPropertyDetails("closure_x0020_status", required = false)
     }
   }
 }
