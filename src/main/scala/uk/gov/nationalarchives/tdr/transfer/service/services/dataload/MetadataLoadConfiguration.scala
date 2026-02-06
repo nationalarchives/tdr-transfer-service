@@ -10,6 +10,7 @@ import scala.jdk.CollectionConverters._
 
 object MetadataLoadConfiguration {
   private val schemaConfig: ApplicationConfig.Schema = ApplicationConfig.appConfig.schema
+  private val blockTdrCustomTags = ApplicationConfig.appConfig.featureAccessBlocks.blockTdrCustomTags
 
   private def sourceSystemSchemaMapping(sourceSystem: SourceSystem): String = sourceSystem match {
     case SourceSystemEnum.SharePoint   => schemaConfig.dataLoadSharePointLocation
@@ -19,18 +20,20 @@ object MetadataLoadConfiguration {
   }
 
   def metadataLoadConfiguration(sourceSystem: SourceSystem): Set[MetadataPropertyDetails] = {
-    if (sourceSystem == SourceSystemEnum.HardDrive || sourceSystem == SourceSystemEnum.NetworkDrive) {
-      Set()
-    } else {
-      val schemaLocation = sourceSystemSchemaMapping(sourceSystem)
+    val schemaLocation = sourceSystemSchemaMapping(sourceSystem)
+    if (sourceSystem == SourceSystemEnum.SharePoint) {
       val schema = SchemaHandler.schema(schemaLocation)
       val properties = schema.get("properties").properties().asScala
       val requiredProperties = schema.get("required").asScala.map(_.asText()).toSet
+      val tdrSharePointCustomTags = if (blockTdrCustomTags) { Nil }
+      else SchemaHandler.tdrSharePointCustomTags
       properties
         .map(p => {
           MetadataPropertyDetails(p.getKey, requiredProperties.contains(p.getKey))
         })
-        .toSet + MetadataPropertyDetails("closure_x0020_status", required = false)
+        .toSet ++ tdrSharePointCustomTags
+    } else {
+      Set()
     }
   }
 }
