@@ -21,15 +21,16 @@ object SchemaHandler {
     val editablePropertiesMapper = metadataConfiguration.downloadFileDisplayProperties("MetadataDownloadTemplate")
     val sharePointTagMapper = metadataConfiguration.propertyToOutputMapper("sharePointTag")
     val tdrFileHeaderMapper = metadataConfiguration.propertyToOutputMapper("tdrFileHeader")
-    editablePropertiesMapper
-      .flatMap(p => {
-        if (p.editable) {
-          val propertyKey = p.key
-          val propertyName = sharePointTagMapper(propertyKey)
-          val displayName = tdrFileHeaderMapper(propertyKey)
-          Some(MetadataPropertyDetails(propertyName, required = false, displayName = displayName))
-        } else None
-      })
-      .toSet
+    editablePropertiesMapper.collect {
+      case p if p.editable =>
+        val propertyKey = p.key
+        val propertyName = sharePointTagMapper(propertyKey)
+        val displayName = tdrFileHeaderMapper(propertyKey)
+        MetadataPropertyDetails(
+          propertyName,
+          required = false,
+          displayName = displayName
+        )
+    }.toSet
   }
 }
