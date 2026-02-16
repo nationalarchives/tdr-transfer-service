@@ -2,6 +2,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.services
 
 import graphql.codegen.{GetConsignmentStatus, GetConsignmentSummary}
 import graphql.codegen.GetConsignmentSummary.{getConsignmentSummary => getSummary}
+import graphql.codegen.GetConsignment.{getConsignment => gc}
 import cats.effect.unsafe.implicits.global
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken
 import graphql.codegen.AddConsignment.addConsignment.AddConsignment
@@ -32,6 +33,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
   val startUploadClient: GraphQLClient[su.Data, su.Variables] = mock[GraphQLClient[su.Data, su.Variables]]
   val existingConsignmentClient: GraphQLClient[getSummary.Data, getSummary.Variables] = mock[GraphQLClient[getSummary.Data, getSummary.Variables]]
   val consignmentStateClient: GraphQLClient[getStatus.Data, getStatus.Variables] = mock[GraphQLClient[getStatus.Data, getStatus.Variables]]
+  val getConsignmentClient: GraphQLClient[gc.Data, gc.Variables] = mock[GraphQLClient[gc.Data, gc.Variables]]
   val consignmentId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
   val consignmentMetadataData = acm.AddOrUpdateConsignmentMetadata(UUID.fromString(consignmentId), "SourceSystem", SourceSystemEnum.SharePoint.toString)
@@ -167,9 +169,35 @@ class GraphQlApiServiceSpec extends BaseSpec {
     exception.getMessage should equal(s"Load not started for consignment: 6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
   }
 
+  "'getConsignment'" should "return consignment when consignment exists" in {
+    mockKeycloak()
+    val consignment = mock[gc.GetConsignment]
+    when(consignment.userid).thenReturn(userId)
+
+    mockGetConsignmentClient(Some(gc.Data(Some(consignment))))
+
+    val response = createService()
+      .getConsignment(mockKeycloakToken, UUID.fromString(consignmentId))
+      .unsafeRunSync()
+
+    response shouldBe consignment
+  }
+
+  "'getConsignment'" should "throw an exception when consignment does not exist" in {
+    mockKeycloak()
+    mockGetConsignmentClient(None)
+
+    val exception = intercept[RuntimeException] {
+      createService()
+        .getConsignment(mockKeycloakToken, UUID.fromString(consignmentId))
+        .unsafeRunSync()
+    }
+    exception.getMessage should equal(s"Failed to retrieve consignment information for consignment: $consignmentId")
+  }
+
   private def createService(): GraphQlApiService = {
     GraphQlApiService
-      .apply(addConsignmentClient, consignmentMetadataClient, startUploadClient, existingConsignmentClient, consignmentStateClient)
+      .apply(addConsignmentClient, consignmentMetadataClient, startUploadClient, existingConsignmentClient, consignmentStateClient, getConsignmentClient)
   }
 
   def mockKeycloak(): Future[BearerAccessToken] = {
@@ -206,5 +234,11 @@ class GraphQlApiServiceSpec extends BaseSpec {
     doAnswer(() => Future(GraphQlResponse[su.Data](response, Nil)))
       .when(startUploadClient)
       .getResult[Identity](any[BearerAccessToken], any[Document], any[Option[su.Variables]])(any[SttpBackend[Identity, Any]], any[ClassTag[Identity[_]]])
+  }
+
+  def mockGetConsignmentClient(response: Option[gc.Data]): Future[GraphQlResponse[gc.Data]] = {
+    doAnswer(() => Future(GraphQlResponse[gc.Data](response, Nil)))
+      .when(getConsignmentClient)
+      .getResult[Identity](any[BearerAccessToken], any[Document], any[Option[gc.Variables]])(any[SttpBackend[Identity, Any]], any[ClassTag[Identity[_]]])
   }
 }

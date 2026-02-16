@@ -16,6 +16,8 @@ object ApplicationConfig {
       metadataUploadBucketName: String,
       recordsUploadBucketArn: String,
       recordsUploadBucketName: String,
+      endpoint: String,
+      transferErrorsBucketName: String,
       aclHeaderValue: String,
       ifNoneMatchHeaderValue: String
   )
@@ -23,6 +25,7 @@ object ApplicationConfig {
   case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int)
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
+  case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean)
 
   case class Configuration(
       auth: Auth,
@@ -32,7 +35,8 @@ object ApplicationConfig {
       schema: Schema,
       transferConfiguration: TransferConfiguration,
       cors: Cors,
-      sqs: Sqs
+      sqs: Sqs,
+      featureAccessBlocks: FeatureAccessBlocks
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
