@@ -4,19 +4,23 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import io.circe.Json
 import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
-import io.circe.syntax.{KeyOps, _}
+import io.circe.syntax._
 import org.http4s.circe._
 import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status, Uri}
+import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
+import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
-import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
+import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
 import java.util.UUID
 
@@ -35,6 +39,12 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     response.as[String].unsafeRunSync() shouldEqual "Healthy"
   }
 
+  "'docs' endpoint" should "return 404 if the feature is blocked" in {
+    val getDocs = Request[IO](Method.GET, uri"/docs/")
+    val response = TransferServiceServer.allRoutes.orNotFound(getDocs).unsafeRunSync()
+    response.status shouldBe Status.NotFound
+  }
+
   def generateUri(uriString: String): Uri = {
     Uri.fromString(uriString).fold(e => throw new RuntimeException(e.message), uri => uri)
   }
@@ -43,7 +53,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     ("Source", "Number of metadata property details"),
     (SourceSystemEnum.NetworkDrive.toString.toLowerCase, 0),
     (SourceSystemEnum.HardDrive.toString.toLowerCase, 0),
-    (SourceSystemEnum.SharePoint.toString.toLowerCase, 11)
+    (SourceSystemEnum.SharePoint.toString.toLowerCase, 12)
   )
 
   forAll(sources) { (source, numberPropertyDetails) =>
@@ -245,6 +255,87 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
       }
     }
+  }
+
+  s"'errors/load/' endpoint" should "return 200 with correct authorisation header" in {
+    graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+
+    val jsonResponse = Json.obj(
+      "consignmentId" := s"$transferId",
+      "errorCode" := "AGGREGATE_PROCESSING.CLIENT_DATA_LOAD.FAILURE",
+      "errorMessage" := s"Client data load errors for consignment: $transferId"
+    )
+
+    val mockedTransferErrors = mock[TransferErrors]
+    when(mockedTransferErrors.getTransferErrors(any[Token](), any[UUID], any[String]()))
+      .thenReturn(
+        IO.pure(
+          TransferErrorsResults(
+            uploadCompleted = true,
+            errors = List(jsonResponse),
+            transferId = UUID.fromString(transferId)
+          )
+        )
+      )
+
+    val controller = new TransferErrorsController(mockedTransferErrors)
+
+    val response = controller.getErrorsRoute.orNotFound
+      .run(
+        Request(method = Method.GET, uri = generateUri(s"/errors/load/$transferId"), headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Ok
+    val body = response.as[Json].unsafeRunSync()
+    val expectedJson = Json.obj(
+      "uploadCompleted" -> Json.fromBoolean(true),
+      "errors" -> Json.arr(jsonResponse),
+      "transferId" -> Json.fromString(transferId)
+    )
+    body shouldEqual expectedJson
+  }
+
+  s"'errors/load/' endpoint" should "return 500 response when a user is authenticated but an exception is thrown" in {
+    graphqlOkJson(uploadStatusValue = StatusValue.Completed.toString)
+    val validToken = validUserToken()
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$validToken")
+    val fakeHeaders = Headers.apply(authHeader)
+
+    val response = TransferErrorsController
+      .apply()
+      .getErrorsRoute
+      .orNotFound
+      .run(
+        Request(method = Method.GET, uri = generateUri(s"/errors/load/$transferId"), headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.InternalServerError
+  }
+
+  s"'errors/load/' endpoint" should "return 401 response with incorrect authorisation header" in {
+    val token = invalidToken
+    val bearer = CIString("Authorization")
+    val authHeader = Header.Raw.apply(bearer, s"$token")
+    val fakeHeaders = Headers.apply(authHeader)
+
+    val response = TransferErrorsController
+      .apply()
+      .getErrorsRoute
+      .orNotFound
+      .run(
+        Request(method = Method.GET, uri = generateUri(s"/errors/load/$transferId"), headers = fakeHeaders)
+      )
+      .unsafeRunSync()
+
+    response.status shouldBe Status.Unauthorized
+    response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
   }
 
   "unknown source system in endpoint" should "return 400 response with correct authorisation header" in {

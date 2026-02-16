@@ -5,13 +5,14 @@ object Dependencies {
   private val mockitoVersion = "2.0.0"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.6"
+  private val awsUtilsVersion = "0.1.317"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.271"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.272"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.6.3"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.450"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.269"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.451"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.270"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
@@ -35,6 +36,7 @@ object Dependencies {
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
 
+  lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.19"
-  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % "0.1.317"
+  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
 }
