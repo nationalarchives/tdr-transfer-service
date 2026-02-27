@@ -7,7 +7,7 @@ import pureconfig.generic.auto._
 object ApplicationConfig {
   implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
 
-  case class TransferServiceApi(port: Int, throttleAmount: Int, throttlePerMs: Int)
+  case class TransferServiceApi(port: Int, throttleAmount: Int, throttlePerMs: Int, domain: String)
   case class ConsignmentApi(url: String)
   case class Auth(url: String, realm: String)
   case class S3(

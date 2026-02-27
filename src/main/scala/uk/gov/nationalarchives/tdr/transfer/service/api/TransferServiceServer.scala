@@ -1,12 +1,13 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api
 
+import cats.data.Kleisli
 import cats.effect.{ExitCode, IO, IOApp, Resource}
 import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s.{IpLiteralSyntax, Port}
 import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.{Logger, Throttle}
-import org.http4s.{HttpApp, HttpRoutes}
+import org.http4s.server.middleware.{CSRF, HSTS, Logger, Throttle}
+import org.http4s.{HttpApp, HttpRoutes, Uri}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.apispec.openapi.Info
@@ -16,6 +17,12 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
+import cats.effect._
+import org.http4s._
+import org.http4s.dsl.io._
+import org.http4s.headers.`Strict-Transport-Security`
+import org.http4s.server.middleware.{CSRF, HSTS}
+import uk.gov.nationalarchives.tdr.transfer.service.api.middleware.SecurityHeaders
 
 import scala.concurrent.duration.DurationInt
 
@@ -24,6 +31,7 @@ object TransferServiceServer extends IOApp {
   private val appConfig = ApplicationConfig.appConfig
   private val authUrl = appConfig.auth.url
   private val realm = appConfig.auth.realm
+  private val domain = appConfig.transferServiceApi.domain
 
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
   implicit val keycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment(s"$authUrl", realm, 8080)
@@ -54,8 +62,23 @@ object TransferServiceServer extends IOApp {
     per = appConfig.transferServiceApi.throttlePerMs.milliseconds
   )(service)
 
+  private val token = CSRF.generateSigningKey[IO]()
+  val a: Kleisli[IO, Request[IO], Response[IO]] = allRoutes.orNotFound
+
+  private val csrfService: IO[Kleisli[IO, Request[IO], Response[IO]]] = token.map { key =>
+    val cookieName: String = "csrf-token"
+    val csrfBuilder: CSRF.CSRFBuilder[IO, IO] = CSRF[IO, IO](key, request => CSRF.defaultOriginCheck[IO](request, domain, Uri.Scheme.http, None))
+    csrfBuilder
+      .withCookieName(cookieName)
+      .withCookieDomain(Some(domain))
+      .withCookiePath(Some("/"))
+      .build
+      .validate()
+      .apply(SecurityHeaders.apply(allRoutes).orNotFound)
+  }
+
   private val transferServiceServer = for {
-    httpApp <- Resource.eval(throttleService(allRoutes.orNotFound))
+    httpApp <- Resource.eval(csrfService)
     finalApp = Logger.httpApp(logHeaders = true, logBody = false)(httpApp)
     server <- EmberServerBuilder
       .default[IO]

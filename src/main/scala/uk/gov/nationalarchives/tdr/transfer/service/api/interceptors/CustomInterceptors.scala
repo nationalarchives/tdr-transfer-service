@@ -1,6 +1,9 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api.interceptors
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import org.http4s.{Request, Uri}
+import org.http4s.server.middleware.{CSRF, HSTS}
 import sttp.model.{Method, StatusCode}
 import sttp.tapir.server.interceptor.cors.CORSConfig._
 import sttp.tapir.server.interceptor.cors.{CORSConfig, CORSInterceptor}
@@ -19,7 +22,7 @@ object CustomInterceptors {
     preflightResponseStatusCode = StatusCode.NoContent
   )
 
-  private def checkOrigins(origin: String): Boolean = {
+  def checkOrigins(origin: String): Boolean = {
     permittedOrigins.exists(origin.contains)
   }
 
