@@ -45,9 +45,7 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     MetadataPropertyDetails("FileLeafRef", required = true),
     MetadataPropertyDetails("TimeCreated", required = true),
     MetadataPropertyDetails("SiteName", required = true),
-    MetadataPropertyDetails("LibraryName", required = true),
-    MetadataPropertyDetails("closure status", required = true),
-    MetadataPropertyDetails("closure_x0020_status", required = false)
+    MetadataPropertyDetails("LibraryName", required = true)
   )
 
   val expectedTransferConfiguration: TransferConfiguration =
