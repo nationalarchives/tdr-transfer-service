@@ -45,9 +45,16 @@ object TransferServiceServer extends IOApp {
     Ok("Healthy")
   }
 
-  val allRoutes = if (appConfig.featureAccessBlocks.blockApiDocumentation) {
-    loadController.routes <+> transferErrorsController.routes <+> healthCheckRoute
-  } else Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+> transferErrorsController.routes <+> healthCheckRoute
+  private val featureAccessBlocks = appConfig.featureAccessBlocks
+
+  val allRoutes = featureAccessBlocks match {
+    case _ if featureAccessBlocks.blockServiceEndpoints => healthCheckRoute
+    case _ if featureAccessBlocks.blockApiDocumentation =>
+      loadController.routes <+> transferErrorsController.routes <+> healthCheckRoute
+    case _ =>
+      Http4sServerInterpreter[IO]().toRoutes(documentationEndpoints) <+> loadController.routes <+>
+        transferErrorsController.routes <+> healthCheckRoute
+  }
 
   private def throttleService(service: HttpApp[IO]): IO[HttpApp[IO]] = Throttle.httpApp[IO](
     amount = appConfig.transferServiceApi.throttleAmount,
