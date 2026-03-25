@@ -7,12 +7,12 @@ object Dependencies {
   private val tapirVersion = "1.13.13"
   private val awsUtilsVersion = "0.1.320"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.277"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.278"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.462"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.284"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.464"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.285"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
@@ -24,7 +24,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.32"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.122"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.124"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
