@@ -7,7 +7,7 @@ object Dependencies {
   private val tapirVersion = "1.13.13"
   private val awsUtilsVersion = "0.1.320"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.277"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.278"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
