@@ -7,12 +7,12 @@ object Dependencies {
   private val tapirVersion = "1.13.15"
   private val awsUtilsVersion = "0.1.323"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.279"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.280"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
   lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.467"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.288"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.289"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
