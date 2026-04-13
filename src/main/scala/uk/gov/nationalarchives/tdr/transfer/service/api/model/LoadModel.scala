@@ -1,5 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api.model
 
+import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames.FilenamePattern
+
 import java.util.UUID
 
 sealed trait LoadModel
@@ -16,6 +18,7 @@ object LoadModel {
       maxIndividualFileSizeMb: Int,
       maxTransferSizeMb: Int,
       disallowedFileExtensions: Set[String] = Set(),
+      disallowedFileNames: Set[FilenamePattern] = Set(),
       metadataPropertyDetails: Set[MetadataPropertyDetails] = Set(),
       customMetadataConfiguration: CustomMetadataConfiguration = CustomMetadataConfiguration(),
       display: Set[DisplayMessage] = Set(),

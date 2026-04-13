@@ -1,6 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
+import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{Header, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.transferConfigurationConfig
@@ -18,12 +19,14 @@ class DataLoadConfiguration {
     val maxTransferSizeMb = transferConfigurationConfig.maxTransferSizeMb
     val metadataPropertyDetails = MetadataLoadConfiguration.metadataLoadConfiguration(sourceSystem)
     val disallowedFileExtensions = Set[String]()
+    val disallowedFileNames = ExcludedFilenames.all.toSet
     IO(
       TransferConfiguration(
         maxNumberRecords,
         maxIndividualFileSizeMb,
         maxTransferSizeMb,
         disallowedFileExtensions,
+        disallowedFileNames,
         metadataPropertyDetails,
         s3PutRequestHeaders = s3PutRequestHeaders
       )
