@@ -13,17 +13,18 @@ object TestUtils {
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
   val transferServiceUserId = UUID.fromString("f67d1337-cbd0-4fd1-9eac-611489e7113f")
 
-  def validUserToken(userId: UUID = userId, body: String = "Code", standardUser: String = "true"): OAuth2BearerToken =
-    OAuth2BearerToken(
-      tdrKeycloakMock.getAccessToken(
-        aTokenConfig()
-          .withResourceRole("tdr", "tdr_user")
-          .withClaim("body", body)
-          .withClaim("user_id", userId)
-          .withClaim("standard_user", standardUser)
-          .build
-      )
-    )
+  def validUserToken(userId: UUID = userId, body: Option[String] = Some("Code"), standardUser: String = "true"): OAuth2BearerToken = {
+    val tokenBuilder = aTokenConfig()
+      .withResourceRole("tdr", "tdr_user")
+      .withClaim("user_id", userId)
+      .withClaim("standard_user", standardUser)
+
+    if (body.nonEmpty) {
+      tokenBuilder.withClaim("body", body.get)
+    }
+
+    OAuth2BearerToken(tdrKeycloakMock.getAccessToken(tokenBuilder.build()))
+  }
 
   def validClientToken(clientId: String = "tdr-transfer-service", role: String = "data-load"): OAuth2BearerToken =
     OAuth2BearerToken(
