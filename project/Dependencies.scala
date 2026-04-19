@@ -4,21 +4,21 @@ object Dependencies {
   private val http4sVersion = "0.23.34"
   private val mockitoVersion = "2.2.1"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.15"
-  private val awsUtilsVersion = "0.1.325"
+  private val tapirVersion = "1.13.16"
+  private val awsUtilsVersion = "0.1.327"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.283"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
   lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.467"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.291"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.292"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 
-  lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.8"
+  lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.9"
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.20.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
