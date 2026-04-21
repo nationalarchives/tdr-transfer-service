@@ -13,6 +13,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
 import uk.gov.nationalarchives.tdr.keycloak.Token
+import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue
@@ -81,6 +82,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         transferConfiguration.maxNumberRecords shouldBe 3000
         transferConfiguration.customMetadataConfiguration.required shouldBe false
         transferConfiguration.metadataPropertyDetails.size shouldBe numberPropertyDetails
+        transferConfiguration.disallowedFileExtensions.size shouldBe 0
+        transferConfiguration.disallowedFileNames.size shouldBe ExcludedFilenames.all.size
         transferConfiguration.display.size shouldBe 0
       }
 

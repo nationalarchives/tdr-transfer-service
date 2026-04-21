@@ -8,14 +8,15 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.keycloak.OAuth2Constants
 import org.keycloak.admin.client.{Keycloak, KeycloakBuilder}
 import org.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, EitherValues}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, EitherValues}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel
+import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
+import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames.FilenamePattern
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{Header, MetadataPropertyDetails, TransferConfiguration}
 
 import scala.concurrent.ExecutionContextExecutor
@@ -48,8 +49,10 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     MetadataPropertyDetails("LibraryName", required = true)
   )
 
+  val excludedFileNames: Set[FilenamePattern] = ExcludedFilenames.all.toSet
+
   val expectedTransferConfiguration: TransferConfiguration =
-    TransferConfiguration(3000, 2000, 5000, Set(), expectedMetadataPropertyDetails, display = Set(), s3PutRequestHeaders = expectedS3PutRequestHeaders)
+    TransferConfiguration(3000, 2000, 5000, Set(), excludedFileNames, expectedMetadataPropertyDetails, display = Set(), s3PutRequestHeaders = expectedS3PutRequestHeaders)
 
   val keycloakUserId = "b2657adf-6e93-424f-b0f1-aadd26762a96"
   val authPath = "/auth/realms/tdr/protocol/openid-connect/token"
