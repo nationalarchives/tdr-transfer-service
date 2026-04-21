@@ -29,7 +29,8 @@ lazy val root = (project in file("."))
       sqsUtils,
       tapirHttp4sServer,
       tapirJsonCirce,
-      tapirSwaggerUI
+      tapirSwaggerUI,
+      tdrAuthorisation
     )
   )
 

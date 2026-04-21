@@ -1,13 +1,13 @@
 import sbt.*
 
 object Dependencies {
-  private val http4sVersion = "0.23.33"
+  private val http4sVersion = "0.23.34"
   private val mockitoVersion = "2.1.0"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.15"
-  private val awsUtilsVersion = "0.1.323"
+  private val awsUtilsVersion = "0.1.324"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.281"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.282"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
@@ -35,6 +35,7 @@ object Dependencies {
   lazy val tapirHttp4sServer = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
+  lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % "0.0.10"
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
