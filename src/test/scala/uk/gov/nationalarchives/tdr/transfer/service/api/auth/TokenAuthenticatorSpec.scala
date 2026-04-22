@@ -30,7 +30,7 @@ class TokenAuthenticatorSpec extends BaseSpec {
     val validToken = validUserToken(body = None, standardUser = "false")
     val response = TokenAuthenticator().authenticateStandardUserToken(validToken.token).unsafeRunSync()
 
-    response.left.toOption.get.message shouldBe s"User $userId is misconfigured"
+    response.left.toOption.get.message shouldBe s"User $userId is not a standard user"
   }
 
   "'authenticateStandardUserToken'" should "return authentication error when token invalid" in {

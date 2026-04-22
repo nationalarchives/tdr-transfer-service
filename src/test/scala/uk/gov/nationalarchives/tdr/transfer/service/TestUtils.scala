@@ -11,7 +11,7 @@ object TestUtils {
   private val testKeycloakMock: KeycloakMock = createServer("test", 8001)
 
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
-  val transferServiceUserId = UUID.fromString("f67d1337-cbd0-4fd1-9eac-611489e7113f")
+  val transferServiceUserId: UUID = UUID.fromString("f67d1337-cbd0-4fd1-9eac-611489e7113f")
 
   def validUserToken(userId: UUID = userId, body: Option[String] = Some("Code"), standardUser: String = "true"): OAuth2BearerToken = {
     val tokenBuilder = aTokenConfig()

@@ -29,14 +29,19 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
     IO {
       KeycloakUtils().token(bearer) match {
         case Right(t) if t.isStandardUser && t.transferringBody.nonEmpty => Right(AuthenticatedContext(t))
-        case Right(t) if t.transferringBody.isEmpty                      =>
+        case Right(t) if !t.isStandardUser                               =>
+          Left {
+            val errorMessage = s"User ${t.userId} is not a standard user"
+            authenticationErrorHandler(errorMessage)
+          }
+        case Right(t) if t.transferringBody.isEmpty =>
           Left {
             val errorMessage = s"User ${t.userId} is misconfigured"
             authenticationErrorHandler(errorMessage)
           }
         case Right(t) =>
           Left {
-            val errorMessage = s"User ${t.userId} is not a standard user"
+            val errorMessage = s"User ${t.userId} does not have access"
             authenticationErrorHandler(errorMessage)
           }
         case Left(e) =>
