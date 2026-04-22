@@ -5,7 +5,7 @@ object Dependencies {
   private val mockitoVersion = "2.2.1"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.16"
-  private val awsUtilsVersion = "0.1.327"
+  private val awsUtilsVersion = "0.1.328"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.283"
 
@@ -25,7 +25,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.32"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.129"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.130-SNAPSHOT"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
@@ -36,7 +36,7 @@ object Dependencies {
   lazy val tapirHttp4sServer = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
-  lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % "0.0.10"
+  lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % "0.0.15"
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
