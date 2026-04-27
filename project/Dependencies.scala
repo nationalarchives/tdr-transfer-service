@@ -4,7 +4,7 @@ object Dependencies {
   private val http4sVersion = "0.23.34"
   private val mockitoVersion = "2.2.1"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.16"
+  private val tapirVersion = "1.13.17"
   private val awsUtilsVersion = "0.1.328"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.283"
@@ -24,7 +24,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.32"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.129"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.131"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
