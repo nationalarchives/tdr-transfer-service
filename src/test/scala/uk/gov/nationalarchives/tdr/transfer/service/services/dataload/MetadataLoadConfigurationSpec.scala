@@ -7,7 +7,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.Sourc
 class MetadataLoadConfigurationSpec extends BaseSpec {
   "'metadataLoadConfiguration'" should "return the correct metadata configuration for the given source system" in {
     val sharePointResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.SharePoint)
-    sharePointResult.size shouldBe 12
+    sharePointResult.size shouldBe 11
     sharePointResult.contains(MetadataPropertyDetails("transferId", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("matchId", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("userId", required = true)) shouldBe true
@@ -17,7 +17,6 @@ class MetadataLoadConfigurationSpec extends BaseSpec {
     sharePointResult.contains(MetadataPropertyDetails("Length", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("SHA256ClientSideChecksum", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("Modified", required = true)) shouldBe true
-    sharePointResult.contains(MetadataPropertyDetails("TimeCreated", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("SiteName", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("LibraryName", required = true)) shouldBe true
 
