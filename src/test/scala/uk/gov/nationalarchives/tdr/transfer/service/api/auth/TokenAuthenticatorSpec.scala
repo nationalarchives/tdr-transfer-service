@@ -19,6 +19,20 @@ class TokenAuthenticatorSpec extends BaseSpec {
     response.left.toOption.get.message shouldBe s"User $userId is not a standard user"
   }
 
+  "'authenticateStandardUserToken'" should "return authentication error when a standard user is not assigned to a transferring body" in {
+    val validToken = validUserToken(body = None)
+    val response = TokenAuthenticator().authenticateStandardUserToken(validToken.token).unsafeRunSync()
+
+    response.left.toOption.get.message shouldBe s"User $userId is misconfigured"
+  }
+
+  "'authenticateStandardUserToken'" should "return authentication error when a non-standard user is not assigned to a transferring body" in {
+    val validToken = validUserToken(body = None, standardUser = "false")
+    val response = TokenAuthenticator().authenticateStandardUserToken(validToken.token).unsafeRunSync()
+
+    response.left.toOption.get.message shouldBe s"User $userId is not a standard user"
+  }
+
   "'authenticateStandardUserToken'" should "return authentication error when token invalid" in {
     val token = invalidToken
     val response = TokenAuthenticator().authenticateStandardUserToken(token.token).unsafeRunSync()
