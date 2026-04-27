@@ -24,11 +24,12 @@ object TransferServiceServer extends IOApp {
   private val appConfig = ApplicationConfig.appConfig
   private val authUrl = appConfig.auth.url
   private val realm = appConfig.auth.realm
+  private val serviceConfig = appConfig.transferServiceApi
 
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
   implicit val keycloakDeployment: TdrKeycloakDeployment = TdrKeycloakDeployment(s"$authUrl", realm, 8080)
 
-  private val apiPort: Port = Port.fromInt(appConfig.transferServiceApi.port).getOrElse(port"8080")
+  private val apiPort: Port = Port.fromInt(serviceConfig.port).getOrElse(port"8080")
 
   private val infoTitle = "TDR Transfer Service API"
   private val infoVersion = "0.0.3"
@@ -61,9 +62,19 @@ object TransferServiceServer extends IOApp {
     per = appConfig.transferServiceApi.throttlePerMs.milliseconds
   )(service)
 
+  private val logAction: String => IO[Unit] =
+    (msg: String) => {
+      if (msg.contains("GET /healthcheck") || msg.contains("200 OK")) {
+        IO.unit
+      } else Slf4jLogger.create[IO].flatMap(_.info(msg))
+    }
+
   private val transferServiceServer = for {
     httpApp <- Resource.eval(throttleService(allRoutes.orNotFound))
-    finalApp = Logger.httpApp(logHeaders = true, logBody = false)(httpApp)
+    finalApp = Logger.httpApp(
+      logHeaders = serviceConfig.logHeaders,
+      logBody = serviceConfig.logBody,
+      logAction = Some(logAction))(httpApp)
     server <- EmberServerBuilder
       .default[IO]
       .withHost(ipv4"0.0.0.0")
