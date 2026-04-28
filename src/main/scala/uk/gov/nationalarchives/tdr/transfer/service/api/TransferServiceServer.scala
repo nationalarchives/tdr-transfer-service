@@ -66,15 +66,12 @@ object TransferServiceServer extends IOApp {
     (msg: String) => {
       if (msg.contains("GET /healthcheck") || msg.contains("200 OK")) {
         IO.unit
-      } else Slf4jLogger.create[IO].flatMap(_.info(msg))
+      } else logger.info(msg)
     }
 
   private val transferServiceServer = for {
     httpApp <- Resource.eval(throttleService(allRoutes.orNotFound))
-    finalApp = Logger.httpApp(
-      logHeaders = serviceConfig.logHeaders,
-      logBody = serviceConfig.logBody,
-      logAction = Some(logAction))(httpApp)
+    finalApp = Logger.httpApp(logHeaders = serviceConfig.logHeaders, logBody = serviceConfig.logBody, logAction = Some(logAction))(httpApp)
     server <- EmberServerBuilder
       .default[IO]
       .withHost(ipv4"0.0.0.0")
