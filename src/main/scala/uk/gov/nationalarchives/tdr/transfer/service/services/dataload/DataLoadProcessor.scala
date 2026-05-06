@@ -13,9 +13,11 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messa
 
 import java.util.UUID
 
-class DataLoadProcessor(messageService: Messages, s3Config: ApplicationConfig.S3)(implicit logger: SelfAwareStructuredLogger[IO]) {
+class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.Configuration)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def trigger(event: DataLoadProcessorEvent, token: Token): IO[LoadCompletionResponse] = {
-    val metadataSourceBucket = s3Config.metadataUploadBucketName
+    val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
+    val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(",").toSet
+    val ignoreSiteName = ignoreSiteNameBodies.contains(token.transferringBody.get)
     val transferId = event.transferId
     val details = event.loadCompletionDetails
     val metadataSourceObjectPrefix = s"${token.userId}/${event.source}/$transferId/metadata"
@@ -24,7 +26,7 @@ class DataLoadProcessor(messageService: Messages, s3Config: ApplicationConfig.S3
 
     if (!clientSideErrors) {
       logger.info(s"Triggering aggregate processing for transfer: $transferId")
-      val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, dataLoadErrors)
+      val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, dataLoadErrors, ignoreSiteName = ignoreSiteName)
       messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
     }
     IO(LoadCompletionResponse(transferId, !clientSideErrors && !dataLoadErrors))
@@ -46,8 +48,8 @@ class DataLoadProcessor(messageService: Messages, s3Config: ApplicationConfig.S3
 object DataLoadProcessor {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
   private val messageService = Messages()(logger)
-  val s3Config: ApplicationConfig.S3 = ApplicationConfig.appConfig.s3
+  val config: ApplicationConfig.Configuration = ApplicationConfig.appConfig
   case class DataLoadProcessorEvent(source: SourceSystem, transferId: UUID, metadataOnly: Option[Boolean] = None, loadCompletionDetails: LoadCompletion)
 
-  def apply() = new DataLoadProcessor(messageService, s3Config)(logger)
+  def apply() = new DataLoadProcessor(messageService, config)(logger)
 }
