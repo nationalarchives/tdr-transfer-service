@@ -22,7 +22,13 @@ object ApplicationConfig {
       ifNoneMatchHeaderValue: String
   )
   case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String, networkDriveLocation: String)
-  case class TransferConfiguration(maxNumberRecords: Int, maxIndividualFileSizeMb: Int, maxTransferSizeMb: Int, ignoreSiteNameBodies: String)
+  case class TransferConfiguration(
+      maxNumberRecords: Int,
+      maxIndividualFileSizeMb: Int,
+      maxTransferSizeMb: Int,
+      ignoreSiteNameBodies: String,
+      includeTopLevelFolderOverride: Boolean
+  )
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
   case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean, blockServiceEndpoints: Boolean)

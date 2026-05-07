@@ -9,9 +9,9 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.Consignment
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ObjectCategory.{MetadataCategory, RecordsCategory}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.InProgress
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.s3Config
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{s3Config, transferConfigurationConfig}
 
 import java.util.UUID
 
@@ -28,7 +28,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
       for {
         addConsignmentResult <- graphQlApiService.addConsignment(token, sourceSystem)
         consignmentId = addConsignmentResult.consignmentid.get
-        _ <- triggerUpload(token, consignmentId)
+        _ <- triggerUpload(token, consignmentId, sourceSystem)
         result <- loadDetails(consignmentId, addConsignmentResult.consignmentReference, token.userId, sourceSystem)
       } yield result
     }
@@ -59,11 +59,19 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
 
   }
 
-  private def triggerUpload(token: Token, consignmentId: UUID): IO[Unit] = {
+  private def triggerUpload(token: Token, consignmentId: UUID, sourceSystem: SourceSystem): IO[Unit] = {
     logger.info(s"Starting upload for consignment $consignmentId")
+    val includeTopLevelFolder = includeTopLevelFolderOverride(sourceSystem)
     for {
-      _ <- graphQlApiService.startUpload(token, consignmentId)
+      _ <- graphQlApiService.startUpload(token, consignmentId, includeTopLevelFolder = includeTopLevelFolder)
     } yield IO.unit
+  }
+
+  private def includeTopLevelFolderOverride(sourceSystem: SourceSystem): Option[Boolean] = {
+    sourceSystem match {
+      case SharePoint => Some(transferConfigurationConfig.includeTopLevelFolderOverride)
+      case _          => None
+    }
   }
 }
 
