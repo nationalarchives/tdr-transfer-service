@@ -27,7 +27,7 @@ object ApplicationConfig {
       maxIndividualFileSizeMb: Int,
       maxTransferSizeMb: Int,
       ignoreSiteNameBodies: String,
-      includeTopLevelFolderOverride: Boolean
+      overrideIncludeTopLevelFolder: Boolean
   )
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)

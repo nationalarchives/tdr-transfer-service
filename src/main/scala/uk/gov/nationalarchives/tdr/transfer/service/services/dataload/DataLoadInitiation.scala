@@ -69,7 +69,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
 
   private def includeTopLevelFolderOverride(sourceSystem: SourceSystem): Option[Boolean] = {
     sourceSystem match {
-      case SharePoint => Some(transferConfigurationConfig.includeTopLevelFolderOverride)
+      case SharePoint => Some(transferConfigurationConfig.overrideIncludeTopLevelFolder)
       case _          => None
     }
   }
