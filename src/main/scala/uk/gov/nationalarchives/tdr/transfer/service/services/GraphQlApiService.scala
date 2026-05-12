@@ -70,9 +70,11 @@ class GraphQlApiService(
     } yield addConsignmentData.addConsignment
   }
 
-  def startUpload(token: Token, consignmentId: UUID, parentFolder: Option[String] = None): IO[String] = {
+  def startUpload(token: Token, consignmentId: UUID, parentFolder: Option[String] = None, includeTopLevelFolder: Option[Boolean] = None): IO[String] = {
     for {
-      result <- startUploadClient.getResult(token.bearerAccessToken, su.document, su.Variables(StartUploadInput(consignmentId, parentFolder.getOrElse(""), None)).some).toIO
+      result <- startUploadClient
+        .getResult(token.bearerAccessToken, su.document, su.Variables(StartUploadInput(consignmentId, parentFolder.getOrElse(""), includeTopLevelFolder)).some)
+        .toIO
       data <- IO.fromOption(result.data)(new RuntimeException(s"Load not started for consignment: $consignmentId"))
     } yield data.startUpload
   }
