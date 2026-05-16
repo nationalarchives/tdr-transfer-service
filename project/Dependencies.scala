@@ -5,7 +5,7 @@ object Dependencies {
   private val mockitoVersion = "2.2.1"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.19"
-  private val awsUtilsVersion = "0.1.328"
+  private val awsUtilsVersion = "0.1.330"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.286"
 
