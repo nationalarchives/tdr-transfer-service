@@ -17,7 +17,8 @@ class MessagesSpec extends BaseSpec {
     val expectedMessageString = """{
                                   |  "metadataSourceBucket" : "source-bucket",
                                   |  "metadataSourceObjectPrefix" : "metadata/source/prefix",
-                                  |  "dataLoadErrors" : false
+                                  |  "dataLoadErrors" : false,
+                                  |  "ignoreSiteName" : false
                                   |}""".stripMargin
 
     service.sendAggregateProcessingEventMessage(transferId, event)
