@@ -16,7 +16,7 @@ import java.util.UUID
 class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.Configuration)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def trigger(event: DataLoadProcessorEvent, token: Token): IO[LoadCompletionResponse] = {
     val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
-    val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(",").toSet
+    val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(";").toSet
     val ignoreSiteName = ignoreSiteNameBodies.contains(token.transferringBody.get)
     val transferId = event.transferId
     val details = event.loadCompletionDetails
