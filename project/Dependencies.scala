@@ -6,6 +6,7 @@ object Dependencies {
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.19"
   private val awsUtilsVersion = "0.1.331"
+  private val tdrUtilsVersion = "0.0.28"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.290"
 
@@ -35,9 +36,9 @@ object Dependencies {
   lazy val tapirHttp4sServer = "com.softwaremill.sttp.tapir" %% "tapir-http4s-server" % tapirVersion
   lazy val tapirJsonCirce = "com.softwaremill.sttp.tapir" %% "tapir-json-circe" % tapirVersion
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
-  lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % "0.0.28"
-  lazy val tdrObjectKeyContext = "uk.gov.nationalarchives" %% "tdr-object-key-context" % "0.0.28"
-  lazy val tdrStatuses = "uk.gov.nationalarchives" %% "tdr-statuses" % "0.0.28"
+  lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % tdrUtilsVersion
+  lazy val tdrObjectKeyContext = "uk.gov.nationalarchives" %% "tdr-object-key-context" % tdrUtilsVersion
+  lazy val tdrStatuses = "uk.gov.nationalarchives" %% "tdr-statuses" % tdrUtilsVersion
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
