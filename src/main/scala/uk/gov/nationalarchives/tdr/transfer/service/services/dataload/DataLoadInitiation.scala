@@ -3,11 +3,11 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 import cats.effect.IO
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import org.typelevel.log4cats.SelfAwareStructuredLogger
+import uk.gov.nationalarchives.tdr.common.utils.objectkeycontext.ObjectCategories.{Metadata, Records}
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.InProgressValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ConsignmentStatusType.Upload
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ObjectCategory.{MetadataCategory, RecordsCategory}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.InProgress
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
@@ -38,15 +38,15 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     val s3KeyPrefix = s"$userId/$sourceSystem/$transferId"
     val awsRegion = s3Config.awsRegion
     val recordsS3Bucket =
-      AWSS3LoadDestination(s"$awsRegion", s"${s3Config.recordsUploadBucketArn}", s"${s3Config.recordsUploadBucketName}", s"$s3KeyPrefix/${RecordsCategory.toString}")
+      AWSS3LoadDestination(s"$awsRegion", s"${s3Config.recordsUploadBucketArn}", s"${s3Config.recordsUploadBucketName}", s"$s3KeyPrefix/${Records.id}")
     val metadataS3Bucket =
-      AWSS3LoadDestination(s"$awsRegion", s"${s3Config.metadataUploadBucketArn}", s"${s3Config.metadataUploadBucketName}", s"$s3KeyPrefix/${MetadataCategory.toString}")
+      AWSS3LoadDestination(s"$awsRegion", s"${s3Config.metadataUploadBucketArn}", s"${s3Config.metadataUploadBucketName}", s"$s3KeyPrefix/${Metadata.id}")
     IO(LoadDetails(transferId, transferReference, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
   }
 
-  private def canUpload(state: List[ConsignmentStatuses]): Boolean = {
-    val uploadState: Option[ConsignmentStatuses] = state.find(_.statusType == Upload.toString)
-    uploadState.nonEmpty && uploadState.get.value == InProgress.toString
+  private def canUpload(currentState: List[ConsignmentStatuses]): Boolean = {
+    val uploadState: Option[ConsignmentStatuses] = currentState.find(_.statusType == UploadType.id)
+    uploadState.nonEmpty && uploadState.get.value == InProgressValue.value
   }
 
   private def loadDetailsForExistingTransfer(token: Token, consignmentId: UUID, sourceSystem: SourceSystem, canUpload: Boolean) = {
