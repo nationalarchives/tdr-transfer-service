@@ -52,7 +52,7 @@ class DataLoadProcessorSpec extends BaseSpec {
     val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
     val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
 
-    mockResponses(ignoreSiteNameBodies = "TDR-BODY1,TDR-BODY2")
+    mockResponses(ignoreSiteNameBodies = "TDR-BODY1;TDR-BODY2")
 
     when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
       .thenReturn(SendMessageResponse.builder().build())

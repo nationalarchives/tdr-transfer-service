@@ -30,7 +30,9 @@ lazy val root = (project in file("."))
       tapirHttp4sServer,
       tapirJsonCirce,
       tapirSwaggerUI,
-      tdrAuthorisation
+      tdrAuthorisation,
+      tdrObjectKeyContext,
+      tdrStatuses
     )
   )
 

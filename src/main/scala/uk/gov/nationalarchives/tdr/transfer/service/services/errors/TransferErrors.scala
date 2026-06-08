@@ -3,10 +3,10 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.errors
 import cats.effect.IO
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import io.circe._
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.ConsignmentStatusType.Upload
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.StatusValue.{Completed, Failed}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.{GraphQlApiService, S3Service}
 
@@ -23,7 +23,7 @@ class TransferErrors(graphQlApiService: GraphQlApiService, s3Service: S3Service)
   }
 
   private def isUploadFinished(state: List[ConsignmentStatuses]): Boolean =
-    state.find(_.statusType == Upload.toString).exists(s => s.value == Completed.toString || s.value == Failed.toString)
+    state.find(_.statusType == UploadType.id).exists(s => s.value == CompletedValue.value || s.value == FailedValue.value)
 }
 
 object TransferErrors {
