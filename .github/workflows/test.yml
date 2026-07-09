@@ -10,11 +10,45 @@ permissions:
   contents: write
 jobs:
   test:
-    uses: nationalarchives/tdr-github-actions/.github/workflows/tdr_test.yml@f318ce8a5d99c08b1235663f97fdb1b35844674e # v0.0.39
-    with:
-      repo-name: tdr-transfer-service
-      test-command: |
-        sbt scalafmtCheckAll test
-      java-version: '17'
-    secrets:
-      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: coursier/cache-action@90c37294538be80a558fd665531fcdc2b467b475 # v8.1.0
+      - uses: sbt/setup-sbt@93e926cbdb4a428e41b4ef754124ec82925ffdc2 # v1.1.23
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - uses: scalacenter/sbt-dependency-submission@f43202114d7522a4b233e052f82c2eea8d658134 # v3.2.1
+      - name: dependency-review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        if: github.event_name == 'pull_request'
+        with:
+          fail-on-severity: critical
+          show-openssf-scorecard: false
+      - name: git-secrets
+        uses: nationalarchives/tdr-github-actions/.github/actions/run-git-secrets@8f8b90556173b43554c22d6b5f192fe9f26ad8ab # v0.0.36
+      - name: determine-failure-message
+        if: failure()
+        id: failure-msg
+        run: |
+          if [[ "${DEPENDENCY_REVIEW_OUTCOME}" == "failure" ]]; then
+            echo "message=:warning: Critical dependency vulnerabilities found in ${REPO_NAME}" >> $GITHUB_OUTPUT
+          elif [[ "${GIT_SECRETS_OUTCOME}" == "failure" ]]; then
+            echo "message=:warning: Secrets found in repository ${REPO_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "message=:warning: Build failed in repository ${REPO_NAME}" >> $GITHUB_OUTPUT
+          fi
+        env:
+          REPO_NAME: tdr-transfer-service
+          DEPENDENCY_REVIEW_OUTCOME: ${{ steps.dependency-review.outcome }}
+          GIT_SECRETS_OUTCOME: ${{ steps.git-secrets.outcome }}
+      - uses: nationalarchives/tdr-github-actions/.github/actions/slack-send@8f8b90556173b43554c22d6b5f192fe9f26ad8ab # v0.0.36
+        if: failure()
+        with:
+          message: ${{ steps.failure-msg.outputs.message }}
+          slack-url: ${{ secrets.SLACK_WEBHOOK }}
+      - name: Run tests
+        run: sbt scalafmtCheckAll test
