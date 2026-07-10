@@ -1,32 +1,32 @@
 import sbt.*
 
 object Dependencies {
-  private val http4sVersion = "0.23.34"
+  private val http4sVersion = "0.23.36"
   private val mockitoVersion = "2.2.1"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.21"
-  private val awsUtilsVersion = "0.1.336"
-  private val tdrUtilsVersion = "0.0.33"
+  private val tapirVersion = "1.13.26"
+  private val awsUtilsVersion = "0.1.338"
+  private val tdrUtilsVersion = "0.0.37"
   private lazy val bouncyCastleVersion = "1.84"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.291"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.294"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.477"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.302"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.479"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.305"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 
-  lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.9"
+  lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.10"
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.20.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.34"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.38"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.133"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.137"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
