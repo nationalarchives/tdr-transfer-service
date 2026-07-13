@@ -138,7 +138,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
     when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, CompletedValue)).thenReturn(IO(Some(1)))
 
     val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
-//    val details = LoadCompletion(2, 2)
     val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), noErrors)
 
     val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()

@@ -34,7 +34,7 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
   }
 
-  private def getResponse(transferId: UUID, clientSideErrors: Boolean, dataLoadErrors: Boolean, state: TransferState): LoadCompletionResponse = {
+  private def setResponse(transferId: UUID, clientSideErrors: Boolean, dataLoadErrors: Boolean, state: TransferState): LoadCompletionResponse = {
     val loadSuccess: Boolean = TransferStateChecker.canProcessLoad(state) && !dataLoadErrors && !clientSideErrors
     LoadCompletionResponse(transferId, loadSuccess)
   }
@@ -45,7 +45,7 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       transferState <- graphQlApiService.consignmentState(token, transferId)
       clientSideErrors = hasClientSideErrors(transferId, event.loadCompletionDetails)
       dataLoadErrors = hasDataLoadErrors(event.loadCompletionDetails)
-      loadCompletionResponse = getResponse(transferId, clientSideErrors, dataLoadErrors, transferState)
+      loadCompletionResponse = setResponse(transferId, clientSideErrors, dataLoadErrors, transferState)
       uploadStatus =
         if (loadCompletionResponse.success) { CompletedValue }
         else FailedValue
