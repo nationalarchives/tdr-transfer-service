@@ -12,6 +12,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
+import uk.gov.nationalarchives.tdr.transfer.service.services.TransferStateChecker.TransferState
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import java.util.UUID
@@ -80,7 +81,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val mockGraphQlApiService = mock[GraphQlApiService]
 
     when(mockGraphQlApiService.existingConsignment(mockToken, consignmentId)).thenReturn(IO(existingConsignmentSummary))
-    when(mockGraphQlApiService.consignmentState(mockToken, consignmentId)).thenReturn(IO(status))
+    when(mockGraphQlApiService.consignmentState(mockToken, consignmentId)).thenReturn(IO(TransferState(List(uploadStatus))))
     when(mockToken.bearerAccessToken).thenReturn(mockBearerAccessToken)
     when(mockToken.bearerAccessToken.getValue).thenReturn("some value")
     when(mockToken.userId).thenReturn(userId)

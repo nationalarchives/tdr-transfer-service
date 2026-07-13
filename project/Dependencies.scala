@@ -4,12 +4,12 @@ object Dependencies {
   private val http4sVersion = "0.23.36"
   private val mockitoVersion = "2.2.1"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.26"
+  private val tapirVersion = "1.13.27"
   private val awsUtilsVersion = "0.1.338"
   private val tdrUtilsVersion = "0.0.37"
   private lazy val bouncyCastleVersion = "1.84"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.294"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.295"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 

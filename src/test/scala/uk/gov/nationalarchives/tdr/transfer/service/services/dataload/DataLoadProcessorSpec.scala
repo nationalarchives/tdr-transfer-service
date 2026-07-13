@@ -1,50 +1,128 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
+import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor7}
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, UploadType}
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues._
 import uk.gov.nationalarchives.tdr.keycloak.Token
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
+import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
+import uk.gov.nationalarchives.tdr.transfer.service.services.TransferStateChecker.TransferState
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
 import uk.gov.nationalarchives.tdr.transfer.service.{ApplicationConfig, BaseSpec}
 
+import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import java.util.UUID
 
-class DataLoadProcessorSpec extends BaseSpec {
+class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
+  private val someDateTime: ZonedDateTime = ZonedDateTime.of(LocalDateTime.of(2022, 3, 10, 1, 0), ZoneId.systemDefault())
   val userId: UUID = UUID.randomUUID()
   val transferId: UUID = UUID.fromString("6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
   val mockKeycloakToken: Token = mock[Token]
   val mockConfig: ApplicationConfig.Configuration = mock[ApplicationConfig.Configuration]
   val mockS3Config: ApplicationConfig.S3 = mock[ApplicationConfig.S3]
   val mockTransferConfig: ApplicationConfig.TransferConfiguration = mock[ApplicationConfig.TransferConfiguration]
+  val mockGraphQlApiService: GraphQlApiService = mock[GraphQlApiService]
 
-  "'trigger' function" should "send aggregate processing SQS event message and return the correct result when no errors" in {
-    val mockMessageService = mock[Messages]
-    val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
-    val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
+  val noErrors = LoadCompletion(2, 2)
+  val dataLoadErrorsOnly = LoadCompletion(2, 1)
+  val clientSideErrorsOnly = LoadCompletion(2, 2, Set(LoadError("client side error")))
+  val allErrors = LoadCompletion(2, 1, Set(LoadError("client side error")))
 
-    mockResponses()
+  val correctTransferState = TransferState(
+    List(
+      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
+      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, InProgressValue.value, someDateTime, None)
+    )
+  )
+  val incorrectUploadState = TransferState(
+    List(
+      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, CompletedValue.value, someDateTime, None),
+      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, InProgressValue.value, someDateTime, None)
+    )
+  )
+  val incorrectClientSideChecksState = TransferState(
+    List(
+      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
+      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
+    )
+  )
+  val incorrectTransferState = TransferState(
+    List(
+      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, CompletedValue.value, someDateTime, None),
+      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
+    )
+  )
+  val successResponse = LoadCompletionResponse(transferId, success = true)
+  val noSuccessResponse = LoadCompletionResponse(transferId, success = false)
 
-    when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
-      .thenReturn(SendMessageResponse.builder().build())
+  val scenarios: TableFor7[String, TransferState, LoadCompletion, Boolean, LoadCompletionResponse, StatusValue, Int] = Table(
+    (
+      "Scenario",
+      "Transfer State",
+      "Load Completion Details",
+      "Expected Data Load Errors",
+      "Expected Load Completion Response",
+      "Updated Upload Status Value",
+      "Expected Number of SNS Messages"
+    ),
+    ("transfer state correct and no errors", correctTransferState, noErrors, false, successResponse, CompletedValue, 1),
+    ("transfer state correct with data load errors", correctTransferState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("transfer state correct with client side errors", correctTransferState, clientSideErrorsOnly, false, noSuccessResponse, FailedValue, 0),
+    ("transfer state correct with client side and data load errors", correctTransferState, allErrors, true, noSuccessResponse, FailedValue, 0),
+    ("Upload state not correct and no errors", incorrectUploadState, noErrors, true, noSuccessResponse, FailedValue, 1),
+    ("Upload state not correct with client side errors", incorrectUploadState, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
+    ("Upload state not correct with data load errors", incorrectUploadState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("Upload state not correct with client side errors and data load errors", incorrectUploadState, allErrors, true, noSuccessResponse, FailedValue, 0),
+    ("Client Side Checks state not in progress and no errors", incorrectClientSideChecksState, noErrors, true, noSuccessResponse, FailedValue, 1),
+    ("Client Side Checks state not in progress with client side errors", incorrectClientSideChecksState, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
+    ("Client Side Checks state not in progress with data load errors", incorrectClientSideChecksState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("Client Side Checks state not in progress with client side and data load errors", incorrectClientSideChecksState, allErrors, true, noSuccessResponse, FailedValue, 0),
+    ("transfer state incorrect and no errors", incorrectTransferState, noErrors, true, noSuccessResponse, FailedValue, 1),
+    ("transfer state incorrect with data load errors", incorrectTransferState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("transfer state incorrect with client side errors", incorrectTransferState, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
+    ("transfer state incorrect with client side and data load errors", incorrectTransferState, allErrors, true, noSuccessResponse, FailedValue, 0)
+  )
 
-    val processor = new DataLoadProcessor(mockMessageService, mockConfig)
-    val details = LoadCompletion(2, 2)
-    val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), details)
+  forAll(scenarios) { (scenario, transferState, loadCompletionDetails, expectedDataLoadErrors, expectedLoadResponse, expectedUploadStatusValue, expectedNumberSnsMessages) =>
+    {
+      "'trigger' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
+        val mockMessageService = mock[Messages]
+        val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
+        val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
 
-    val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
-    result.transferId shouldBe transferId
-    result.success shouldBe true
+        mockResponses()
+        when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
+          .thenReturn(SendMessageResponse.builder().build())
+        when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferState))
+        when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, expectedUploadStatusValue)).thenReturn(IO(Some(1)))
 
-    transferIdArgumentCaptor.getValue shouldBe transferId
-    eventArgumentCaptor.getValue.dataLoadErrors shouldBe false
-    eventArgumentCaptor.getValue.metadataSourceObjectPrefix shouldBe s"$userId/sharepoint/$transferId/metadata"
-    eventArgumentCaptor.getValue.metadataSourceBucket shouldBe "source-bucket"
-    eventArgumentCaptor.getValue.ignoreSiteName shouldBe false
+        val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
+        val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), loadCompletionDetails)
+
+        val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
+        result.transferId shouldBe expectedLoadResponse.transferId
+        result.success shouldBe expectedLoadResponse.success
+
+        verify(mockMessageService, times(expectedNumberSnsMessages)).sendAggregateProcessingEventMessage(any[UUID], any[AggregateProcessingEvent])
+
+        if (expectedNumberSnsMessages > 0) {
+          transferIdArgumentCaptor.getValue shouldBe transferId
+          eventArgumentCaptor.getValue.dataLoadErrors shouldBe expectedDataLoadErrors
+          eventArgumentCaptor.getValue.metadataSourceObjectPrefix shouldBe s"$userId/sharepoint/$transferId/metadata"
+          eventArgumentCaptor.getValue.metadataSourceBucket shouldBe "source-bucket"
+          eventArgumentCaptor.getValue.ignoreSiteName shouldBe false
+        }
+      }
+    }
   }
 
   "'trigger' function" should "send aggregate processing SQS event message and return the correct result when ignore site name" in {
@@ -56,10 +134,12 @@ class DataLoadProcessorSpec extends BaseSpec {
 
     when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
       .thenReturn(SendMessageResponse.builder().build())
+    when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(correctTransferState))
+    when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, CompletedValue)).thenReturn(IO(Some(1)))
 
-    val processor = new DataLoadProcessor(mockMessageService, mockConfig)
-    val details = LoadCompletion(2, 2)
-    val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), details)
+    val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
+//    val details = LoadCompletion(2, 2)
+    val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), noErrors)
 
     val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
     result.transferId shouldBe transferId
@@ -70,46 +150,6 @@ class DataLoadProcessorSpec extends BaseSpec {
     eventArgumentCaptor.getValue.metadataSourceObjectPrefix shouldBe s"$userId/sharepoint/$transferId/metadata"
     eventArgumentCaptor.getValue.metadataSourceBucket shouldBe "source-bucket"
     eventArgumentCaptor.getValue.ignoreSiteName shouldBe true
-  }
-
-  "'trigger' function" should "send aggregate processing SQS event message and return the correct result when data load errors present" in {
-    val mockMessageService = mock[Messages]
-    val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
-    val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
-
-    mockResponses()
-
-    when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
-      .thenReturn(SendMessageResponse.builder().build())
-
-    val processor = new DataLoadProcessor(mockMessageService, mockConfig)
-    val details = LoadCompletion(2, 1)
-    val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), details)
-
-    val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
-    result.transferId shouldBe transferId
-    result.success shouldBe false
-
-    transferIdArgumentCaptor.getValue shouldBe transferId
-    eventArgumentCaptor.getValue.dataLoadErrors shouldBe true
-    eventArgumentCaptor.getValue.metadataSourceObjectPrefix shouldBe s"$userId/sharepoint/$transferId/metadata"
-    eventArgumentCaptor.getValue.metadataSourceBucket shouldBe "source-bucket"
-  }
-
-  "'trigger' function" should "not send aggregate processing SQS event message and return the correct result when client side errors present" in {
-    val mockMessageService = mock[Messages]
-
-    mockResponses()
-
-    val processor = new DataLoadProcessor(mockMessageService, mockConfig)
-    val details = LoadCompletion(2, 2, Set(LoadError("client side error message")))
-    val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), details)
-
-    val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
-    result.transferId shouldBe transferId
-    result.success shouldBe false
-
-    verify(mockMessageService, times(0)).sendAggregateProcessingEventMessage(any[UUID], any[AggregateProcessingEvent])
   }
 
   private def mockResponses(ignoreSiteNameBodies: String = ""): Unit = {

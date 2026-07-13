@@ -29,7 +29,7 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
 
   val graphQlPath = "/graphql"
 
-  def graphqlOkJson(uploadStatusValue: String = "InProgress", consignmentExists: Boolean = true): Unit = {
+  def graphqlOkJson(uploadStatusValue: String = "InProgress", clientChecksStatusValue: String = "InProgress", consignmentExists: Boolean = true): Unit = {
     wiremockGraphqlServer.stubFor(
       post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("getConsignment"))
@@ -45,7 +45,7 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
     wiremockGraphqlServer.stubFor(
       post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("getConsignmentStatus"))
-        .willReturn(okJson(uploadStatusResponse(uploadStatusValue)))
+        .willReturn(okJson(consignmentStatusesResponse(uploadStatusValue, clientChecksStatusValue)))
     )
 
     wiremockGraphqlServer.stubFor(
@@ -65,6 +65,12 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
         .withRequestBody(containing("startUpload"))
         .willReturn(okJson(fromResource(s"json/start_upload_response.json").mkString))
     )
+
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing("updateConsignmentStatus"))
+        .willReturn(okJson(fromResource(s"json/update_consignment_status_response.json").mkString))
+    )
   }
 
   def getConsignmentResponse: String = {
@@ -80,7 +86,7 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
          |}""".stripMargin
   }
 
-  private def uploadStatusResponse(uploadStatusValue: String): String = {
+  private def consignmentStatusesResponse(uploadStatusValue: String, clientChecksStatusValue: String): String = {
     s"""
        | {
        |  "data": {
@@ -91,6 +97,13 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
        |          "consignmentId": "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e",
        |          "statusType": "Upload",
        |          "value": "$uploadStatusValue",
+       |          "createdDatetime": "2020-01-01T09:00:00Z"
+       |        },
+       |        {
+       |          "consignmentStatusId": "31657058-a8f7-4b1a-b2d7-529d212a7718",
+       |          "consignmentId": "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e",
+       |          "statusType": "ClientChecks",
+       |          "value": "$clientChecksStatusValue",
        |          "createdDatetime": "2020-01-01T09:00:00Z"
        |        }
        |      ]
