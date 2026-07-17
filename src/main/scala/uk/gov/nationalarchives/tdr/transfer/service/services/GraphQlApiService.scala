@@ -6,6 +6,7 @@ import graphql.codegen.AddConsignment.{addConsignment => ac}
 import graphql.codegen.AddOrUpdateConsignmenetMetadata.{addOrUpdateConsignmentMetadata => acm}
 import graphql.codegen.GetConsignment.getConsignment.GetConsignment
 import graphql.codegen.GetConsignment.{getConsignment => gc}
+import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import graphql.codegen.GetConsignmentStatus.{getConsignmentStatus => getStatus}
 import graphql.codegen.GetConsignmentSummary.{getConsignmentSummary => getSummary}
 import graphql.codegen.StartUpload.{startUpload => su}
@@ -19,7 +20,6 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.StatusValu
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
-import uk.gov.nationalarchives.tdr.transfer.service.services.TransferStateChecker.TransferState
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -55,14 +55,11 @@ class GraphQlApiService(
     } yield summaryData.getConsignment.get
   }
 
-  def consignmentState(token: Token, consignmentId: UUID): IO[TransferState] = {
+  def consignmentState(token: Token, consignmentId: UUID): IO[List[ConsignmentStatuses]] = {
     for {
-      consignmentStatuses <- consignmentStateClient.getResult(token.bearerAccessToken, getStatus.document, getStatus.Variables(consignmentId).some).toIO
-      statusesData <- IO.fromOption(consignmentStatuses.data)(new RuntimeException(s"Failed to retrieve state for consignment: $consignmentId"))
-    } yield {
-      val a = statusesData.getConsignment
-      TransferState(statusesData.getConsignment.get.consignmentStatuses)
-    }
+      consignmentState <- consignmentStateClient.getResult(token.bearerAccessToken, getStatus.document, getStatus.Variables(consignmentId).some).toIO
+      stateData <- IO.fromOption(consignmentState.data)(new RuntimeException(s"Failed to retrieve state for consignment: $consignmentId"))
+    } yield stateData.getConsignment.get.consignmentStatuses
   }
 
   def addConsignment(token: Token, sourceSystem: SourceSystem): IO[AddConsignment.addConsignment.AddConsignment] = {

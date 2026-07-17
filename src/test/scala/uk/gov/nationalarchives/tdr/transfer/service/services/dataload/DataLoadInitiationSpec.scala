@@ -5,14 +5,12 @@ import cats.effect.unsafe.implicits.global
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken
 import graphql.codegen.AddConsignment.addConsignment.AddConsignment
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
-import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.{GetConsignment => consignmentStatus}
 import graphql.codegen.GetConsignmentSummary.getConsignmentSummary.{GetConsignment => consignmentSummary}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.TransferStateChecker.TransferState
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import java.util.UUID
@@ -77,11 +75,10 @@ class DataLoadInitiationSpec extends BaseSpec {
   "'initiateConsignmentLoad'" should "not create existing consignment when consignment exists" in {
     val existingConsignmentSummary = consignmentSummary(Some("series-name"), Some("transferring-body-name"), 1, "existing-consignment-ref")
     val uploadStatus = ConsignmentStatuses(UUID.randomUUID(), consignmentId, "Upload", "InProgress", someDateTime, None)
-    val status = consignmentStatus(Some(UUID.randomUUID()), Some("series-name"), List(uploadStatus))
     val mockGraphQlApiService = mock[GraphQlApiService]
 
     when(mockGraphQlApiService.existingConsignment(mockToken, consignmentId)).thenReturn(IO(existingConsignmentSummary))
-    when(mockGraphQlApiService.consignmentState(mockToken, consignmentId)).thenReturn(IO(TransferState(List(uploadStatus))))
+    when(mockGraphQlApiService.consignmentState(mockToken, consignmentId)).thenReturn(IO(List(uploadStatus)))
     when(mockToken.bearerAccessToken).thenReturn(mockBearerAccessToken)
     when(mockToken.bearerAccessToken.getValue).thenReturn("some value")
     when(mockToken.userId).thenReturn(userId)

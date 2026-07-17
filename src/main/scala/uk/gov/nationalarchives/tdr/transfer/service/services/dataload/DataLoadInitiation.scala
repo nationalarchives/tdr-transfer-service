@@ -10,7 +10,7 @@ import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
-import uk.gov.nationalarchives.tdr.transfer.service.services.{GraphQlApiService, TransferStateChecker}
+import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{s3Config, transferConfigurationConfig}
 
 import java.util.UUID
@@ -19,9 +19,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[LoadDetails] = {
     if (existingTransferId.nonEmpty) {
       for {
-        state <- graphQlApiService.consignmentState(token, existingTransferId.get)
+        statuses <- graphQlApiService.consignmentState(token, existingTransferId.get)
         loadDetails <-
-          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, TransferStateChecker.canInitiateLoad(state))
+          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUpload(statuses))
       } yield loadDetails
     } else {
       logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
@@ -42,6 +42,11 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     val metadataS3Bucket =
       AWSS3LoadDestination(s"$awsRegion", s"${s3Config.metadataUploadBucketArn}", s"${s3Config.metadataUploadBucketName}", s"$s3KeyPrefix/${Metadata.id}")
     IO(LoadDetails(transferId, transferReference, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
+  }
+
+  private def canUpload(currentState: List[ConsignmentStatuses]): Boolean = {
+    val uploadState: Option[ConsignmentStatuses] = currentState.find(_.statusType == UploadType.id)
+    uploadState.nonEmpty && uploadState.get.value == InProgressValue.value
   }
 
   private def loadDetailsForExistingTransfer(token: Token, consignmentId: UUID, sourceSystem: SourceSystem, canUpload: Boolean) = {

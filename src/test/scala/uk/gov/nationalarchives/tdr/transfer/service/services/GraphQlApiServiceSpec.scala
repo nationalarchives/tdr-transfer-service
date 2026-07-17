@@ -22,7 +22,6 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedV
 import uk.gov.nationalarchives.tdr.keycloak.{KeycloakUtils, TdrKeycloakDeployment, Token}
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
-import uk.gov.nationalarchives.tdr.transfer.service.services.TransferStateChecker.TransferState
 import uk.gov.nationalarchives.tdr.{GraphQLClient, GraphQlResponse}
 
 import java.util.UUID
@@ -124,7 +123,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
         .consignmentState(mockKeycloakToken, UUID.fromString(consignmentId))
         .unsafeRunSync()
 
-    response shouldEqual TransferState(List(mockConsignmentStatus))
+    response shouldEqual List(mockConsignmentStatus)
   }
 
   "'consignmentState'" should "throw an exception when consignment state does not exist" in {

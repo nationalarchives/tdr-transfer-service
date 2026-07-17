@@ -4,7 +4,7 @@ import cats.effect.IO
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import io.circe._
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
-import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue}
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue, InProgressValue}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
@@ -16,14 +16,14 @@ class TransferErrors(graphQlApiService: GraphQlApiService, s3Service: S3Service)
 
   def getTransferErrors(token: Token, existingTransferId: UUID, objectPrefix: String): IO[TransferErrorsResults] = {
     for {
-      consignmentState <- graphQlApiService.consignmentState(token, existingTransferId)
-      uploadCompleted = isUploadFinished(consignmentState.statuses)
+      statuses <- graphQlApiService.consignmentState(token, existingTransferId)
+      uploadCompleted = isUploadFinished(statuses)
       errorJsons <- if (uploadCompleted) s3Service.getAllJsonObjectsWithPrefix(objectPrefix, appConfig.s3.transferErrorsBucketName) else IO.pure(List.empty[Json])
     } yield TransferErrorsResults(uploadCompleted, errorJsons, existingTransferId)
   }
 
   private def isUploadFinished(state: List[ConsignmentStatuses]): Boolean =
-    state.find(_.statusType == UploadType.id).exists(s => s.value == CompletedValue.value || s.value == FailedValue.value)
+    state.find(_.statusType == UploadType.id).exists(s => s.value != InProgressValue.value)
 }
 
 object TransferErrors {

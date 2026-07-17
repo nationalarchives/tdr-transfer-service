@@ -13,7 +13,6 @@ import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.TransferStateChecker.TransferState
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
@@ -37,34 +36,30 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
   val clientSideErrorsOnly = LoadCompletion(2, 2, Set(LoadError("client side error")))
   val allErrors = LoadCompletion(2, 1, Set(LoadError("client side error")))
 
-  val correctTransferState = TransferState(
-    List(
-      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
-      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, InProgressValue.value, someDateTime, None)
-    )
+  private val correctTransferStatuses = List(
+    ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
+    ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, InProgressValue.value, someDateTime, None)
   )
-  val incorrectUploadState = TransferState(
-    List(
-      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, CompletedValue.value, someDateTime, None),
-      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, InProgressValue.value, someDateTime, None)
-    )
+
+  private val incorrectUploadStatus = List(
+    ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, CompletedValue.value, someDateTime, None),
+    ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, InProgressValue.value, someDateTime, None)
   )
-  val incorrectClientSideChecksState = TransferState(
-    List(
-      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
-      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
-    )
+
+  private val incorrectClientSideChecksStatus = List(
+    ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
+    ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
   )
-  val incorrectTransferState = TransferState(
-    List(
-      ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, CompletedValue.value, someDateTime, None),
-      ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
-    )
+
+  private val incorrectTransferStatuses = List(
+    ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, CompletedValue.value, someDateTime, None),
+    ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
   )
+
   val successResponse = LoadCompletionResponse(transferId, success = true)
   val noSuccessResponse = LoadCompletionResponse(transferId, success = false)
 
-  val scenarios: TableFor7[String, TransferState, LoadCompletion, Boolean, LoadCompletionResponse, StatusValue, Int] = Table(
+  val scenarios: TableFor7[String, List[ConsignmentStatuses], LoadCompletion, Boolean, LoadCompletionResponse, StatusValue, Int] = Table(
     (
       "Scenario",
       "Transfer State",
@@ -74,25 +69,25 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       "Updated Upload Status Value",
       "Expected Number of SNS Messages"
     ),
-    ("transfer state correct and no errors", correctTransferState, noErrors, false, successResponse, CompletedValue, 1),
-    ("transfer state correct with data load errors", correctTransferState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("transfer state correct with client side errors", correctTransferState, clientSideErrorsOnly, false, noSuccessResponse, FailedValue, 0),
-    ("transfer state correct with client side and data load errors", correctTransferState, allErrors, true, noSuccessResponse, FailedValue, 0),
-    ("Upload state not correct and no errors", incorrectUploadState, noErrors, true, noSuccessResponse, FailedValue, 1),
-    ("Upload state not correct with client side errors", incorrectUploadState, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
-    ("Upload state not correct with data load errors", incorrectUploadState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("Upload state not correct with client side errors and data load errors", incorrectUploadState, allErrors, true, noSuccessResponse, FailedValue, 0),
-    ("Client Side Checks state not in progress and no errors", incorrectClientSideChecksState, noErrors, true, noSuccessResponse, FailedValue, 1),
-    ("Client Side Checks state not in progress with client side errors", incorrectClientSideChecksState, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
-    ("Client Side Checks state not in progress with data load errors", incorrectClientSideChecksState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("Client Side Checks state not in progress with client side and data load errors", incorrectClientSideChecksState, allErrors, true, noSuccessResponse, FailedValue, 0),
-    ("transfer state incorrect and no errors", incorrectTransferState, noErrors, true, noSuccessResponse, FailedValue, 1),
-    ("transfer state incorrect with data load errors", incorrectTransferState, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("transfer state incorrect with client side errors", incorrectTransferState, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
-    ("transfer state incorrect with client side and data load errors", incorrectTransferState, allErrors, true, noSuccessResponse, FailedValue, 0)
+    ("transfer state correct and no errors", correctTransferStatuses, noErrors, false, successResponse, CompletedValue, 1),
+    ("transfer state correct with data load errors", correctTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("transfer state correct with client side errors", correctTransferStatuses, clientSideErrorsOnly, false, noSuccessResponse, FailedValue, 0),
+    ("transfer state correct with client side and data load errors", correctTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0),
+    ("Upload state not correct and no errors", incorrectUploadStatus, noErrors, true, noSuccessResponse, FailedValue, 1),
+    ("Upload state not correct with client side errors", incorrectUploadStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
+    ("Upload state not correct with data load errors", incorrectUploadStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("Upload state not correct with client side errors and data load errors", incorrectUploadStatus, allErrors, true, noSuccessResponse, FailedValue, 0),
+    ("Client Side Checks state not in progress and no errors", incorrectClientSideChecksStatus, noErrors, true, noSuccessResponse, FailedValue, 1),
+    ("Client Side Checks state not in progress with client side errors", incorrectClientSideChecksStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
+    ("Client Side Checks state not in progress with data load errors", incorrectClientSideChecksStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("Client Side Checks state not in progress with client side and data load errors", incorrectClientSideChecksStatus, allErrors, true, noSuccessResponse, FailedValue, 0),
+    ("transfer state incorrect and no errors", incorrectTransferStatuses, noErrors, true, noSuccessResponse, FailedValue, 1),
+    ("transfer state incorrect with data load errors", incorrectTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
+    ("transfer state incorrect with client side errors", incorrectTransferStatuses, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
+    ("transfer state incorrect with client side and data load errors", incorrectTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0)
   )
 
-  forAll(scenarios) { (scenario, transferState, loadCompletionDetails, expectedDataLoadErrors, expectedLoadResponse, expectedUploadStatusValue, expectedNumberSnsMessages) =>
+  forAll(scenarios) { (scenario, transferStatuses, loadCompletionDetails, expectedDataLoadErrors, expectedLoadResponse, expectedUploadStatusValue, expectedNumberSnsMessages) =>
     {
       "'trigger' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
         val mockMessageService = mock[Messages]
@@ -102,7 +97,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
         mockResponses()
         when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
           .thenReturn(SendMessageResponse.builder().build())
-        when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferState))
+        when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferStatuses))
         when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, expectedUploadStatusValue)).thenReturn(IO(Some(1)))
 
         val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
@@ -134,7 +129,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
 
     when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
       .thenReturn(SendMessageResponse.builder().build())
-    when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(correctTransferState))
+    when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(correctTransferStatuses))
     when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, CompletedValue)).thenReturn(IO(Some(1)))
 
     val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
