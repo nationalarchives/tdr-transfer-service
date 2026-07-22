@@ -5,9 +5,9 @@ import cats.effect.unsafe.implicits.global
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor7}
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor9}
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
-import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, UploadType}
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, StatusType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues._
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadError}
@@ -59,7 +59,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
   val successResponse = LoadCompletionResponse(transferId, success = true)
   val noSuccessResponse = LoadCompletionResponse(transferId, success = false)
 
-  val scenarios: TableFor7[String, List[ConsignmentStatuses], LoadCompletion, Boolean, LoadCompletionResponse, StatusValue, Int] = Table(
+  val scenarios: TableFor9[String, List[ConsignmentStatuses], LoadCompletion, Boolean, LoadCompletionResponse, StatusValue, Int, Int, Int] = Table(
     (
       "Scenario",
       "Transfer State",
@@ -67,57 +67,73 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       "Expected Data Load Errors",
       "Expected Load Completion Response",
       "Updated Upload Status Value",
-      "Expected Number of SNS Messages"
+      "Expected Number of SNS Messages",
+      "Expected Number of Consignment State Calls",
+      "Expected Number of Update State Calls"
     ),
-    ("transfer state correct and no errors", correctTransferStatuses, noErrors, false, successResponse, CompletedValue, 1),
-    ("transfer state correct with data load errors", correctTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("transfer state correct with client side errors", correctTransferStatuses, clientSideErrorsOnly, false, noSuccessResponse, FailedValue, 0),
-    ("transfer state correct with client side and data load errors", correctTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0),
-    ("Upload state not correct and no errors", incorrectUploadStatus, noErrors, true, noSuccessResponse, FailedValue, 1),
-    ("Upload state not correct with client side errors", incorrectUploadStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
-    ("Upload state not correct with data load errors", incorrectUploadStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("Upload state not correct with client side errors and data load errors", incorrectUploadStatus, allErrors, true, noSuccessResponse, FailedValue, 0),
-    ("Client Side Checks state not in progress and no errors", incorrectClientSideChecksStatus, noErrors, true, noSuccessResponse, FailedValue, 1),
-    ("Client Side Checks state not in progress with client side errors", incorrectClientSideChecksStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
-    ("Client Side Checks state not in progress with data load errors", incorrectClientSideChecksStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("Client Side Checks state not in progress with client side and data load errors", incorrectClientSideChecksStatus, allErrors, true, noSuccessResponse, FailedValue, 0),
-    ("transfer state incorrect and no errors", incorrectTransferStatuses, noErrors, true, noSuccessResponse, FailedValue, 1),
-    ("transfer state incorrect with data load errors", incorrectTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1),
-    ("transfer state incorrect with client side errors", incorrectTransferStatuses, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0),
-    ("transfer state incorrect with client side and data load errors", incorrectTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0)
+    ("transfer state correct and no errors", correctTransferStatuses, noErrors, false, successResponse, CompletedValue, 1, 1, 1),
+    ("transfer state correct with data load errors", correctTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 1),
+    ("transfer state correct with client side errors", correctTransferStatuses, clientSideErrorsOnly, false, noSuccessResponse, FailedValue, 0, 1, 1),
+    ("transfer state correct with client side and data load errors", correctTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 1),
+    ("upload state not correct and no errors", incorrectUploadStatus, noErrors, true, noSuccessResponse, FailedValue, 1, 1, 0),
+    ("upload state not correct with client side errors", incorrectUploadStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0, 1, 0),
+    ("upload state not correct with data load errors", incorrectUploadStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 0),
+    ("upload state not correct with client side errors and data load errors", incorrectUploadStatus, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 0),
+    ("client side checks state not in progress and no errors", incorrectClientSideChecksStatus, noErrors, true, noSuccessResponse, FailedValue, 1, 1, 0),
+    ("client side checks state not in progress with client side errors", incorrectClientSideChecksStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0, 1, 0),
+    ("client side checks state not in progress with data load errors", incorrectClientSideChecksStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 0),
+    ("client side checks state not in progress with client side and data load errors", incorrectClientSideChecksStatus, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 0),
+    ("transfer state incorrect and no errors", incorrectTransferStatuses, noErrors, true, noSuccessResponse, FailedValue, 1, 1, 0),
+    ("transfer state incorrect with data load errors", incorrectTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 0),
+    ("transfer state incorrect with client side errors", incorrectTransferStatuses, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0, 1, 0),
+    ("transfer state incorrect with client side and data load errors", incorrectTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 0)
   )
 
-  forAll(scenarios) { (scenario, transferStatuses, loadCompletionDetails, expectedDataLoadErrors, expectedLoadResponse, expectedUploadStatusValue, expectedNumberSnsMessages) =>
-    {
-      "'trigger' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
-        val mockMessageService = mock[Messages]
-        val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
-        val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
+  forAll(scenarios) {
+    (
+        scenario,
+        transferStatuses,
+        loadCompletionDetails,
+        expectedDataLoadErrors,
+        expectedLoadResponse,
+        expectedUploadStatusValue,
+        expectedNumberSnsMessages,
+        expectedNumberOfStateCalls,
+        expectedNumberOfUpdateStateCalls
+    ) =>
+      {
+        "'trigger' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
+          reset(mockGraphQlApiService)
+          val mockMessageService = mock[Messages]
+          val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
+          val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
 
-        mockResponses()
-        when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
-          .thenReturn(SendMessageResponse.builder().build())
-        when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferStatuses))
-        when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, expectedUploadStatusValue)).thenReturn(IO(Some(1)))
+          mockResponses()
+          when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
+            .thenReturn(SendMessageResponse.builder().build())
+          when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferStatuses))
+          when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, expectedUploadStatusValue)).thenReturn(IO(Some(1)))
 
-        val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
-        val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), loadCompletionDetails)
+          val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
+          val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), loadCompletionDetails)
 
-        val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
-        result.transferId shouldBe expectedLoadResponse.transferId
-        result.success shouldBe expectedLoadResponse.success
+          val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
+          result.transferId shouldBe expectedLoadResponse.transferId
+          result.success shouldBe expectedLoadResponse.success
 
-        verify(mockMessageService, times(expectedNumberSnsMessages)).sendAggregateProcessingEventMessage(any[UUID], any[AggregateProcessingEvent])
+          verify(mockMessageService, times(expectedNumberSnsMessages)).sendAggregateProcessingEventMessage(any[UUID], any[AggregateProcessingEvent])
+          verify(mockGraphQlApiService, times(expectedNumberOfStateCalls)).consignmentState(mockKeycloakToken, transferId)
+          verify(mockGraphQlApiService, times(expectedNumberOfUpdateStateCalls)).updateConsignmentStatus(any[Token], any[UUID], any[StatusType], any[StatusValue])
 
-        if (expectedNumberSnsMessages > 0) {
-          transferIdArgumentCaptor.getValue shouldBe transferId
-          eventArgumentCaptor.getValue.dataLoadErrors shouldBe expectedDataLoadErrors
-          eventArgumentCaptor.getValue.metadataSourceObjectPrefix shouldBe s"$userId/sharepoint/$transferId/metadata"
-          eventArgumentCaptor.getValue.metadataSourceBucket shouldBe "source-bucket"
-          eventArgumentCaptor.getValue.ignoreSiteName shouldBe false
+          if (expectedNumberSnsMessages > 0) {
+            transferIdArgumentCaptor.getValue shouldBe transferId
+            eventArgumentCaptor.getValue.dataLoadErrors shouldBe expectedDataLoadErrors
+            eventArgumentCaptor.getValue.metadataSourceObjectPrefix shouldBe s"$userId/sharepoint/$transferId/metadata"
+            eventArgumentCaptor.getValue.metadataSourceBucket shouldBe "source-bucket"
+            eventArgumentCaptor.getValue.ignoreSiteName shouldBe false
+          }
         }
       }
-    }
   }
 
   "'trigger' function" should "send aggregate processing SQS event message and return the correct result when ignore site name" in {

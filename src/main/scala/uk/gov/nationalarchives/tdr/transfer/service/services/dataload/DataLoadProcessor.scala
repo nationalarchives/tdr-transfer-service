@@ -62,7 +62,7 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       stateCorrect = isStateCorrect(transferId, statuses, uploadStatus)
       loadSuccess = stateCorrect && !dataLoadErrors && !clientSideErrors
       loadCompletionResponse = LoadCompletionResponse(transferId, loadSuccess)
-      _ <- graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus)
+      _ <- if (stateCorrect) graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) else IO.unit
       _ = if (!clientSideErrors) {
         sendProcessMessage(transferId, token, event.source, loadSuccess)
       }
