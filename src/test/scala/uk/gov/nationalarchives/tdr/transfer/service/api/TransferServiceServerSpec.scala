@@ -222,6 +222,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       val uri = generateUri(s"/load/$source/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
 
       s"'load/$source/complete' endpoint" should "return 200 with correct authorisation header" in {
+        graphqlOkJson()
         val loadCompletionBody = LoadCompletion(3, 3, Set(LoadError("There was an error"))).asJson
         val validToken = validUserToken()
         val bearer = CIString("Authorization")

@@ -32,6 +32,7 @@ lazy val root = (project in file("."))
       tapirSwaggerUI,
       tdrAuthorisation,
       tdrObjectKeyContext,
+      tdrStateControl,
       tdrStatuses
     ),
     dependencyOverrides ++= Seq(
