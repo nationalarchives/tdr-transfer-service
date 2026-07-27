@@ -4,6 +4,7 @@ import cats.effect.IO
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{okJson, post, urlEqualTo}
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.keycloak.OAuth2Constants
 import org.keycloak.admin.client.{Keycloak, KeycloakBuilder}
@@ -58,16 +59,16 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
   val keycloakGetRealmPath = "/auth/admin/realms/tdr"
   val keycloakGetUserPath: String = s"/auth/admin/realms/tdr/users/$keycloakUserId"
 
-  val keycloakAdminClient: Keycloak = KeycloakBuilder
+  val wiremockAuthServer = new WireMockServer(WireMockConfiguration.options().dynamicPort())
+
+  lazy val keycloakAdminClient: Keycloak = KeycloakBuilder
     .builder()
-    .serverUrl("http://localhost:9002/auth")
+    .serverUrl(s"http://localhost:${wiremockAuthServer.port()}/auth")
     .realm("tdr")
     .clientId("auth-client-id")
     .clientSecret("auth-client-secret")
     .grantType(OAuth2Constants.CLIENT_CREDENTIALS)
     .build()
-
-  val wiremockAuthServer = new WireMockServer(9002)
 
   def keycloakCreateAdminClient: Keycloak = keycloakAdminClient
 
