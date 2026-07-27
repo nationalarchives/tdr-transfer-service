@@ -13,12 +13,32 @@ class MessagesSpec extends BaseSpec {
     val mockSqsUtils = mock[SQSUtils]
     when(mockSqsConfig.aggregateProcessingQueueUrl).thenReturn("sqs/url")
     val service = new Messages(mockSqsUtils, mockSqsConfig)
-    val event = AggregateProcessingEvent("source-bucket", "metadata/source/prefix")
+    val event = AggregateProcessingEvent("source-bucket", "metadata/source/prefix", dataLoadErrors = true, ignoreSiteName = true, loadedNumberOfFiles = 2)
+    val expectedMessageString = """{
+                                  |  "metadataSourceBucket" : "source-bucket",
+                                  |  "metadataSourceObjectPrefix" : "metadata/source/prefix",
+                                  |  "dataLoadErrors" : true,
+                                  |  "ignoreSiteName" : true,
+                                  |  "loadedNumberOfFiles" : 2
+                                  |}""".stripMargin
+
+    service.sendAggregateProcessingEventMessage(transferId, event)
+    verify(mockSqsUtils).send("sqs/url", expectedMessageString)
+  }
+
+  "'sendAggregateProcessingEventMessage'" should "send a aggregate processing event message with default values" in {
+    val transferId = UUID.randomUUID()
+    val mockSqsConfig = mock[ApplicationConfig.Sqs]
+    val mockSqsUtils = mock[SQSUtils]
+    when(mockSqsConfig.aggregateProcessingQueueUrl).thenReturn("sqs/url")
+    val service = new Messages(mockSqsUtils, mockSqsConfig)
+    val event = AggregateProcessingEvent("source-bucket", "metadata/source/prefix", loadedNumberOfFiles = 2)
     val expectedMessageString = """{
                                   |  "metadataSourceBucket" : "source-bucket",
                                   |  "metadataSourceObjectPrefix" : "metadata/source/prefix",
                                   |  "dataLoadErrors" : false,
-                                  |  "ignoreSiteName" : false
+                                  |  "ignoreSiteName" : false,
+                                  |  "loadedNumberOfFiles" : 2
                                   |}""".stripMargin
 
     service.sendAggregateProcessingEventMessage(transferId, event)

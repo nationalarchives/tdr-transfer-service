@@ -4,12 +4,12 @@ object Dependencies {
   private val http4sVersion = "0.23.36"
   private val mockitoVersion = "2.2.3"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.28"
+  private val tapirVersion = "1.13.29"
   private val awsUtilsVersion = "0.1.338"
-  private val tdrUtilsVersion = "0.0.40"
+  private val tdrUtilsVersion = "0.0.41"
   private lazy val bouncyCastleVersion = "1.84"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.295"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.296"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
 
@@ -21,16 +21,16 @@ object Dependencies {
   lazy val http4sDsl = "org.http4s" %% "http4s-dsl" % http4sVersion
 
   lazy val keycloakAdminClient = "org.keycloak" % "keycloak-admin-client" % "26.0.11"
-  lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.20.0"
+  lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.21.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.5.38"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.0"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.137"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.138"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
-  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.3.0"
+  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.4.0"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
 
@@ -39,7 +39,7 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
   lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % tdrUtilsVersion
   lazy val tdrObjectKeyContext = "uk.gov.nationalarchives" %% "tdr-object-key-context" % tdrUtilsVersion
-  lazy val tdrStateControl = "uk.gov.nationalarchives" %% "tdr-state-control" % "0.0.40"
+  lazy val tdrStateControl = "uk.gov.nationalarchives" %% "tdr-state-control" % tdrUtilsVersion
   lazy val tdrStatuses = "uk.gov.nationalarchives" %% "tdr-statuses" % tdrUtilsVersion
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion

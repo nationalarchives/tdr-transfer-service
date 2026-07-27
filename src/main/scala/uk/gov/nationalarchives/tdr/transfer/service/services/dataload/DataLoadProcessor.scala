@@ -5,7 +5,7 @@ import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
-import uk.gov.nationalarchives.tdr.common.utils.statecontrol.CurrentState
+import uk.gov.nationalarchives.tdr.common.utils.statecontrol.{CurrentState, TransferState}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue, InProgressValue, StatusValue}
 import uk.gov.nationalarchives.tdr.keycloak.Token
@@ -16,7 +16,6 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
-import uk.gov.nationalarchives.tdr.common.utils.statecontrol.{CurrentState, StateChange, TransferState, ValidStateChange}
 
 import java.util.UUID
 
@@ -24,14 +23,14 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     logger: SelfAwareStructuredLogger[IO]
 ) {
 
-  private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean): SendMessageResponse = {
+  private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean, loadedNumberOfFiles: Int): SendMessageResponse = {
     val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/metadata"
     val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
     val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(";").toSet
     val ignoreSiteName = ignoreSiteNameBodies.contains(token.transferringBody.get)
 
     logger.info(s"Triggering aggregate processing for transfer: $transferId")
-    val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, !loadSuccess, ignoreSiteName = ignoreSiteName)
+    val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, !loadSuccess, ignoreSiteName = ignoreSiteName, loadedNumberOfFiles)
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
   }
 
@@ -54,8 +53,9 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     val transferId = event.transferId
     for {
       statuses <- graphQlApiService.consignmentState(token, transferId)
-      clientSideErrors = hasClientSideErrors(transferId, event.loadCompletionDetails)
-      dataLoadErrors = hasDataLoadErrors(event.loadCompletionDetails)
+      loadCompletionDetails = event.loadCompletionDetails
+      clientSideErrors = hasClientSideErrors(transferId, loadCompletionDetails)
+      dataLoadErrors = hasDataLoadErrors(loadCompletionDetails)
       uploadStatus =
         if (!dataLoadErrors && !clientSideErrors) { CompletedValue }
         else FailedValue
@@ -64,7 +64,7 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       loadCompletionResponse = LoadCompletionResponse(transferId, loadSuccess)
       _ <- if (stateCorrect) graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) else IO.unit
       _ = if (!clientSideErrors) {
-        sendProcessMessage(transferId, token, event.source, loadSuccess)
+        sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles)
       }
     } yield loadCompletionResponse
   }
