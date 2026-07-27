@@ -9,7 +9,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_build.yml@f318ce8a5d99c08b1235663f97fdb1b35844674e # v0.0.39
+    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_build.yml@2d29c2e83fbaba6554c1e0d8c0b45d2015d610b2 # v0.0.41
     with:
       java-version: '17'
       repo-name: tdr-transfer-service
@@ -28,7 +28,7 @@ jobs:
     permissions:
       actions: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - run: gh workflow run deploy.yml -f environment=intg -f to-deploy=$NEXT_VERSION

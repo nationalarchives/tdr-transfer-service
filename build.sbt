@@ -33,6 +33,10 @@ lazy val root = (project in file("."))
       tdrAuthorisation,
       tdrObjectKeyContext,
       tdrStatuses
+    ),
+    dependencyOverrides ++= Seq(
+      bcprov,
+      bcpkix
     )
   )
 
