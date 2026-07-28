@@ -6,7 +6,7 @@ object Dependencies {
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.29"
   private val awsUtilsVersion = "0.1.338"
-  private val tdrUtilsVersion = "0.0.40"
+  private val tdrUtilsVersion = "0.0.42"
   private lazy val bouncyCastleVersion = "1.85"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.296"
