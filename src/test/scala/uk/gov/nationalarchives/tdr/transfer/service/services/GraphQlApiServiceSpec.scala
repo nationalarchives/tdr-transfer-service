@@ -1,20 +1,24 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services
 
-import graphql.codegen.{GetConsignmentStatus, GetConsignmentSummary}
-import graphql.codegen.GetConsignmentSummary.{getConsignmentSummary => getSummary}
-import graphql.codegen.GetConsignment.{getConsignment => gc}
 import cats.effect.unsafe.implicits.global
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken
 import graphql.codegen.AddConsignment.addConsignment.AddConsignment
 import graphql.codegen.AddConsignment.{addConsignment => ac}
 import graphql.codegen.AddOrUpdateConsignmenetMetadata.{addOrUpdateConsignmentMetadata => acm}
+import graphql.codegen.GetConsignment.{getConsignment => gc}
+import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.{GetConsignment => consignmentStatus}
 import graphql.codegen.GetConsignmentStatus.{getConsignmentStatus => getStatus}
 import graphql.codegen.GetConsignmentSummary.getConsignmentSummary.{GetConsignment => consignmentSummary}
+import graphql.codegen.GetConsignmentSummary.{getConsignmentSummary => getSummary}
 import graphql.codegen.StartUpload.{startUpload => su}
+import graphql.codegen.UpdateConsignmentStatus.{updateConsignmentStatus => ucs}
+import graphql.codegen.{GetConsignmentStatus, GetConsignmentSummary}
 import org.mockito.ArgumentMatchers.any
 import sangria.ast.Document
 import sttp.client3.{Identity, SttpBackend}
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.{KeycloakUtils, TdrKeycloakDeployment, Token}
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
@@ -34,6 +38,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
   val existingConsignmentClient: GraphQLClient[getSummary.Data, getSummary.Variables] = mock[GraphQLClient[getSummary.Data, getSummary.Variables]]
   val consignmentStateClient: GraphQLClient[getStatus.Data, getStatus.Variables] = mock[GraphQLClient[getStatus.Data, getStatus.Variables]]
   val getConsignmentClient: GraphQLClient[gc.Data, gc.Variables] = mock[GraphQLClient[gc.Data, gc.Variables]]
+  val updateConsignmentStatusClient: GraphQLClient[ucs.Data, ucs.Variables] = mock[GraphQLClient[ucs.Data, ucs.Variables]]
   val consignmentId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
   val consignmentMetadataData = acm.AddOrUpdateConsignmentMetadata(UUID.fromString(consignmentId), "SourceSystem", SourceSystemEnum.SharePoint.toString)
@@ -85,7 +90,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
   "'existingConsignment'" should "return consignment details when consignment exists" in {
     val responseData = Some(getSummary.Data(Some(consignmentSummary(Some("series-name"), Some("transferring-body-name"), 1, "consignment-reference"))))
     mockKeycloak()
-    mockExistingConsigmentClient(responseData)
+    mockExistingConsignmentClient(responseData)
 
     val response =
       createService()
@@ -97,7 +102,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
 
   "'existingConsignment'" should "throw an exception when consignment does not exist" in {
     mockKeycloak()
-    mockExistingConsigmentClient(None)
+    mockExistingConsignmentClient(None)
 
     val exception = intercept[RuntimeException] {
       createService()
@@ -108,7 +113,8 @@ class GraphQlApiServiceSpec extends BaseSpec {
   }
 
   "'consignmentState'" should "return consignment state when consignment exists" in {
-    val responseData = Some(getStatus.Data(Some(consignmentStatus(Some(UUID.randomUUID()), Some("series-name"), Nil))))
+    val mockConsignmentStatus = mock[ConsignmentStatuses]
+    val responseData = Some(getStatus.Data(Some(consignmentStatus(Some(UUID.randomUUID()), Some("series-name"), List(mockConsignmentStatus)))))
     mockKeycloak()
     mockConsignmentStateClient(responseData)
 
@@ -117,7 +123,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
         .consignmentState(mockKeycloakToken, UUID.fromString(consignmentId))
         .unsafeRunSync()
 
-    response shouldBe responseData.get.getConsignment.get
+    response shouldEqual List(mockConsignmentStatus)
   }
 
   "'consignmentState'" should "throw an exception when consignment state does not exist" in {
@@ -195,9 +201,42 @@ class GraphQlApiServiceSpec extends BaseSpec {
     exception.getMessage should equal(s"Failed to retrieve consignment information for consignment: $consignmentId")
   }
 
+  "'updateConsignmentStatus'" should "update the provided status for a consignment" in {
+    val responseData = Some(ucs.Data(Some(1)))
+    mockKeycloak()
+    mockUpdateConsignmentStatusClient(responseData)
+
+    val response =
+      createService()
+        .updateConsignmentStatus(mockKeycloakToken, UUID.fromString(consignmentId), UploadType, CompletedValue)
+        .unsafeRunSync()
+
+    response.get shouldBe 1
+  }
+
+  "'updateConsignmentStatus'" should "throw an exception when update fails" in {
+    mockKeycloak()
+    mockUpdateConsignmentStatusClient(None)
+
+    val exception = intercept[RuntimeException] {
+      createService()
+        .updateConsignmentStatus(mockKeycloakToken, UUID.fromString(consignmentId), UploadType, CompletedValue)
+        .unsafeRunSync()
+    }
+    exception.getMessage should equal(s"Unable to update status for consignment: $consignmentId")
+  }
+
   private def createService(): GraphQlApiService = {
     GraphQlApiService
-      .apply(addConsignmentClient, consignmentMetadataClient, startUploadClient, existingConsignmentClient, consignmentStateClient, getConsignmentClient)
+      .apply(
+        addConsignmentClient,
+        consignmentMetadataClient,
+        startUploadClient,
+        existingConsignmentClient,
+        consignmentStateClient,
+        getConsignmentClient,
+        updateConsignmentStatusClient
+      )
   }
 
   def mockKeycloak(): Future[BearerAccessToken] = {
@@ -206,7 +245,7 @@ class GraphQlApiServiceSpec extends BaseSpec {
       .serviceAccountToken[Identity](any[String], any[String])(any[SttpBackend[Identity, Any]], any[ClassTag[Identity[_]]], any[TdrKeycloakDeployment])
   }
 
-  def mockExistingConsigmentClient(response: Option[getSummary.Data]): Future[GraphQlResponse[GetConsignmentSummary.getConsignmentSummary.Data]] = {
+  def mockExistingConsignmentClient(response: Option[getSummary.Data]): Future[GraphQlResponse[GetConsignmentSummary.getConsignmentSummary.Data]] = {
     doAnswer(() => Future(GraphQlResponse[getSummary.Data](response, Nil)))
       .when(existingConsignmentClient)
       .getResult[Identity](any[BearerAccessToken], any[Document], any[Option[getSummary.Variables]])(any[SttpBackend[Identity, Any]], any[ClassTag[Identity[_]]])
@@ -240,5 +279,11 @@ class GraphQlApiServiceSpec extends BaseSpec {
     doAnswer(() => Future(GraphQlResponse[gc.Data](response, Nil)))
       .when(getConsignmentClient)
       .getResult[Identity](any[BearerAccessToken], any[Document], any[Option[gc.Variables]])(any[SttpBackend[Identity, Any]], any[ClassTag[Identity[_]]])
+  }
+
+  def mockUpdateConsignmentStatusClient(response: Option[ucs.Data]): Future[GraphQlResponse[ucs.Data]] = {
+    doAnswer(() => Future(GraphQlResponse[ucs.Data](response, Nil)))
+      .when(updateConsignmentStatusClient)
+      .getResult[Identity](any[BearerAccessToken], any[Document], any[Option[ucs.Variables]])(any[SttpBackend[Identity, Any]], any[ClassTag[Identity[_]]])
   }
 }

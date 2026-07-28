@@ -39,6 +39,7 @@ object Dependencies {
   lazy val tapirSwaggerUI = "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle" % tapirVersion
   lazy val tdrAuthorisation = "uk.gov.nationalarchives" %% "tdr-authorisation" % tdrUtilsVersion
   lazy val tdrObjectKeyContext = "uk.gov.nationalarchives" %% "tdr-object-key-context" % tdrUtilsVersion
+  lazy val tdrStateControl = "uk.gov.nationalarchives" %% "tdr-state-control" % tdrUtilsVersion
   lazy val tdrStatuses = "uk.gov.nationalarchives" %% "tdr-statuses" % tdrUtilsVersion
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
