@@ -4,7 +4,7 @@ object Dependencies {
   private val http4sVersion = "0.23.36"
   private val mockitoVersion = "2.2.3"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.28"
+  private val tapirVersion = "1.13.29"
   private val awsUtilsVersion = "0.1.338"
   private val tdrUtilsVersion = "0.0.40"
   private lazy val bouncyCastleVersion = "1.84"
