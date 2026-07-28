@@ -39,7 +39,8 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       .apply(UploadType)
       .checkStateChange(statusValue, CurrentState(transferId, statuses))
       .fold(
-        _ => {
+        err => {
+          logger.warn(s"State change rejected for transfer $transferId: $err")
           false
         },
         _ => {
