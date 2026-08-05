@@ -32,6 +32,7 @@ lazy val root = (project in file("."))
       tapirSwaggerUI,
       tdrAuthorisation,
       tdrObjectKeyContext,
+      tdrStateControl,
       tdrStatuses
     ),
     dependencyOverrides ++= Seq(
@@ -45,6 +46,9 @@ lazy val root = (project in file("."))
 (Test / javaOptions) += s"-Dconfig.file=${sourceDirectory.value}/test/resources/application.conf"
 (Test / fork) := true
 (assembly / assemblyJarName) := "transferservice.jar"
+(assembly / assemblyOutputPath) := Def.uncached {
+  baseDirectory.value / "target" / "scala-2.13" / (assembly / assemblyJarName).value
+}
 
 (assembly / assemblyMergeStrategy) := {
   case PathList("META-INF", "maven", "org.webjars", "swagger-ui", "pom.properties") => MergeStrategy.singleOrError

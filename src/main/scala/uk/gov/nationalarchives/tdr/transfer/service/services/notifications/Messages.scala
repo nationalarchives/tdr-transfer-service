@@ -36,7 +36,8 @@ object Messages {
       metadataSourceBucket: String,
       metadataSourceObjectPrefix: String,
       dataLoadErrors: Boolean = false,
-      ignoreSiteName: Boolean = false
+      ignoreSiteName: Boolean = false,
+      loadedNumberOfFiles: Int
   )
   val sqsUtils: SQSUtils = SQSUtils(sqsClient)
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new Messages(sqsUtils, sqsConfig)(logger)

@@ -19,9 +19,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[LoadDetails] = {
     if (existingTransferId.nonEmpty) {
       for {
-        consignmentState <- graphQlApiService.consignmentState(token, existingTransferId.get)
+        statuses <- graphQlApiService.consignmentState(token, existingTransferId.get)
         loadDetails <-
-          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUpload(consignmentState.consignmentStatuses))
+          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUpload(statuses))
       } yield loadDetails
     } else {
       logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
