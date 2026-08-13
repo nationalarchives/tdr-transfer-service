@@ -8,7 +8,7 @@ import sttp.model.StatusCode
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerOptions
-import sttp.tapir.{Endpoint, EndpointInput, auth, endpoint, path, statusCode}
+import sttp.tapir.{EndpointInput, auth, endpoint, header, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
@@ -24,7 +24,16 @@ trait BaseController {
 
   private val tokenAuthenticator = TokenAuthenticator()
 
-  private val securedWithBearerEndpoint: Endpoint[String, Unit, AuthenticationError, Unit, Any] = endpoint
+  private val baseEndpoint = endpoint
+    .out(header("X-Content-Type-Options", "nosniff"))
+    .out(header("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+    .out(header("X-Frame-Options", "DENY"))
+    .out(header("Referrer-Policy", "origin"))
+    .out(header(
+      "Content-Security-Policy",
+      "child-src 'self'; default-src 'self'; base-uri 'none'; script-src 'strict-dynamic'; connect-src 'self'; object-src 'none'"))
+
+  private val securedWithBearerEndpoint = baseEndpoint
     .securityIn(auth.bearer[String]())
     .errorOut(statusCode(StatusCode.Unauthorized))
     .errorOut(jsonBody[AuthenticationError])

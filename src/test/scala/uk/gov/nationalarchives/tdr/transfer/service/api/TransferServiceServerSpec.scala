@@ -57,6 +57,16 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     (SourceSystemEnum.SharePoint.toString.toLowerCase, 11)
   )
 
+  private def checkValidResponseHeaders(headers: Headers) = {
+    headers.headers.size shouldBe 7
+    headers.get(CIString("X-Content-Type-Options")).get.head.value shouldBe "nosniff"
+    headers.get(CIString("Strict-Transport-Security")).get.head.value shouldBe "max-age=31536000; includeSubDomains"
+    headers.get(CIString("X-Frame-Options")).get.head.value shouldBe "DENY"
+    headers.get(CIString("Referrer-Policy")).get.head.value shouldBe "origin"
+    headers.get(CIString("Content-Security-Policy")).get.head.value shouldBe
+      "child-src 'self'; default-src 'self'; base-uri 'none'; script-src 'strict-dynamic'; connect-src 'self'; object-src 'none'"
+  }
+
   forAll(sources) { (source, numberPropertyDetails) =>
     val uri = generateUri(s"/load/$source/configuration")
 
@@ -77,6 +87,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
           .unsafeRunSync()
 
         response.status shouldBe Status.Ok
+        checkValidResponseHeaders(response.headers)
         val body = response.as[Json].unsafeRunSync()
         val transferConfiguration = body.as[TransferConfiguration].toOption.get
         transferConfiguration.maxNumberRecords shouldBe 3000
@@ -127,6 +138,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         .unsafeRunSync()
 
       response.status shouldBe Status.Ok
+      checkValidResponseHeaders(response.headers)
       val body = response.as[Json].unsafeRunSync()
       val loadDetails = body.as[LoadDetails].toOption.get
       loadDetails.transferId.toString shouldBe transferId
@@ -152,6 +164,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         .unsafeRunSync()
 
       response.status shouldBe Status.Ok
+      checkValidResponseHeaders(response.headers)
       val body = response.as[Json].unsafeRunSync()
       val loadDetails = body.as[LoadDetails].toOption.get
       loadDetails.transferId.toString shouldBe transferId
@@ -238,6 +251,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
           .unsafeRunSync()
 
         response.status shouldBe Status.Ok
+        checkValidResponseHeaders(response.headers)
         response.as[String].unsafeRunSync() shouldEqual "{\"transferId\":\"6e3b76c4-1745-4467-8ac5-b4dd736e1b3e\",\"success\":false}"
       }
 
@@ -295,6 +309,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       .unsafeRunSync()
 
     response.status shouldBe Status.Ok
+    checkValidResponseHeaders(response.headers)
     val body = response.as[Json].unsafeRunSync()
     val expectedJson = Json.obj(
       "uploadCompleted" -> Json.fromBoolean(true),
