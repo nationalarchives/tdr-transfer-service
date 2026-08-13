@@ -29,9 +29,12 @@ trait BaseController {
     .out(header("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
     .out(header("X-Frame-Options", "DENY"))
     .out(header("Referrer-Policy", "origin"))
-    .out(header(
-      "Content-Security-Policy",
-      "child-src 'self'; default-src 'self'; base-uri 'none'; script-src 'strict-dynamic'; connect-src 'self'; object-src 'none'"))
+    .out(
+      header(
+        "Content-Security-Policy",
+        "child-src 'self'; default-src 'self'; base-uri 'none'; script-src 'strict-dynamic'; connect-src 'self'; object-src 'none'"
+      )
+    )
 
   private val securedWithBearerEndpoint = baseEndpoint
     .securityIn(auth.bearer[String]())
