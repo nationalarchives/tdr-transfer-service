@@ -7,8 +7,7 @@ object Dependencies {
   private val tapirVersion = "1.13.31"
   private val awsUtilsVersion = "0.1.339"
   private val tdrUtilsVersion = "0.0.48"
-  private lazy val bouncyCastleVersion = "1.85.2"
-
+  
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.297"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.0"
@@ -46,6 +45,6 @@ object Dependencies {
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
   lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
 
-  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % bouncyCastleVersion
-  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % bouncyCastleVersion
+  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2"
+  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.85"
 }
