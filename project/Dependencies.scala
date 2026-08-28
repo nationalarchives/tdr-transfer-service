@@ -8,7 +8,7 @@ object Dependencies {
   private val awsUtilsVersion = "0.1.339"
   private val tdrUtilsVersion = "0.0.48"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.298"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.299"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
