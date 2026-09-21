@@ -22,7 +22,7 @@ permissions:
   contents: write
 jobs:
   deploy:
-    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_deploy.yml@2d29c2e83fbaba6554c1e0d8c0b45d2015d610b2 # v0.0.41
+    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_deploy.yml@b98899c2acfaf872e0053671743a5b1284b0dab0 # v0.0.43
     with:
       service: transferservice
       image-name: transfer-service

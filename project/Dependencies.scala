@@ -1,18 +1,22 @@
 import sbt.*
 
 object Dependencies {
-  private val http4sVersion = "0.23.36"
+  private val http4sVersion = "0.23.37"
   private val mockitoVersion = "2.2.3"
+  private val nettyVersion = "4.1.137.Final"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.31"
   private val awsUtilsVersion = "0.1.339"
-  private val tdrUtilsVersion = "0.0.50"
+  private val tdrUtilsVersion = "0.0.51"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.300"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.301"
+
+  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2"
+  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.85"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.485"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.486"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.306"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -25,9 +29,22 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.3"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.139"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.143"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
+
+  lazy val nettyOverrides: Seq[ModuleID] = Seq(
+    "netty-buffer",
+    "netty-codec",
+    "netty-codec-http",
+    "netty-codec-http2",
+    "netty-common",
+    "netty-handler",
+    "netty-resolver",
+    "netty-transport",
+    "netty-transport-classes-epoll",
+    "netty-transport-native-unix-common"
+  ).map("io.netty" % _ % nettyVersion)
 
   lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.4.0"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
@@ -43,8 +60,5 @@ object Dependencies {
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
-  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
-
-  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2"
-  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.85"
+  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion  
 }
