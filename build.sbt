@@ -38,7 +38,7 @@ lazy val root = (project in file("."))
     dependencyOverrides ++= Seq(
       bcprov,
       bcpkix
-    )
+    ) ++ nettyOverrides
   )
 
 (Compile / run / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer")
