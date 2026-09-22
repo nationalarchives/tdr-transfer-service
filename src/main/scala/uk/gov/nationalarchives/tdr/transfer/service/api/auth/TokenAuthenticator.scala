@@ -25,25 +25,13 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
     AuthenticationError(errorMessage)
   }
 
-  private def transferringBodies(token: Token): List[String] = {
-    token.transferringBodies match {
-      case Some(bodies) => bodies
-      case _            => Nil
-    }
-  }
-
   def authenticateStandardUserToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] = {
     IO {
       KeycloakUtils().token(bearer) match {
-        case Right(t) if t.isStandardUser && transferringBodies(t).nonEmpty => Right(AuthenticatedContext(t))
-        case Right(t) if !t.isStandardUser                                  =>
+        case Right(t) if t.isStandardUser  => Right(AuthenticatedContext(t))
+        case Right(t) if !t.isStandardUser =>
           Left {
             val errorMessage = s"User ${t.userId} is not a standard user"
-            authenticationErrorHandler(errorMessage)
-          }
-        case Right(t) if transferringBodies(t).isEmpty =>
-          Left {
-            val errorMessage = s"User ${t.userId} is not assigned to a transferring body"
             authenticationErrorHandler(errorMessage)
           }
         case Right(t) =>
