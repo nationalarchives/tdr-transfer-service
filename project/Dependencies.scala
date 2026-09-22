@@ -3,16 +3,16 @@ import sbt.*
 object Dependencies {
   private val http4sVersion = "0.23.37"
   private val mockitoVersion = "2.2.3"
-  private val nettyVersion = "4.1.137.Final"
+  private val nettyVersion = "4.1.138.Final"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.31"
   private val awsUtilsVersion = "0.1.339"
-  private val tdrUtilsVersion = "0.0.51"
+  private val tdrUtilsVersion = "0.0.52"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.301"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.303"
 
-  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2"
-  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.85"
+  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
+  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
@@ -60,5 +60,5 @@ object Dependencies {
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
-  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion  
+  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
 }
