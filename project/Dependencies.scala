@@ -3,7 +3,7 @@ import sbt.*
 object Dependencies {
   private val http4sVersion = "0.23.37"
   private val mockitoVersion = "2.2.3"
-  private val nettyVersion = "4.1.137.Final"
+  private val nettyVersion = "4.1.138.Final"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.31"
   private val awsUtilsVersion = "0.1.339"
@@ -60,5 +60,5 @@ object Dependencies {
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
-  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion  
+  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
 }
