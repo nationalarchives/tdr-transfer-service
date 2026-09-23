@@ -2,9 +2,10 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
+import graphql.codegen.types.ConsignmentFilters
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.common.utils.objectkeycontext.ObjectCategories.{Metadata, Records}
-import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.InProgressValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
@@ -17,20 +18,40 @@ import java.util.UUID
 
 class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[LoadDetails] = {
+    lazy val userId: UUID = token.userId
     if (existingTransferId.nonEmpty) {
       for {
-        statuses <- graphQlApiService.consignmentState(token, existingTransferId.get)
+        canInitiate <- canInitiateTransfer(token)
+        statuses <-
+          if (canInitiate) graphQlApiService.consignmentState(token, existingTransferId.get)
+          else
+            IO.raiseError(throw new RuntimeException(s"User $userId has too many consignments without series assigned"))
         loadDetails <-
-          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUpload(statuses))
+          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUploadExistingTransfer(statuses))
       } yield loadDetails
     } else {
       logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
       for {
-        addConsignmentResult <- graphQlApiService.addConsignment(token, sourceSystem)
+        canInitiate <- canInitiateTransfer(token)
+        addConsignmentResult <-
+          if (canInitiate) graphQlApiService.addConsignment(token, sourceSystem)
+          else
+            IO.raiseError(throw new RuntimeException(s"User $userId has too many consignments without series assigned"))
         consignmentId = addConsignmentResult.consignmentid.get
         _ <- triggerUpload(token, consignmentId, sourceSystem)
         result <- loadDetails(consignmentId, addConsignmentResult.consignmentReference, token.userId, sourceSystem)
       } yield result
+    }
+  }
+
+  private def canInitiateTransfer(token: Token): IO[Boolean] = {
+    for {
+      userTransfers <- graphQlApiService.getAllUserConsignments(token)
+    } yield {
+      val missingSeries = userTransfers.count(t => {
+        !t.consignmentStatuses.map(_.statusType).contains(SeriesType.id)
+      })
+      missingSeries < transferConfigurationConfig.maxNumberNoSeriesAssignment
     }
   }
 
@@ -44,7 +65,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     IO(LoadDetails(transferId, transferReference, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
   }
 
-  private def canUpload(currentState: List[ConsignmentStatuses]): Boolean = {
+  private def canUploadExistingTransfer(currentState: List[ConsignmentStatuses]): Boolean = {
     val uploadState: Option[ConsignmentStatuses] = currentState.find(_.statusType == UploadType.id)
     uploadState.nonEmpty && uploadState.get.value == InProgressValue.value
   }
