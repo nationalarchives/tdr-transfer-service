@@ -71,6 +71,11 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
         .withRequestBody(containing("updateConsignmentStatus"))
         .willReturn(okJson(fromResource(s"json/update_consignment_status_response.json").mkString))
     )
+
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing(""))
+    )
   }
 
   def getConsignmentResponse: String = {
