@@ -104,7 +104,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val service = new DataLoadInitiation(mockGraphQlApiService)
 
     val exception = intercept[RuntimeException] {
-      service.initiateConsignmentLoad(mockToken, sharePointSourceSystem).attempt.unsafeRunSync()
+      service.initiateConsignmentLoad(mockToken, sharePointSourceSystem).unsafeRunSync()
     }
     exception.getMessage shouldBe "Error adding consignment"
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, sharePointSourceSystem)
