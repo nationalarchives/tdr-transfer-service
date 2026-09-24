@@ -7,7 +7,6 @@ import graphql.codegen.AddConsignment.addConsignment.AddConsignment
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment
 import graphql.codegen.GetConsignmentSummary.getConsignmentSummary.{GetConsignment => consignmentSummary}
 import graphql.codegen.GetConsignments.getConsignments.Consignments.Edges.Node
-import graphql.codegen.types.ConsignmentFilters
 import org.mockito.ArgumentMatchers.any
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.SeriesType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue

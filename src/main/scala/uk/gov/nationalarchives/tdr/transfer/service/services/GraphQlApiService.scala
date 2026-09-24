@@ -57,7 +57,7 @@ class GraphQlApiService(
     } yield consignmentData.getConsignment.get
   }
 
-  private def consignments(currentCursor: Option[String], consignmentFilters: ConsignmentFilters, token: Token): IO[Consignments] = {
+  def consignments(currentCursor: Option[String], consignmentFilters: ConsignmentFilters, token: Token): IO[Consignments] = {
     for {
       results <- getConsignmentsClient
         .getResult(token.bearerAccessToken, gcs.document, gcs.Variables(consignmentsPaginationLimit, currentCursor, None, Option(consignmentFilters), None).some)

@@ -2,7 +2,6 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
-import graphql.codegen.types.ConsignmentFilters
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.common.utils.objectkeycontext.ObjectCategories.{Metadata, Records}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, UploadType}
@@ -18,7 +17,7 @@ import java.util.UUID
 
 class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[LoadDetails] = {
-    lazy val userId: UUID = token.userId
+    val userId: UUID = token.userId
     if (existingTransferId.nonEmpty) {
       for {
         canInitiate <- canInitiateTransfer(token)
@@ -35,8 +34,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
         canInitiate <- canInitiateTransfer(token)
         addConsignmentResult <-
           if (canInitiate) graphQlApiService.addConsignment(token, sourceSystem)
-          else
+          else {
             IO.raiseError(throw new RuntimeException(s"User $userId has too many consignments without series assigned"))
+          }
         consignmentId = addConsignmentResult.consignmentid.get
         _ <- triggerUpload(token, consignmentId, sourceSystem)
         result <- loadDetails(consignmentId, addConsignmentResult.consignmentReference, token.userId, sourceSystem)

@@ -12,6 +12,7 @@ import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
@@ -227,6 +228,24 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
       response.status shouldBe Status.Unauthorized
       response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
+    }
+
+    s"'load/$source/initiate' endpoint" should "return 500 response when a user has too many transfers without a series assigned" in {
+      graphqlOkJson(overrideStatusType = UploadType)
+      val validToken = validUserToken()
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$validToken")
+      val fakeHeaders = Headers.apply(authHeader)
+      val response = LoadController
+        .apply()
+        .initiateLoadRoute
+        .orNotFound
+        .run(
+          Request(method = Method.POST, uri = uri, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      response.status shouldBe Status.InternalServerError
     }
   }
 
