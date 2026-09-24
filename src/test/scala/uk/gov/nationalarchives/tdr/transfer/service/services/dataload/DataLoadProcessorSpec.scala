@@ -123,7 +123,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
 
           mockResponses()
           when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
-            .thenReturn(SendMessageResponse.builder().build())
+            .thenReturn(IO(SendMessageResponse.builder().build()))
           when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferStatuses))
           when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, expectedUploadStatusValue)).thenReturn(IO(Some(1)))
 
@@ -158,7 +158,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
     mockResponses(ignoreSiteNameBodies = "TDR-BODY1;TDR-BODY2")
 
     when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
-      .thenReturn(SendMessageResponse.builder().build())
+      .thenReturn(IO(SendMessageResponse.builder().build()))
     when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(correctTransferStatuses))
     when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, CompletedValue)).thenReturn(IO(Some(1)))
 

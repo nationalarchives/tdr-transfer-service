@@ -20,12 +20,13 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     if (existingTransferId.nonEmpty) {
       for {
         statuses <- graphQlApiService.consignmentState(token, existingTransferId.get)
+        canUpload <- canUpload(statuses)
         loadDetails <-
-          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUpload(statuses))
+          loadDetailsForExistingTransfer(token, existingTransferId.get, sourceSystem, canUpload)
       } yield loadDetails
     } else {
-      logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
       for {
+        _ <- logger.info(s"Creating consignment for user ${token.userId} from ${sourceSystem.toString}")
         addConsignmentResult <- graphQlApiService.addConsignment(token, sourceSystem)
         consignmentId = addConsignmentResult.consignmentid.get
         _ <- triggerUpload(token, consignmentId, sourceSystem)
@@ -44,9 +45,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     IO(LoadDetails(transferId, transferReference, recordsLoadDestination = recordsS3Bucket, metadataLoadDestination = metadataS3Bucket))
   }
 
-  private def canUpload(currentState: List[ConsignmentStatuses]): Boolean = {
+  private def canUpload(currentState: List[ConsignmentStatuses]): IO[Boolean] = {
     val uploadState: Option[ConsignmentStatuses] = currentState.find(_.statusType == UploadType.id)
-    uploadState.nonEmpty && uploadState.get.value == InProgressValue.value
+    IO(uploadState.nonEmpty && uploadState.get.value == InProgressValue.value)
   }
 
   private def loadDetailsForExistingTransfer(token: Token, consignmentId: UUID, sourceSystem: SourceSystem, canUpload: Boolean) = {
@@ -60,9 +61,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
   }
 
   private def triggerUpload(token: Token, consignmentId: UUID, sourceSystem: SourceSystem): IO[Unit] = {
-    logger.info(s"Starting upload for consignment $consignmentId")
     val includeTopLevelFolder = includeTopLevelFolderOverride(sourceSystem)
     for {
+      _ <- logger.info(s"Starting upload for consignment $consignmentId")
       _ <- graphQlApiService.startUpload(token, consignmentId, includeTopLevelFolder = includeTopLevelFolder)
     } yield IO.unit
   }
