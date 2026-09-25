@@ -1,6 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxApplicativeByName
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -57,10 +58,8 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       loadSuccess = stateCorrect && !dataLoadErrors && !clientSideErrors
       loadCompletionResponse = LoadCompletionResponse(transferId, loadSuccess)
       _ <- if (stateCorrect) graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) else IO.unit
-      _ <-
-        if (!clientSideErrors) {
-          sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles).void
-        } else IO.unit
+      _ <- sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles)
+        .unlessA(clientSideErrors)
     } yield loadCompletionResponse
   }
 
