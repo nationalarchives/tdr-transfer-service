@@ -1,5 +1,12 @@
 name: TDR Tag and pre deploy Transfer Service
 on:
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: 'Build a dev snapshot from the current branch instead of the next release version'
+        type: boolean
+        required: false
+        default: false
   push:
     branches:
       - main

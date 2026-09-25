@@ -5,7 +5,7 @@ import cats.effect.unsafe.implicits.global
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor10, TableFor9}
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor10}
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, StatusType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues._
@@ -118,12 +118,16 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
         "'trigger' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
           reset(mockGraphQlApiService)
           val mockMessageService = mock[Messages]
+          val sqsEffectWasRun = new java.util.concurrent.atomic.AtomicBoolean(false)
           val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
           val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])
 
           mockResponses()
           when(mockMessageService.sendAggregateProcessingEventMessage(transferIdArgumentCaptor.capture(), eventArgumentCaptor.capture()))
-            .thenReturn(IO(SendMessageResponse.builder().build()))
+            .thenReturn(IO.delay {
+              sqsEffectWasRun.set(true)
+              SendMessageResponse.builder().build()
+            })
           when(mockGraphQlApiService.consignmentState(mockKeycloakToken, transferId)).thenReturn(IO(transferStatuses))
           when(mockGraphQlApiService.updateConsignmentStatus(mockKeycloakToken, transferId, UploadType, expectedUploadStatusValue)).thenReturn(IO(Some(1)))
 
@@ -131,6 +135,10 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
           val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), loadCompletionDetails)
 
           val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
+
+          val sqsEffectRun = expectedNumberSnsMessages != 0
+
+          sqsEffectWasRun.get() shouldBe sqsEffectRun
           result.transferId shouldBe expectedLoadResponse.transferId
           result.success shouldBe expectedLoadResponse.success
 
