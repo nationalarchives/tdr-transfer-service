@@ -28,7 +28,8 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/metadata"
     val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
     val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(";").toSet
-    val ignoreSiteName = ignoreSiteNameBodies.contains(token.transferringBody.get)
+    val transferringBodies: Set[String] = token.transferringBodies.getOrElse(Nil).toSet
+    val ignoreSiteName = transferringBodies.exists(ignoreSiteNameBodies.contains)
 
     val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, !loadSuccess, ignoreSiteName = ignoreSiteName, loadedNumberOfFiles)
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
