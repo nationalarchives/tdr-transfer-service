@@ -190,6 +190,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
     when(mockS3Config.metadataUploadBucketName).thenReturn("source-bucket")
     when(mockTransferConfig.ignoreSiteNameBodies).thenReturn(ignoreSiteNameBodies)
     when(mockKeycloakToken.userId).thenReturn(userId)
-    when(mockKeycloakToken.transferringBody).thenReturn(Some("TDR-BODY2"))
+    when(mockKeycloakToken.transferringBodies).thenReturn(Some(List("TDR-BODY2")))
   }
 }
