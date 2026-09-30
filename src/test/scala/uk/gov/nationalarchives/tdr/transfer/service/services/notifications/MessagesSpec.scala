@@ -3,6 +3,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.services.notifications
 import uk.gov.nationalarchives.aws.utils.sqs.SQSUtils
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
 import uk.gov.nationalarchives.tdr.transfer.service.{ApplicationConfig, BaseSpec}
+import cats.effect.unsafe.implicits.global
 
 import java.util.UUID
 
@@ -22,7 +23,7 @@ class MessagesSpec extends BaseSpec {
                                   |  "loadedNumberOfFiles" : 2
                                   |}""".stripMargin
 
-    service.sendAggregateProcessingEventMessage(transferId, event)
+    service.sendAggregateProcessingEventMessage(transferId, event).unsafeRunSync()
     verify(mockSqsUtils).send("sqs/url", expectedMessageString)
   }
 
@@ -41,7 +42,7 @@ class MessagesSpec extends BaseSpec {
                                   |  "loadedNumberOfFiles" : 2
                                   |}""".stripMargin
 
-    service.sendAggregateProcessingEventMessage(transferId, event)
+    service.sendAggregateProcessingEventMessage(transferId, event).unsafeRunSync()
     verify(mockSqsUtils).send("sqs/url", expectedMessageString)
   }
 }

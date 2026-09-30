@@ -1,6 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
 import cats.effect.IO
+import cats.implicits.catsSyntaxApplicativeByName
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
@@ -23,30 +24,24 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     logger: SelfAwareStructuredLogger[IO]
 ) {
 
-  private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean, loadedNumberOfFiles: Int): SendMessageResponse = {
+  private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean, loadedNumberOfFiles: Int): IO[SendMessageResponse] = {
     val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/metadata"
     val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
     val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(";").toSet
-    val ignoreSiteName = ignoreSiteNameBodies.contains(token.transferringBody.get)
+    val transferringBodies: Set[String] = token.transferringBodies.getOrElse(Nil).toSet
+    val ignoreSiteName = transferringBodies.exists(ignoreSiteNameBodies.contains)
 
-    logger.info(s"Triggering aggregate processing for transfer: $transferId")
     val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, !loadSuccess, ignoreSiteName = ignoreSiteName, loadedNumberOfFiles)
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
   }
 
-  private def isStateCorrect(transferId: UUID, statuses: List[ConsignmentStatuses], statusValue: StatusValue): Boolean = {
+  private def isStateCorrect(transferId: UUID, statuses: List[ConsignmentStatuses], statusValue: StatusValue): IO[Boolean] = {
     TransferState
       .apply(UploadType)
       .checkStateChange(statusValue, CurrentState(transferId, statuses))
       .fold(
-        err => {
-          logger.warn(s"State change rejected for transfer $transferId: $err")
-          false
-        },
-        _ => {
-          val clientChecksStatus = statuses.find(_.statusType == ClientChecksType.id)
-          clientChecksStatus.exists(_.value == InProgressValue.value)
-        }
+        err => logger.warn(s"State change rejected for transfer $transferId: $err").as(false),
+        _ => IO.pure(statuses.find(_.statusType == ClientChecksType.id).exists(_.value == InProgressValue.value))
       )
   }
 
@@ -55,27 +50,27 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     for {
       statuses <- graphQlApiService.consignmentState(token, transferId)
       loadCompletionDetails = event.loadCompletionDetails
-      clientSideErrors = hasClientSideErrors(transferId, loadCompletionDetails)
+      clientSideErrors <- hasClientSideErrors(transferId, loadCompletionDetails)
       dataLoadErrors = hasDataLoadErrors(loadCompletionDetails)
       uploadStatus =
         if (!dataLoadErrors && !clientSideErrors) { CompletedValue }
         else FailedValue
-      stateCorrect = isStateCorrect(transferId, statuses, uploadStatus)
+      stateCorrect <- isStateCorrect(transferId, statuses, uploadStatus)
       loadSuccess = stateCorrect && !dataLoadErrors && !clientSideErrors
       loadCompletionResponse = LoadCompletionResponse(transferId, loadSuccess)
       _ <- if (stateCorrect) graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) else IO.unit
-      _ = if (!clientSideErrors) {
-        sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles)
-      }
+      _ <- sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles)
+        .unlessA(clientSideErrors)
     } yield loadCompletionResponse
   }
 
-  private def hasClientSideErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): Boolean = {
+  private def hasClientSideErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Boolean] = {
     val clientSideErrors = loadCompletionDetails.loadErrors
     if (clientSideErrors.nonEmpty) {
-      logger.info(s"Client side data load error(s) for transfer $transferId: ${clientSideErrors.mkString("; ").trim}")
-      true
-    } else false
+      logger
+        .info(s"Client side data load error(s) for transfer $transferId: ${clientSideErrors.mkString("; ").trim}")
+        .as(true)
+    } else IO.pure(false)
   }
 
   private def hasDataLoadErrors(loadCompletionDetails: LoadCompletion): Boolean = {

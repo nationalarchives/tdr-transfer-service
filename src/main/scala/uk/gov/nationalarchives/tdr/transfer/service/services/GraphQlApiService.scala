@@ -36,59 +36,65 @@ class GraphQlApiService(
 )(implicit
     backend: SttpBackend[Identity, Any]
 ) {
-
-  implicit class FutureUtils[T](f: Future[T]) {
-    def toIO: IO[T] = IO.fromFuture(IO(f))
-  }
+  private def blockingFutureToIO[T](future: => Future[T]): IO[T] =
+    IO.blocking(future).flatMap(result => IO.fromFuture(IO.pure(result)))
 
   def getConsignment(token: Token, consignmentId: UUID): IO[GetConsignment] = {
     for {
-      consignmentResult <- getConsignmentClient.getResult(token.bearerAccessToken, gc.document, gc.Variables(consignmentId).some).toIO
+      consignmentResult <- blockingFutureToIO(getConsignmentClient.getResult(token.bearerAccessToken, gc.document, gc.Variables(consignmentId).some))
       consignmentData <- IO.fromOption(consignmentResult.data)(new RuntimeException(s"Failed to retrieve consignment information for consignment: $consignmentId"))
     } yield consignmentData.getConsignment.get
   }
 
   def existingConsignment(token: Token, consignmentId: UUID): IO[GetConsignmentSummary.getConsignmentSummary.GetConsignment] = {
     for {
-      summaryResult <- existingConsignmentClient.getResult(token.bearerAccessToken, getSummary.document, getSummary.Variables(consignmentId).some).toIO
+      summaryResult <- blockingFutureToIO(existingConsignmentClient.getResult(token.bearerAccessToken, getSummary.document, getSummary.Variables(consignmentId).some))
       summaryData <- IO.fromOption(summaryResult.data)(new RuntimeException(s"Failed to retrieve summary information for consignment: $consignmentId"))
     } yield summaryData.getConsignment.get
   }
 
   def consignmentState(token: Token, consignmentId: UUID): IO[List[ConsignmentStatuses]] = {
     for {
-      consignmentState <- consignmentStateClient.getResult(token.bearerAccessToken, getStatus.document, getStatus.Variables(consignmentId).some).toIO
+      consignmentState <- blockingFutureToIO(consignmentStateClient.getResult(token.bearerAccessToken, getStatus.document, getStatus.Variables(consignmentId).some))
       stateData <- IO.fromOption(consignmentState.data)(new RuntimeException(s"Failed to retrieve state for consignment: $consignmentId"))
     } yield stateData.getConsignment.get.consignmentStatuses
   }
 
   def addConsignment(token: Token, sourceSystem: SourceSystem): IO[AddConsignment.addConsignment.AddConsignment] = {
     for {
-      addConsignmentResult <- addConsignmentClient.getResult(token.bearerAccessToken, ac.document, ac.Variables(AddConsignmentInput(None, "standard")).some).toIO
+      addConsignmentResult <- blockingFutureToIO(addConsignmentClient.getResult(token.bearerAccessToken, ac.document, ac.Variables(AddConsignmentInput(None, "standard")).some))
       addConsignmentData <- IO.fromOption(addConsignmentResult.data)(new RuntimeException(s"Consignment not added for user ${token.userId}"))
       consignmentId = addConsignmentData.addConsignment.consignmentid.get
       consignmentMetadata = AddOrUpdateConsignmentMetadata("SourceSystem", sourceSystem.toString)
-      consignmentMetadataResult <- consignmentMetadataClient
-        .getResult(token.bearerAccessToken, acm.document, acm.Variables(AddOrUpdateConsignmentMetadataInput(consignmentId, List(consignmentMetadata))).some)
-        .toIO
+      consignmentMetadataResult <- blockingFutureToIO(
+        consignmentMetadataClient.getResult(
+          token.bearerAccessToken,
+          acm.document,
+          acm.Variables(AddOrUpdateConsignmentMetadataInput(consignmentId, List(consignmentMetadata))).some
+        )
+      )
       _ <- IO.fromOption(consignmentMetadataResult.data)(new RuntimeException(s"Consignment metadata not added for $consignmentId"))
     } yield addConsignmentData.addConsignment
   }
 
   def startUpload(token: Token, consignmentId: UUID, parentFolder: Option[String] = None, includeTopLevelFolder: Option[Boolean] = None): IO[String] = {
     for {
-      result <- startUploadClient
-        .getResult(token.bearerAccessToken, su.document, su.Variables(StartUploadInput(consignmentId, parentFolder.getOrElse(""), includeTopLevelFolder)).some)
-        .toIO
+      result <- blockingFutureToIO(
+        startUploadClient.getResult(token.bearerAccessToken, su.document, su.Variables(StartUploadInput(consignmentId, parentFolder.getOrElse(""), includeTopLevelFolder)).some)
+      )
       data <- IO.fromOption(result.data)(new RuntimeException(s"Load not started for consignment: $consignmentId"))
     } yield data.startUpload
   }
 
   def updateConsignmentStatus(token: Token, consignmentId: UUID, statusType: StatusType, statusValue: StatusValue): IO[Option[Int]] = {
     for {
-      result <- updateConsignmentStatusClient
-        .getResult(token.bearerAccessToken, ucs.document, ucs.Variables(ConsignmentStatusInput(consignmentId, statusType.id, Some(statusValue.value), None, None)).some)
-        .toIO
+      result <- blockingFutureToIO(
+        updateConsignmentStatusClient.getResult(
+          token.bearerAccessToken,
+          ucs.document,
+          ucs.Variables(ConsignmentStatusInput(consignmentId, statusType.id, Some(statusValue.value), None, None)).some
+        )
+      )
       data <- IO.fromOption(result.data)(new RuntimeException(s"Unable to update status for consignment: $consignmentId"))
     } yield data.updateConsignmentStatus
   }

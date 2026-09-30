@@ -17,11 +17,13 @@ import java.util.UUID
 class Messages(sqsUtils: SQSUtils, sqsConfig: ApplicationConfig.Sqs)(implicit logger: SelfAwareStructuredLogger[IO]) {
   implicit val aggregateProcessingMessageEncoder: Encoder[AggregateProcessingEvent] = deriveEncoder[AggregateProcessingEvent]
 
-  def sendAggregateProcessingEventMessage(transferId: UUID, message: AggregateProcessingEvent): SendMessageResponse = {
+  def sendAggregateProcessingEventMessage(transferId: UUID, message: AggregateProcessingEvent): IO[SendMessageResponse] = {
     val queueUrl = sqsConfig.aggregateProcessingQueueUrl
     val messageBody = message.asJson.toString()
-    logger.info(s"Sending aggregate processing event message for transfer: $transferId")
-    sendMessage(queueUrl, messageBody)
+    for {
+      _ <- logger.info(s"Sending aggregate processing event message for transfer: $transferId")
+      response <- IO.delay(sendMessage(queueUrl, messageBody))
+    } yield response
   }
 
   private def sendMessage(queueUrl: String, messageBody: String): SendMessageResponse = {
