@@ -2,7 +2,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.auth
 
 import cats.effect.unsafe.implicits.global
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
-import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, transferServiceUserId, userId, validClientToken, validUserToken}
+import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, transferServiceUserId, userId, validClientToken, validUserToken, validUserTokenNoBodiesClaim}
 
 class TokenAuthenticatorSpec extends BaseSpec {
   "'authenticateStandardUserToken'" should "return authenticated token when token valid" in {
@@ -23,7 +23,14 @@ class TokenAuthenticatorSpec extends BaseSpec {
     val validToken = validUserToken(body = None)
     val response = TokenAuthenticator().authenticateStandardUserToken(validToken.token).unsafeRunSync()
 
-    response.left.toOption.get.message shouldBe s"User $userId is misconfigured"
+    response.left.toOption.get.message shouldBe s"User $userId is not assigned to a transferring body"
+  }
+
+  "'authenticateStandardUserToken'" should "return authentication error when no 'bodies' claim present" in {
+    val validToken = validUserTokenNoBodiesClaim()
+    val response = TokenAuthenticator().authenticateStandardUserToken(validToken.token).unsafeRunSync()
+
+    response.left.toOption.get.message shouldBe s"User $userId is not assigned to a transferring body"
   }
 
   "'authenticateStandardUserToken'" should "return authentication error when a non-standard user is not assigned to a transferring body" in {

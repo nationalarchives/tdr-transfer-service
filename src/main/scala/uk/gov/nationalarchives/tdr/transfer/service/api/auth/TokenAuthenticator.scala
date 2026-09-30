@@ -20,56 +20,42 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
   implicit val tdrKeycloakDeployment: TdrKeycloakDeployment =
     TdrKeycloakDeployment(s"$authUrl", realm, 8080)
 
-  private def authenticationErrorHandler(errorMessage: String, errorType: String = "Authorisation"): AuthenticationError = {
-    logger.info(s"$errorType error: $errorMessage")
-    AuthenticationError(errorMessage)
-  }
+  private def parseToken(bearer: String): IO[Either[Throwable, Token]] =
+    IO.blocking(KeycloakUtils().token(bearer))
 
-  def authenticateStandardUserToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] = {
-    IO {
-      KeycloakUtils().token(bearer) match {
-        case Right(t) if t.isStandardUser && t.transferringBody.nonEmpty => Right(AuthenticatedContext(t))
-        case Right(t) if !t.isStandardUser                               =>
-          Left {
-            val errorMessage = s"User ${t.userId} is not a standard user"
-            authenticationErrorHandler(errorMessage)
-          }
-        case Right(t) if t.transferringBody.isEmpty =>
-          Left {
-            val errorMessage = s"User ${t.userId} is misconfigured"
-            authenticationErrorHandler(errorMessage)
-          }
-        case Right(t) =>
-          Left {
-            val errorMessage = s"User ${t.userId} does not have access"
-            authenticationErrorHandler(errorMessage)
-          }
-        case Left(e) =>
-          Left {
-            authenticationErrorHandler(e.getMessage, "Authentication")
-          }
-      }
-    }
-  }
+  private def authenticationErrorHandler(errorMessage: String, errorType: String = "Authorisation"): IO[AuthenticationError] =
+    logger.info(s"$errorType error: $errorMessage").as(AuthenticationError(errorMessage))
 
-  def authenticateClientToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] = {
-    IO {
-      KeycloakUtils().token(bearer) match {
-        case Right(t) if t.transferServiceRoles.contains("data-load") => Right(AuthenticatedContext(t))
-        case Right(t)                                                 =>
-          Left {
-            val errorMessage = s"${t.userId} does not have correct authorisation"
-            logger.info(s"Authorisation error: $errorMessage")
-            AuthenticationError(errorMessage)
-          }
-        case Left(e) =>
-          Left {
-            logger.info(s"Authentication error: ${e.getMessage}")
-            AuthenticationError(e.getMessage)
-          }
-      }
+  def authenticateStandardUserToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] =
+    parseToken(bearer).flatMap {
+      case Right(t) if t.isStandardUser =>
+        IO.pure(Right(AuthenticatedContext(t)))
+      case Right(t) if !t.isStandardUser =>
+        val errorMessage = s"User ${t.userId} is not a standard user"
+        authenticationErrorHandler(errorMessage).map(Left(_))
+      case Right(t) =>
+        val errorMessage = s"User ${t.userId} does not have access"
+        authenticationErrorHandler(errorMessage).map(Left(_))
+      case Left(e) =>
+        authenticationErrorHandler(
+          e.getMessage,
+          "Authentication"
+        ).map(Left(_))
     }
-  }
+
+  def authenticateClientToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] =
+    parseToken(bearer).flatMap {
+      case Right(t) if t.transferServiceRoles.contains("data-load") =>
+        IO.pure(Right(AuthenticatedContext(t)))
+      case Right(t) =>
+        val errorMessage = s"${t.userId} does not have correct authorisation"
+        authenticationErrorHandler(errorMessage).map(Left(_))
+      case Left(e) =>
+        authenticationErrorHandler(
+          e.getMessage,
+          "Authentication"
+        ).map(Left(_))
+    }
 }
 
 object TokenAuthenticator {

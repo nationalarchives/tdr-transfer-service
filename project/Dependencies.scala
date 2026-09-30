@@ -1,23 +1,23 @@
 import sbt.*
 
 object Dependencies {
-  private val http4sVersion = "0.23.37"
+  private val http4sVersion = "0.23.38"
   private val mockitoVersion = "2.2.3"
-  private val nettyVersion = "4.1.137.Final"
+  private val nettyVersion = "4.1.138.Final"
   private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.31"
-  private val awsUtilsVersion = "0.1.339"
-  private val tdrUtilsVersion = "0.0.51"
+  private val tapirVersion = "1.13.32"
+  private val awsUtilsVersion = "0.1.340"
+  private val tdrUtilsVersion = "0.0.52"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.301"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.303"
 
-  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.85.2"
-  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.85"
+  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
+  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
   lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.486"
-  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.306"
+  lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.307"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
   lazy val http4sEmberServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
@@ -27,7 +27,7 @@ object Dependencies {
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.21.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.3"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.4"
 
   lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.143"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
@@ -60,5 +60,5 @@ object Dependencies {
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
-  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion  
+  lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
 }

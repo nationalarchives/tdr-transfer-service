@@ -20,8 +20,19 @@ object TestUtils {
       .withClaim("standard_user", standardUser)
 
     if (body.nonEmpty) {
-      tokenBuilder.withClaim("body", body.get)
+      tokenBuilder.withClaim("bodies", java.util.Arrays.asList(body))
+    } else {
+      tokenBuilder.withClaim("bodies", java.util.Arrays.asList())
     }
+
+    OAuth2BearerToken(tdrKeycloakMock.getAccessToken(tokenBuilder.build()))
+  }
+
+  def validUserTokenNoBodiesClaim(userId: UUID = userId): OAuth2BearerToken = {
+    val tokenBuilder = aTokenConfig()
+      .withResourceRole("tdr", "tdr_user")
+      .withClaim("user_id", userId)
+      .withClaim("standard_user", true)
 
     OAuth2BearerToken(tdrKeycloakMock.getAccessToken(tokenBuilder.build()))
   }
