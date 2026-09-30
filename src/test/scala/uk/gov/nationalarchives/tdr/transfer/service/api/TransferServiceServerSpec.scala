@@ -12,6 +12,7 @@ import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.UploadType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
@@ -72,7 +73,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     s"'load/$source/configuration' endpoint" should
       "return 200 with correct authorisation header" in {
-        graphqlOkJson()
+        graphqlOkJson(UUID.fromString(transferId))
         val validToken = validUserToken()
         val bearer = CIString("Authorization")
         val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -123,7 +124,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     val expectedMetadataLoadDestination = AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/$source/$transferId/metadata")
 
     s"'load/$source/initiate' endpoint" should "return 200 with correct authorisation header" in {
-      graphqlOkJson()
+      graphqlOkJson(UUID.fromString(transferId))
       val validToken = validUserToken()
       val bearer = CIString("Authorization")
       val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -149,7 +150,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 200 with correct authorisation header" in {
       val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=$transferId")
-      graphqlOkJson()
+      graphqlOkJson(UUID.fromString(transferId))
       val validToken = validUserToken()
       val bearer = CIString("Authorization")
       val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -175,7 +176,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 500 response when transfer not in correct upload state" in {
       val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=${UUID.randomUUID()}")
-      graphqlOkJson(uploadStatusValue = CompletedValue.value)
+      graphqlOkJson(UUID.fromString(transferId), overrideStatusType = UploadType, uploadStatusValue = CompletedValue.value)
       val validToken = validUserToken()
       val bearer = CIString("Authorization")
       val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -194,7 +195,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 500 response when transfer does not exist" in {
       val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=${UUID.randomUUID()}")
-      graphqlOkJson(consignmentExists = false)
+      graphqlOkJson(UUID.fromString(transferId), consignmentExists = false)
       val validToken = validUserToken()
       val bearer = CIString("Authorization")
       val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -228,6 +229,24 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       response.status shouldBe Status.Unauthorized
       response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
     }
+
+    s"'load/$source/initiate' endpoint" should "return 500 response when a user has too many transfers without a series assigned" in {
+      graphqlOkJson(UUID.fromString(transferId), overrideStatusType = UploadType)
+      val validToken = validUserToken()
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$validToken")
+      val fakeHeaders = Headers.apply(authHeader)
+      val response = LoadController
+        .apply()
+        .initiateLoadRoute
+        .orNotFound
+        .run(
+          Request(method = Method.POST, uri = uri, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      response.status shouldBe Status.InternalServerError
+    }
   }
 
   forAll(sources) { (source, _) =>
@@ -235,7 +254,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       val uri = generateUri(s"/load/$source/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
 
       s"'load/$source/complete' endpoint" should "return 200 with correct authorisation header" in {
-        graphqlOkJson()
+        graphqlOkJson(UUID.fromString(transferId))
         val loadCompletionBody = LoadCompletion(3, 3, Set(LoadError("There was an error"))).asJson
         val validToken = validUserToken()
         val bearer = CIString("Authorization")
@@ -276,7 +295,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
   }
 
   s"'errors/load/' endpoint" should "return 200 with correct authorisation header" in {
-    graphqlOkJson(uploadStatusValue = CompletedValue.value)
+    graphqlOkJson(UUID.fromString(transferId), uploadStatusValue = CompletedValue.value)
     val validToken = validUserToken()
     val bearer = CIString("Authorization")
     val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -320,7 +339,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
   }
 
   s"'errors/load/' endpoint" should "return 500 response when a user is authenticated but an exception is thrown" in {
-    graphqlOkJson(uploadStatusValue = CompletedValue.value)
+    graphqlOkJson(UUID.fromString(transferId), uploadStatusValue = CompletedValue.value)
     val validToken = validUserToken()
     val bearer = CIString("Authorization")
     val authHeader = Header.Raw.apply(bearer, s"$validToken")
