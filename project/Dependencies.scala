@@ -3,7 +3,7 @@ import sbt.*
 object Dependencies {
   private val http4sVersion = "0.23.38"
   private val mockitoVersion = "2.2.3"
-  private val nettyVersion = "4.1.138.Final"
+  private val nettyVersion = "4.2.18.Final"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.32"
   private val awsUtilsVersion = "0.1.340"
