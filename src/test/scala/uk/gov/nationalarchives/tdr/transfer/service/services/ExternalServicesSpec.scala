@@ -5,8 +5,10 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, StatusType}
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 
+import java.util.UUID
 import scala.io.Source.fromResource
 
 class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
@@ -29,7 +31,13 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
 
   val graphQlPath = "/graphql"
 
-  def graphqlOkJson(uploadStatusValue: String = "InProgress", clientChecksStatusValue: String = "InProgress", consignmentExists: Boolean = true): Unit = {
+  def graphqlOkJson(
+      transferId: UUID,
+      overrideStatusType: StatusType = SeriesType,
+      uploadStatusValue: String = "InProgress",
+      clientChecksStatusValue: String = "InProgress",
+      consignmentExists: Boolean = true
+  ): Unit = {
     wiremockGraphqlServer.stubFor(
       post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("getConsignment"))
@@ -70,6 +78,12 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
       post(urlEqualTo(graphQlPath))
         .withRequestBody(containing("updateConsignmentStatus"))
         .willReturn(okJson(fromResource(s"json/update_consignment_status_response.json").mkString))
+    )
+
+    wiremockGraphqlServer.stubFor(
+      post(urlEqualTo(graphQlPath))
+        .withRequestBody(containing("getConsignments"))
+        .willReturn(okJson(getConsignmentsResponse(overrideStatusType, transferId)))
     )
   }
 
@@ -128,6 +142,63 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
          |}
          |""".stripMargin
     } else ""
+  }
 
+  private def getConsignmentsResponse(overrideStatusType: StatusType, transferId: UUID): String = {
+    s"""{
+       |  "data": {
+       |    "consignments": {
+       |      "pageInfo": {
+       |        "endCursor": "consignment-ref1",
+       |        "hasNextPage": false
+       |       },
+       |      "totalPages": 1,
+       |      "edges": [
+       |        {
+       |          "cursor": "a-cursor",
+       |          "node": {
+       |            "consignmentid": "$transferId",
+       |            "consignmentReference": "consignment-ref2",
+       |            "totalFiles": 1,
+       |            "consignmentStatuses": [
+       |              {
+       |                "consignmentStatusId": "5c761efa-ae1a-4ec8-bb08-dc609fce51f8",
+       |                "consignmentId": "$transferId",
+       |                "statusType": "Series",
+       |                "value": "Completed",
+       |                "createdDatetime": "2020-01-01T09:00:00Z"
+       |              },
+       |              {
+       |                "consignmentStatusId": "5c761efa-ae1a-4ec8-bb08-dc609fce51f8",
+       |                "consignmentId": "c31b3d3e-1931-421b-a829-e2ef4cd8930c",
+       |                "statusType": "${overrideStatusType.id}",
+       |                "value": "Completed",
+       |                "createdDatetime": "2020-01-01T09:00:00Z"
+       |              }
+       |            ]
+       |          }
+       |        },
+       |        {
+       |          "cursor": "b-cursor",
+       |          "node": {
+       |            "consignmentid": "c31b3d3e-1931-421b-a829-e2ef4cd8930c",
+       |            "consignmentReference": "consignment-ref1",
+       |            "totalFiles": 1,
+       |            "consignmentStatuses": [
+       |              {
+       |                "consignmentStatusId": "5c761efa-ae1a-4ec8-bb08-dc609fce51f8",
+       |                "consignmentId": "c31b3d3e-1931-421b-a829-e2ef4cd8930c",
+       |                "statusType": "${overrideStatusType.id}",
+       |                "value": "Completed",
+       |                "createdDatetime": "2020-01-01T09:00:00Z"
+       |              }
+       |            ]
+       |          }
+       |        }
+       |      ]
+       |    }
+       |  }
+       |}
+       |""".stripMargin
   }
 }
