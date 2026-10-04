@@ -9,7 +9,7 @@ object Dependencies {
   private val awsUtilsVersion = "0.1.340"
   private val tdrUtilsVersion = "0.0.52"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.303"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.305"
 
   lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
   lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
