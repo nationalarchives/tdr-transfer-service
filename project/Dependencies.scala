@@ -3,13 +3,13 @@ import sbt.*
 object Dependencies {
   private val http4sVersion = "0.23.38"
   private val mockitoVersion = "2.2.3"
-  private val nettyVersion = "4.1.138.Final"
+  private val nettyVersion = "4.2.18.Final"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.32"
   private val awsUtilsVersion = "0.1.340"
   private val tdrUtilsVersion = "0.0.52"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.303"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.305"
 
   lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
   lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
@@ -27,9 +27,9 @@ object Dependencies {
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.21.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.4"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.5"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.143"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.144"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
