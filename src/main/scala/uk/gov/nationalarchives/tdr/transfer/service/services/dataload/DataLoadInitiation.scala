@@ -8,6 +8,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.LoadInitiationException.{SeriesAssignmentError, TransferStateError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
@@ -21,7 +22,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     for {
       userTransfers <- graphQlApiService.getAllUserConsignments(token)
       _ <- canInitiate(userTransfers, token.userId, existingTransferId)
-        .flatMap(_.fold(err => IO.raiseError(throw new RuntimeException(err.getMessage)), _ => IO.unit))
+        .flatMap(_.fold(err => IO.raiseError(throw BackendException.LoadError(err.getMessage)), _ => IO.unit))
       result <-
         if (existingTransferId.nonEmpty) { initiateExistingTransfer(token, sourceSystem, existingTransferId.get) }
         else { initiateNewTransfer(token, sourceSystem) }
