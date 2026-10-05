@@ -10,10 +10,12 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir.{EndpointInput, auth, endpoint, header, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
+import sttp.tapir._
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 
 import java.util.UUID
 
@@ -25,6 +27,12 @@ trait BaseController {
   private val tokenAuthenticator = TokenAuthenticator()
 
   private val baseEndpoint = endpoint
+    .errorOut(
+      oneOf[BackendError](
+        oneOfVariant(statusCode(StatusCode.Unauthorized).and(jsonBody[AuthenticationError].description("User not authorised"))),
+        oneOfDefaultVariant(statusCode(StatusCode.InternalServerError).and(jsonBody[BackendError].description("Unknown")))
+      )
+    )
     .out(header("X-Content-Type-Options", "nosniff"))
     .out(header("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
     .out(header("X-Frame-Options", "DENY"))
@@ -38,12 +46,10 @@ trait BaseController {
 
   private val securedWithBearerEndpoint = baseEndpoint
     .securityIn(auth.bearer[String]())
-    .errorOut(statusCode(StatusCode.Unauthorized))
-    .errorOut(jsonBody[AuthenticationError])
 
   val transferId: EndpointInput[UUID] = path("transferId")
 
-  val securedWithStandardUserBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, AuthenticationError, Unit, Any, IO] = securedWithBearerEndpoint
+  val securedWithStandardUserBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, BackendError, Unit, Any, IO] = securedWithBearerEndpoint
     .serverSecurityLogic(
       tokenAuthenticator.authenticateStandardUserToken
     )

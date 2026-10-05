@@ -9,7 +9,7 @@ import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
@@ -24,7 +24,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
   def endpoints: List[Endpoint[
     String,
     _ >: SourceSystem with (SourceSystem, Option[UUID]) with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
-    BackendException.AuthenticationError,
+    BackendError,
     _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse <: Product,
     Any
   ]] =
@@ -32,7 +32,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute
 
-  private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendException.AuthenticationError, TransferConfiguration, Any, IO] =
+  private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendError, TransferConfiguration, Any, IO] =
     securedWithStandardUserBearer
       .summary("Configuration for client transfer")
       .description("Provides configuration for calling client before starting an operation")
@@ -43,7 +43,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
   private val metadataOnly: EndpointInput[Option[Boolean]] = query("metadataOnly")
   private val existingTransferId: EndpointInput[Option[UUID]] = query("transferId")
 
-  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, Option[UUID]), BackendException.AuthenticationError, LoadDetails, Any, IO] =
+  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, Option[UUID]), BackendError, LoadDetails, Any, IO] =
     securedWithStandardUserBearer
       .summary("Initiate the load of records and metadata")
       .post
@@ -54,7 +54,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
     String,
     AuthenticatedContext,
     (SourceSystem, UUID, Option[Boolean], LoadCompletion),
-    BackendException.AuthenticationError,
+    BackendError,
     LoadCompletionResponse,
     Any,
     IO
