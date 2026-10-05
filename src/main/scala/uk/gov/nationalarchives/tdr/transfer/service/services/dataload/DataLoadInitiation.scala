@@ -22,7 +22,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     for {
       userTransfers <- graphQlApiService.getAllUserConsignments(token)
       _ <- canInitiate(userTransfers, token.userId, existingTransferId)
-        .flatMap(_.fold(err => IO.raiseError(throw BackendException.LoadError(err.getMessage)), _ => IO.unit))
+        .flatMap(_.fold(err => IO.raiseError(BackendException.LoadError(err.getMessage)), _ => IO.unit))
       result <-
         if (existingTransferId.nonEmpty) { initiateExistingTransfer(token, sourceSystem, existingTransferId.get) }
         else { initiateNewTransfer(token, sourceSystem) }
