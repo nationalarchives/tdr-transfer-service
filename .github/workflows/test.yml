@@ -15,6 +15,6 @@ jobs:
       repo-name: tdr-transfer-service
       test-command: |
         sbt "scalafmtCheckAll; test"
-      java-version: '17'
+      java-version: '21'
     secrets:
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
