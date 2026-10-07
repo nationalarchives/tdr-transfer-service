@@ -16,11 +16,14 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedV
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
 import java.util.UUID
@@ -209,6 +212,31 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         .unsafeRunSync()
 
       response.status shouldBe Status.InternalServerError
+    }
+
+    s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 401 response when user does not have access to the transfer" in {
+      val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=${UUID.randomUUID()}")
+      graphqlOkJson()
+      val mockAuthorisation = mock[Authorisation]
+      val validToken = validUserToken()
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$validToken")
+      val fakeHeaders = Headers.apply(authHeader)
+
+      when(mockAuthorisation.validateUserHasAccessToConsignment(any[Token], any[UUID]))
+        .thenReturn(IO.raiseError(AuthenticationError("Authentication error message")))
+
+      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation).initiateLoadRoute.orNotFound
+        .run(
+          Request(method = Method.POST, uri = uriOptionalTransferId, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      val expectedErrorJson = Json.obj(
+        "message" := "Authentication error message"
+      )
+      response.status shouldBe Status.Unauthorized
+      response.as[Json].unsafeRunSync() shouldEqual expectedErrorJson
     }
 
     s"'load/$source/initiate' endpoint" should "return 401 response with incorrect authorisation header" in {

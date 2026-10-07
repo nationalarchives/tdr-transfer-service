@@ -8,7 +8,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
-import uk.gov.nationalarchives.tdr.transfer.service.api.auth.AuthenticatedContext
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
@@ -19,7 +19,8 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadC
 
 import java.util.UUID
 
-class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor) extends BaseController {
+class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor, authorisation: Authorisation)
+    extends BaseController {
 
   def endpoints: List[Endpoint[
     String,
@@ -72,7 +73,23 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input._1, input._2))
+      initiateLoadEndpoint.serverLogic { ac =>
+        { case (sourceSystem, existingTransferId) =>
+          val authorisationIO =
+            if (existingTransferId.nonEmpty) authorisation.validateUserHasAccessToConsignment(ac.token, existingTransferId.get)
+            else IO.unit
+
+          val loadIO = dataLoadInitiation.initiateConsignmentLoad(ac.token, sourceSystem, existingTransferId)
+
+          (for {
+            _ <- authorisationIO
+            result <- loadIO
+          } yield Right(result)).handleErrorWith {
+            case ex: BackendError.AuthenticationError => IO.pure(Left(ex))
+            case ex                                   => IO.raiseError(ex)
+          }
+        }
+      }
     )
 
   val completeLoadRoute: HttpRoutes[IO] =
@@ -82,5 +99,6 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 }
 
 object LoadController {
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor())
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
+    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation())
 }
