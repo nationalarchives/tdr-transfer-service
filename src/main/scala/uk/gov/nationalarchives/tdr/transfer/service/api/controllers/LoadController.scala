@@ -72,7 +72,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      initiateLoadEndpoint.serverLogicSuccess(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input._1, input._2))
+      initiateLoadEndpoint.serverLogic(ac => input => dataLoadInitiation.initiateConsignmentLoad(ac.token, input._1, input._2))
     )
 
   val completeLoadRoute: HttpRoutes[IO] =

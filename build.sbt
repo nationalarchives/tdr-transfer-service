@@ -21,6 +21,7 @@ lazy val root = (project in file("."))
       logBackEncoder,
       metadataSchema,
       mockito % Test,
+      mockitoScalaTest % Test,
       pekkoTestKitHttp % Test,
       pureConfig,
       pureConfigCatsEffect,
