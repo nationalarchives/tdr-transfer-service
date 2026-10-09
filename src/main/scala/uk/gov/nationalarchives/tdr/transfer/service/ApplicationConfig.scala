@@ -8,7 +8,7 @@ object ApplicationConfig {
   implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
 
   case class TransferServiceApi(port: Int, throttleAmount: Int, throttlePerMs: Int, logHeaders: Boolean, logBody: Boolean)
-  case class ConsignmentApi(url: String)
+  case class ConsignmentApi(url: String, consignmentsPaginationLimit: Int)
   case class Auth(url: String, realm: String)
   case class S3(
       awsRegion: String,
@@ -24,6 +24,7 @@ object ApplicationConfig {
   case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String, networkDriveLocation: String)
   case class TransferConfiguration(
       maxNumberRecords: Int,
+      maxNumberNoSeriesAssignment: Int,
       maxIndividualFileSizeMb: Int,
       maxTransferSizeMb: Int,
       ignoreSiteNameBodies: String,
