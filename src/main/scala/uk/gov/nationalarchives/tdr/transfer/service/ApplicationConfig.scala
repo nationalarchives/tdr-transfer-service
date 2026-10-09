@@ -33,6 +33,7 @@ object ApplicationConfig {
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
   case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean, blockServiceEndpoints: Boolean)
+  case class ErrorMessagePatterns(inCorrectUploadState: String, transfersWithoutSeries: String)
 
   case class Configuration(
       auth: Auth,
@@ -43,7 +44,8 @@ object ApplicationConfig {
       transferConfiguration: TransferConfiguration,
       cors: Cors,
       sqs: Sqs,
-      featureAccessBlocks: FeatureAccessBlocks
+      featureAccessBlocks: FeatureAccessBlocks,
+      errorMessagePatterns: ErrorMessagePatterns
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
