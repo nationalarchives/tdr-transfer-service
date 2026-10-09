@@ -1,6 +1,5 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.dataload
 
-import cats.data.EitherT
 import cats.effect.IO
 import graphql.codegen.GetConsignments.getConsignments.Consignments.Edges.Node
 import org.typelevel.log4cats.SelfAwareStructuredLogger
@@ -14,7 +13,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.{Ser
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{s3Config, transferConfigurationConfig}
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{errorMessagePatterns, s3Config, transferConfigurationConfig}
 
 import java.util.UUID
 
@@ -46,7 +45,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
       !t.consignmentStatuses.map(_.statusType).contains(SeriesType.id)
     })
     if (missingSeriesCount > transferConfigurationConfig.maxConsignmentsWithoutSeries) {
-      val errorMessage = s"User $userId has too many consignments without series assigned"
+      val errorMessage = s"User $userId has ${errorMessagePatterns.transfersWithoutSeries}"
       logger.error(errorMessage).as(Left(SeriesAssignmentError(errorMessage)))
     } else isTransferStateCorrect(existingTransferId, userTransfers)
   }
@@ -58,9 +57,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     val uploadState = existingTransferStatuses.find(_.statusType == UploadType.id)
     uploadState match {
       case Some(state) if state.value == CompletedValue.value =>
-        val errorMessage = s"Existing consignment state incorrect for upload: ${existingTransferId.get}"
+        val errorMessage = s"Existing ${errorMessagePatterns.inCorrectUploadState}: ${existingTransferId.get}"
         logger
-          .error(s"Existing consignment state incorrect for upload: ${existingTransferId.get}")
+          .error(errorMessage)
           .as(Left(TransferStateError(errorMessage)))
       case _ => IO.pure(Right(true))
     }
@@ -111,7 +110,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
 }
 
 object DataLoadInitiation {
-  val s3Config: ApplicationConfig.S3 = ApplicationConfig.appConfig.s3
-  val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = ApplicationConfig.appConfig.transferConfiguration
+  private val appConfig = ApplicationConfig.appConfig
+  val s3Config: ApplicationConfig.S3 = appConfig.s3
+  val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = appConfig.transferConfiguration
+  val errorMessagePatterns: ApplicationConfig.ErrorMessagePatterns = appConfig.errorMessagePatterns
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new DataLoadInitiation(GraphQlApiService.service)(logger)
 }

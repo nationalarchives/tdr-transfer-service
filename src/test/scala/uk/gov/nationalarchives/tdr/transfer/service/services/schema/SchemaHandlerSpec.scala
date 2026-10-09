@@ -29,8 +29,8 @@ class SchemaHandlerSpec extends BaseSpec {
       MetadataPropertyDetails("copyright_details", required = false, "copyright details"),
       MetadataPropertyDetails("closure_x0020_period", required = false, "closure period"),
       MetadataPropertyDetails("former_x0020_reference", required = false, "former reference"),
-      MetadataPropertyDetails("description", required = false, "description"),
       MetadataPropertyDetails("foi_x0020_exemption_x0020_code", required = false, "foi exemption code"),
+      MetadataPropertyDetails("catalogue_placement", required = false, "catalogue placement"),
       MetadataPropertyDetails("alternate_x0020_filename", required = false, "alternate filename"),
       MetadataPropertyDetails("alternate_x0020_description", required = false, "alternate description"),
       MetadataPropertyDetails("is_x0020_filename_x0020_closed", required = false, "is filename closed"),
@@ -38,11 +38,13 @@ class SchemaHandlerSpec extends BaseSpec {
       MetadataPropertyDetails("language", required = false, "language"),
       MetadataPropertyDetails("date_x0020_of_x0020_the_x0020_record", required = false, "date of the record"),
       MetadataPropertyDetails("note", required = false, "note"),
-      MetadataPropertyDetails("closure_x0020_period", required = false, "closure period")
+      MetadataPropertyDetails("closure_x0020_period", required = false, "closure period"),
+      MetadataPropertyDetails("former_filepath_department", required = false, "former filepath"),
+      MetadataPropertyDetails("description", required = false, "description")
     )
     val result = SchemaHandler.tdrSharePointCustomTags
 
-    result.size shouldBe 20
+    result.size shouldBe 22
     result shouldBe expectedTdrSharePointCustomTags
   }
 }
