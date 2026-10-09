@@ -7,14 +7,16 @@ sealed trait BackendError extends Exception {
   val message: String
 }
 
-object BackendError {
-  case class AuthenticationError(message: String) extends BackendError
-  case class SeriesAssignmentError(message: String) extends BackendError
-  case class TransferStateError(message: String) extends BackendError
-}
+case class TransferStateError(message: String) extends BackendError
+case class AuthenticationError(message: String) extends BackendError
+case class SeriesAssignmentError(message: String) extends BackendError
 
 class ErrorHandler()(implicit logger: SelfAwareStructuredLogger[IO]) {
-  def handleError(error: BackendError): IO[Unit] = {
-    logger.info(error.message).as(error).flatMap(IO.raiseError)
+  private def handleError(error: BackendError): IO[BackendError] = {
+    logger.error(error.message).as(error)
+  }
+
+  def handleErrorAsLeft(error: BackendError): IO[Left[BackendError, Nothing]] = {
+    handleError(error).map(Left(_))
   }
 }

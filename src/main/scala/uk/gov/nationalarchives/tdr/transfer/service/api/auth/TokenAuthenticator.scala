@@ -4,8 +4,7 @@ import cats.effect.IO
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.keycloak.{KeycloakUtils, TdrKeycloakDeployment, Token}
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError}
 
 import scala.concurrent.ExecutionContext
 

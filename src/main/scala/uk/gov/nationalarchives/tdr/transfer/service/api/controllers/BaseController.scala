@@ -10,7 +10,7 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir.{EndpointInput, auth, endpoint, header, path, statusCode}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem

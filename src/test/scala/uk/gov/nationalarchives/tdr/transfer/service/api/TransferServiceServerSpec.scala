@@ -19,7 +19,7 @@ import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.{AuthenticationError, SeriesAssignmentError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, ErrorHandler, SeriesAssignmentError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
@@ -219,8 +219,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     }
 
     s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 401 response when user does not have access to the transfer" in {
-      val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=${UUID.randomUUID()}")
-      graphqlOkJson()
+      val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=$transferId")
+      graphqlOkJson(UUID.fromString(transferId))
       val mockAuthorisation = mock[Authorisation]
       val validToken = validUserToken()
       val bearer = CIString("Authorization")

@@ -11,6 +11,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.ErrorHandler
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
@@ -19,6 +20,7 @@ import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import java.util.UUID
 
 class DataLoadInitiationSpec extends BaseSpec {
+  implicit def errorHandler: ErrorHandler = new ErrorHandler()
   private val mockToken = mock[Token]
   private val mockBearerAccessToken = mock[BearerAccessToken]
   private val consignmentId = UUID.fromString("6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")

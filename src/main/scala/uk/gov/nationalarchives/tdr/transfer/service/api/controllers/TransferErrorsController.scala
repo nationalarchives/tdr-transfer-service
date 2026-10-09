@@ -8,7 +8,7 @@ import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
@@ -40,8 +40,8 @@ class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: 
             _ <- Authorisation().validateUserHasAccessToConsignment(ac.token, transferId)
             result <- transferErrors.getTransferErrors(ac.token, transferId, prefix)
           } yield Right(result)).handleErrorWith {
-            case ex: BackendError.AuthenticationError => IO.pure(Left(ex))
-            case ex                                   => IO.raiseError(ex)
+            case ex: AuthenticationError => IO.pure(Left(ex))
+            case ex                      => IO.raiseError(ex)
           }
         }
       }

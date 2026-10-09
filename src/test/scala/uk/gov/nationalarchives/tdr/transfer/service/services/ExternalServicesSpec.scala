@@ -7,12 +7,14 @@ import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, StatusType}
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.ErrorHandler
 
 import java.util.UUID
 import scala.io.Source.fromResource
 
 class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeAndAfterAll with ScalaFutures {
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(5, Seconds)), interval = scaled(Span(100, Millis)))
+  implicit def errorHandler: ErrorHandler = new ErrorHandler()
 
   val wiremockGraphqlServer = new WireMockServer(9001)
   val wiremockS3 = new WireMockServer(8003)

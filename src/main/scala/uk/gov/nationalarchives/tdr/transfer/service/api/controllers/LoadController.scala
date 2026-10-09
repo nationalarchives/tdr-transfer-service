@@ -9,7 +9,7 @@ import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
@@ -19,8 +19,9 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadC
 
 import java.util.UUID
 
-class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor, authorisation: Authorisation)
-    extends BaseController {
+class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor, authorisation: Authorisation)(
+    implicit errorHandler: ErrorHandler
+) extends BaseController {
 
   def endpoints: List[Endpoint[
     String,
@@ -84,9 +85,11 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
           (for {
             _ <- authorisationIO
             result <- loadIO
-          } yield Right(result)).handleErrorWith {
-            case ex: BackendError.AuthenticationError => IO.pure(Left(ex))
-            case ex                                   => IO.raiseError(ex)
+          } yield result).handleErrorWith {
+            case err: BackendError =>
+              errorHandler.handleErrorAsLeft(err)
+            case err =>
+              IO.raiseError(err)
           }
         }
       }
@@ -99,6 +102,6 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 }
 
 object LoadController {
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO], errorHandler: ErrorHandler) =
     new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation())
 }

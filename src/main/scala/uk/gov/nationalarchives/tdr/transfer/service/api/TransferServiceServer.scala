@@ -16,11 +16,13 @@ import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.ErrorHandler
 
 import scala.concurrent.duration.DurationInt
 
 object TransferServiceServer extends IOApp {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+  implicit def errorHandler: ErrorHandler = new ErrorHandler()
   private val appConfig = ApplicationConfig.appConfig
   private val authUrl = appConfig.auth.url
   private val realm = appConfig.auth.realm
