@@ -230,7 +230,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       when(mockAuthorisation.validateUserHasAccessToConsignment(any[Token], any[UUID]))
         .thenReturn(IO.raiseError(AuthenticationError("Authentication error message")))
 
-      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation).initiateLoadRoute.orNotFound
+      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation, new ErrorHandler()).initiateLoadRoute.orNotFound
         .run(
           Request(method = Method.POST, uri = uriOptionalTransferId, headers = fakeHeaders)
         )
@@ -353,7 +353,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         )
       )
 
-    val controller = new TransferErrorsController(mockedTransferErrors)
+    val controller = new TransferErrorsController(mockedTransferErrors, Authorisation(), new ErrorHandler())
 
     val response = controller.getErrorsRoute.orNotFound
       .run(

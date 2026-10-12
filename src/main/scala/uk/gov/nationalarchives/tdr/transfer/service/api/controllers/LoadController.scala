@@ -19,8 +19,12 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadC
 
 import java.util.UUID
 
-class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadInitiation: DataLoadInitiation, dataLoadProcessor: DataLoadProcessor, authorisation: Authorisation)(
-    implicit errorHandler: ErrorHandler
+class LoadController(
+    dataLoadConfiguration: DataLoadConfiguration,
+    dataLoadInitiation: DataLoadInitiation,
+    dataLoadProcessor: DataLoadProcessor,
+    authorisation: Authorisation,
+    errorHandler: ErrorHandler
 ) extends BaseController {
 
   def endpoints: List[Endpoint[
@@ -102,6 +106,7 @@ class LoadController(dataLoadConfiguration: DataLoadConfiguration, dataLoadIniti
 }
 
 object LoadController {
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO], errorHandler: ErrorHandler) =
-    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation())
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]): LoadController = {
+    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation(), new ErrorHandler())
+  }
 }

@@ -8,7 +8,7 @@ import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError, ErrorHandler}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
@@ -16,7 +16,11 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErro
 
 import java.util.UUID
 
-class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: SelfAwareStructuredLogger[IO]) extends BaseController {
+class TransferErrorsController(
+    transferErrors: TransferErrors,
+    authorisation: Authorisation,
+    errorHandler: ErrorHandler
+) extends BaseController {
   private val transferFunction: EndpointInput[TransferFunction] = path("transferFunction")
 
   override def routes: HttpRoutes[IO] = getErrorsRoute
@@ -35,7 +39,22 @@ class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: 
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
       getErrorsEndpoint.serverLogic { ac =>
         { case (transferFunction, transferId) =>
-          val prefix = s"$transferId/$transferFunction"
+          lazy val prefix = s"$transferId/$transferFunction"
+
+          val authorisationIO = authorisation.validateUserHasAccessToConsignment(ac.token, transferId)
+
+          val resultIO = transferErrors.getTransferErrors(ac.token, transferId, prefix)
+
+          (for {
+            _ <- authorisationIO
+            result <- resultIO
+          } yield result).handleErrorWith {
+            case err: BackendError =>
+              errorHandler.handleErrorAsLeft(err)
+            case err =>
+              IO.raiseError(err)
+          }
+
           (for {
             _ <- Authorisation().validateUserHasAccessToConsignment(ac.token, transferId)
             result <- transferErrors.getTransferErrors(ac.token, transferId, prefix)
@@ -49,5 +68,6 @@ class TransferErrorsController(transferErrors: TransferErrors)(implicit logger: 
 }
 
 object TransferErrorsController {
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new TransferErrorsController(TransferErrors())
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
+    new TransferErrorsController(TransferErrors(), Authorisation(), new ErrorHandler())
 }

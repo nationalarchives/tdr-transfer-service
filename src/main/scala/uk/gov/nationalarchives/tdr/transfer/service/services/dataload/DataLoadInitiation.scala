@@ -16,7 +16,10 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadIn
 
 import java.util.UUID
 
-class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO], errorHandler: ErrorHandler) {
+class DataLoadInitiation(
+    graphQlApiService: GraphQlApiService,
+    errorHandler: ErrorHandler
+)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[Either[BackendError, LoadDetails]] = {
     for {
       userTransfers <- graphQlApiService.getAllUserConsignments(token)
@@ -111,6 +114,6 @@ object DataLoadInitiation {
   val s3Config: ApplicationConfig.S3 = appConfig.s3
   val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = appConfig.transferConfiguration
   val errorMessagePatterns: ApplicationConfig.ErrorMessagePatterns = appConfig.errorMessagePatterns
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO], errorHandler: ErrorHandler) =
-    new DataLoadInitiation(GraphQlApiService.service)(logger, errorHandler)
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
+    new DataLoadInitiation(GraphQlApiService.service, new ErrorHandler())(logger)
 }
