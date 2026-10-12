@@ -24,7 +24,7 @@ object ApplicationConfig {
   case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String, networkDriveLocation: String)
   case class TransferConfiguration(
       maxNumberRecords: Int,
-      maxNumberNoSeriesAssignment: Int,
+      maxConsignmentsWithoutSeries: Int,
       maxIndividualFileSizeMb: Int,
       maxTransferSizeMb: Int,
       ignoreSiteNameBodies: String,

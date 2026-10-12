@@ -43,9 +43,9 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     val missingSeriesCount = userTransfers.count(t => {
       !t.consignmentStatuses.map(_.statusType).contains(SeriesType.id)
     })
-    if (missingSeriesCount > transferConfigurationConfig.maxNumberNoSeriesAssignment) {
+    if (missingSeriesCount > transferConfigurationConfig.maxConsignmentsWithoutSeries) {
       val errorMessage = s"User $userId has ${errorMessagePatterns.transfersWithoutSeries}"
-      errorHandler.handleErrorAsLeft(SeriesAssignmentError(errorMessage))
+      logger.error(errorMessage).as(Left(SeriesAssignmentError(errorMessage)))
     } else isTransferStateCorrect(existingTransferId, userTransfers)
   }
 
