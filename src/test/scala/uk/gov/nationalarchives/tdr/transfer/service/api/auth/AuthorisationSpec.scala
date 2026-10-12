@@ -6,7 +6,7 @@ import org.mockito.ArgumentMatchers.any
 import uk.gov.nationalarchives.tdr.common.utils.authorisation.{Allow, ConsignmentAuthorisation, ConsignmentAuthorisationInput, Deny}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 
 import java.util.UUID
 
@@ -31,11 +31,11 @@ class AuthorisationSpec extends BaseSpec {
     when(token.userId).thenReturn(userId)
     when(authModule.hasAccess(any[ConsignmentAuthorisationInput])).thenReturn(IO(Deny))
 
-    val ex = intercept[BackendException.AuthenticationError] {
+    val ex = intercept[BackendError.AuthenticationError] {
       authorisation.validateUserHasAccessToConsignment(token, consignmentId).unsafeRunSync()
     }
 
     ex.message should include(s"User $userId does not have access to consignment: $consignmentId")
-    ex.getClass shouldBe classOf[BackendException.AuthenticationError]
+    ex.getClass shouldBe classOf[BackendError.AuthenticationError]
   }
 }

@@ -1,7 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services
 
 import cats.effect.IO
-import cats.implicits.catsSyntaxOptionId
+import cats.implicits.{catsSyntaxMonadIdOps, catsSyntaxOptionId}
 import graphql.codegen.AddConsignment.{addConsignment => ac}
 import graphql.codegen.AddOrUpdateConsignmenetMetadata.{addOrUpdateConsignmentMetadata => acm}
 import graphql.codegen.GetConsignment.getConsignment.GetConsignment
@@ -9,6 +9,9 @@ import graphql.codegen.GetConsignment.{getConsignment => gc}
 import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.ConsignmentStatuses
 import graphql.codegen.GetConsignmentStatus.{getConsignmentStatus => getStatus}
 import graphql.codegen.GetConsignmentSummary.{getConsignmentSummary => getSummary}
+import graphql.codegen.GetConsignments.getConsignments.Consignments
+import graphql.codegen.GetConsignments.getConsignments.Consignments.Edges.Node
+import graphql.codegen.GetConsignments.{getConsignments => gcs}
 import graphql.codegen.StartUpload.{startUpload => su}
 import graphql.codegen.UpdateConsignmentStatus.{updateConsignmentStatus => ucs}
 import graphql.codegen.types._
@@ -20,6 +23,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.StatusValu
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
+import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService.consignmentsPaginationLimit
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,12 +36,17 @@ class GraphQlApiService(
     existingConsignmentClient: GraphQLClient[getSummary.Data, getSummary.Variables],
     consignmentStateClient: GraphQLClient[getStatus.Data, getStatus.Variables],
     getConsignmentClient: GraphQLClient[gc.Data, gc.Variables],
-    updateConsignmentStatusClient: GraphQLClient[ucs.Data, ucs.Variables]
+    updateConsignmentStatusClient: GraphQLClient[ucs.Data, ucs.Variables],
+    getConsignmentsClient: GraphQLClient[gcs.Data, gcs.Variables]
 )(implicit
     backend: SttpBackend[Identity, Any]
 ) {
   private def blockingFutureToIO[T](future: => Future[T]): IO[T] =
     IO.blocking(future).flatMap(result => IO.fromFuture(IO.pure(result)))
+
+  private case class UserConsignments(consignments: List[Consignments], nextPage: Boolean, currentCursor: Option[String]) {
+    def nodes: List[Node] = consignments.flatMap(_.edges).flatMap(_.map(_.map(_.node))).flatten
+  }
 
   def getConsignment(token: Token, consignmentId: UUID): IO[GetConsignment] = {
     for {
@@ -45,6 +54,25 @@ class GraphQlApiService(
       consignmentData <- IO.fromOption(consignmentResult.data)(new RuntimeException(s"Failed to retrieve consignment information for consignment: $consignmentId"))
     } yield consignmentData.getConsignment.get
   }
+
+  def consignments(currentCursor: Option[String], consignmentFilters: ConsignmentFilters, token: Token): IO[Consignments] = {
+    for {
+      results <- blockingFutureToIO(
+        getConsignmentsClient
+          .getResult(token.bearerAccessToken, gcs.document, gcs.Variables(consignmentsPaginationLimit, currentCursor, None, Option(consignmentFilters), None).some)
+      )
+      data <- IO.fromOption(results.data)(new RuntimeException(s"Failed to retrieve consignments"))
+    } yield data.consignments
+  }
+
+  def getAllUserConsignments(token: Token): IO[List[Node]] = {
+    val filter = ConsignmentFilters(Some(token.userId), Some("standard"))
+    UserConsignments(Nil, nextPage = true, None)
+      .iterateUntilM(ucs => {
+        consignments(ucs.currentCursor, filter, token)
+          .map(c => UserConsignments(ucs.consignments :+ c, c.pageInfo.hasNextPage, c.pageInfo.endCursor))
+      })(_.nextPage == false)
+  }.map(_.nodes)
 
   def existingConsignment(token: Token, consignmentId: UUID): IO[GetConsignmentSummary.getConsignmentSummary.GetConsignment] = {
     for {
@@ -102,7 +130,9 @@ class GraphQlApiService(
 
 object GraphQlApiService {
   implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
-  private val apiUrl = appConfig.consignmentApi.url
+  private val apiConfig = appConfig.consignmentApi
+  private val apiUrl = apiConfig.url
+  private val consignmentsPaginationLimit = apiConfig.consignmentsPaginationLimit
 
   val service: GraphQlApiService = GraphQlApiService.apply(
     new GraphQLClient[ac.Data, ac.Variables](apiUrl),
@@ -111,7 +141,8 @@ object GraphQlApiService {
     new GraphQLClient[getSummary.Data, getSummary.Variables](apiUrl),
     new GraphQLClient[getStatus.Data, getStatus.Variables](apiUrl),
     new GraphQLClient[gc.Data, gc.Variables](apiUrl),
-    new GraphQLClient[ucs.Data, ucs.Variables](apiUrl)
+    new GraphQLClient[ucs.Data, ucs.Variables](apiUrl),
+    new GraphQLClient[gcs.Data, gcs.Variables](apiUrl)
   )
 
   def apply(
@@ -121,7 +152,8 @@ object GraphQlApiService {
       getConsignmentSummaryClient: GraphQLClient[getSummary.Data, getSummary.Variables],
       getConsignmentStatus: GraphQLClient[getStatus.Data, getStatus.Variables],
       getConsignment: GraphQLClient[gc.Data, gc.Variables],
-      updateConsignmentStatusClient: GraphQLClient[ucs.Data, ucs.Variables]
+      updateConsignmentStatusClient: GraphQLClient[ucs.Data, ucs.Variables],
+      getConsignmentsClient: GraphQLClient[gcs.Data, gcs.Variables]
   )(implicit backend: SttpBackend[Identity, Any]) =
     new GraphQlApiService(
       addConsignmentClient,
@@ -130,6 +162,7 @@ object GraphQlApiService {
       getConsignmentSummaryClient,
       getConsignmentStatus,
       getConsignment,
-      updateConsignmentStatusClient
+      updateConsignmentStatusClient,
+      getConsignmentsClient
     )
 }

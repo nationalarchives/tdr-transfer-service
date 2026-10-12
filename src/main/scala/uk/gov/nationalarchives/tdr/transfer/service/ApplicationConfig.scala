@@ -8,7 +8,7 @@ object ApplicationConfig {
   implicit def hint[A]: ProductHint[A] = ProductHint[A](ConfigFieldMapping(CamelCase, CamelCase))
 
   case class TransferServiceApi(port: Int, throttleAmount: Int, throttlePerMs: Int, logHeaders: Boolean, logBody: Boolean)
-  case class ConsignmentApi(url: String)
+  case class ConsignmentApi(url: String, consignmentsPaginationLimit: Int)
   case class Auth(url: String, realm: String)
   case class S3(
       awsRegion: String,
@@ -24,6 +24,7 @@ object ApplicationConfig {
   case class Schema(dataLoadSharePointLocation: String, hardDriveLocation: String, networkDriveLocation: String)
   case class TransferConfiguration(
       maxNumberRecords: Int,
+      maxConsignmentsWithoutSeries: Int,
       maxIndividualFileSizeMb: Int,
       maxTransferSizeMb: Int,
       ignoreSiteNameBodies: String,
@@ -32,6 +33,7 @@ object ApplicationConfig {
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
   case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean, blockServiceEndpoints: Boolean)
+  case class ErrorMessagePatterns(inCorrectUploadState: String, transfersWithoutSeries: String)
 
   case class Configuration(
       auth: Auth,
@@ -42,7 +44,8 @@ object ApplicationConfig {
       transferConfiguration: TransferConfiguration,
       cors: Cors,
       sqs: Sqs,
-      featureAccessBlocks: FeatureAccessBlocks
+      featureAccessBlocks: FeatureAccessBlocks,
+      errorMessagePatterns: ErrorMessagePatterns
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {

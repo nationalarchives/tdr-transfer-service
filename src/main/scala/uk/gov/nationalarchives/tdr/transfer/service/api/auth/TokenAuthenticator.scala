@@ -4,7 +4,8 @@ import cats.effect.IO
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import uk.gov.nationalarchives.tdr.keycloak.{KeycloakUtils, TdrKeycloakDeployment, Token}
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendException.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.AuthenticationError
 
 import scala.concurrent.ExecutionContext
 
@@ -26,7 +27,7 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
   private def authenticationErrorHandler(errorMessage: String, errorType: String = "Authorisation"): IO[AuthenticationError] =
     logger.info(s"$errorType error: $errorMessage").as(AuthenticationError(errorMessage))
 
-  def authenticateStandardUserToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] =
+  def authenticateStandardUserToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
     parseToken(bearer).flatMap {
       case Right(t) if t.isStandardUser =>
         IO.pure(Right(AuthenticatedContext(t)))
@@ -43,7 +44,7 @@ class TokenAuthenticator()(implicit logger: SelfAwareStructuredLogger[IO]) {
         ).map(Left(_))
     }
 
-  def authenticateClientToken(bearer: String): IO[Either[AuthenticationError, AuthenticatedContext]] =
+  def authenticateClientToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
     parseToken(bearer).flatMap {
       case Right(t) if t.transferServiceRoles.contains("data-load") =>
         IO.pure(Right(AuthenticatedContext(t)))
