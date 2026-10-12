@@ -3,7 +3,7 @@ import sbt.*
 object Dependencies {
   private val http4sVersion = "0.23.38"
   private val mockitoVersion = "2.2.3"
-  private val nettyVersion = "4.2.18.Final"
+  private val nettyVersion = "4.2.19.Final"
   private val pureConfigVersion = "0.17.10"
   private val tapirVersion = "1.13.33"
   private val awsUtilsVersion = "0.1.340"
@@ -29,7 +29,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.5"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.147"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.148"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
