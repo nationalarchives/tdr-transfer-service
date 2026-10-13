@@ -41,26 +41,18 @@ class TransferErrorsController(
         { case (transferFunction, transferId) =>
           lazy val prefix = s"$transferId/$transferFunction"
 
-          val authorisationIO = authorisation.validateUserHasAccessToConsignment(ac.token, transferId)
+          val authorisationIO: IO[Unit] = authorisation.validateUserHasAccessToConsignment(ac.token, transferId)
 
-          val resultIO = transferErrors.getTransferErrors(ac.token, transferId, prefix)
+          val resultIO: IO[TransferErrorsResults] = transferErrors.getTransferErrors(ac.token, transferId, prefix)
 
           (for {
             _ <- authorisationIO
             result <- resultIO
-          } yield result).handleErrorWith {
+          } yield Right(result)).handleErrorWith {
             case err: BackendError =>
               errorHandler.handleErrorAsLeft(err)
             case err =>
               IO.raiseError(err)
-          }
-
-          (for {
-            _ <- Authorisation().validateUserHasAccessToConsignment(ac.token, transferId)
-            result <- transferErrors.getTransferErrors(ac.token, transferId, prefix)
-          } yield Right(result)).handleErrorWith {
-            case ex: AuthenticationError => IO.pure(Left(ex))
-            case ex                      => IO.raiseError(ex)
           }
         }
       }
