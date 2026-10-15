@@ -8,8 +8,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError.{SeriesAssignmentError, TransferStateError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler, SeriesAssignmentError, TransferStateError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
@@ -17,7 +16,10 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadIn
 
 import java.util.UUID
 
-class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: SelfAwareStructuredLogger[IO]) {
+class DataLoadInitiation(
+    graphQlApiService: GraphQlApiService,
+    errorHandler: ErrorHandler
+)(implicit logger: SelfAwareStructuredLogger[IO]) {
   def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[Either[BackendError, LoadDetails]] = {
     for {
       userTransfers <- graphQlApiService.getAllUserConsignments(token)
@@ -50,7 +52,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     } else isTransferStateCorrect(existingTransferId, userTransfers)
   }
 
-  private def isTransferStateCorrect(existingTransferId: Option[UUID], userTransfers: List[Node]): IO[Either[TransferStateError, Boolean]] = {
+  private def isTransferStateCorrect(existingTransferId: Option[UUID], userTransfers: List[Node]): IO[Either[BackendError, Boolean]] = {
     val existingTransfer = userTransfers.find(_.consignmentid == existingTransferId)
     val existingTransferStatuses = if (existingTransfer.nonEmpty) { existingTransfer.get.consignmentStatuses }
     else Nil
@@ -58,9 +60,7 @@ class DataLoadInitiation(graphQlApiService: GraphQlApiService)(implicit logger: 
     uploadState match {
       case Some(state) if state.value == CompletedValue.value =>
         val errorMessage = s"Existing ${errorMessagePatterns.inCorrectUploadState}: ${existingTransferId.get}"
-        logger
-          .error(errorMessage)
-          .as(Left(TransferStateError(errorMessage)))
+        errorHandler.handleErrorAsLeft(TransferStateError(errorMessage))
       case _ => IO.pure(Right(true))
     }
   }
@@ -114,5 +114,6 @@ object DataLoadInitiation {
   val s3Config: ApplicationConfig.S3 = appConfig.s3
   val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = appConfig.transferConfiguration
   val errorMessagePatterns: ApplicationConfig.ErrorMessagePatterns = appConfig.errorMessagePatterns
-  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) = new DataLoadInitiation(GraphQlApiService.service)(logger)
+  def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
+    new DataLoadInitiation(GraphQlApiService.service, new ErrorHandler())(logger)
 }

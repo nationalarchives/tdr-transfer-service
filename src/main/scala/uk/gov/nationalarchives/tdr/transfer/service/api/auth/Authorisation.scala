@@ -7,17 +7,19 @@ import uk.gov.nationalarchives.tdr.common.utils.authorisation.{Allow, Consignmen
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer.backend
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthenticationError
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class Authorisation(authorisationModule: ConsignmentAuthorisation) {
-
-  def validateUserHasAccessToConsignment(token: Token, transferId: UUID): IO[Unit] = {
+  def validateUserConsignmentAccess(token: Token, transferId: UUID): IO[Unit] = {
     val input = ConsignmentAuthorisationInput(transferId, token)
-    authorisationModule.hasAccess(input).flatMap { result =>
-      if (result == Allow) IO.unit else IO.raiseError(BackendError.AuthenticationError(s"User ${token.userId} does not have access to consignment: $transferId"))
+    authorisationModule.hasAccess(input).flatMap {
+      case Allow => IO.unit
+      case Deny  =>
+        val errorMessage = s"User ${token.userId} ${appConfig.errorMessagePatterns.consignmentAccessDenied}: $transferId"
+        IO.raiseError(AuthenticationError(errorMessage))
     }
   }
 }
