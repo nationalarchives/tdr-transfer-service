@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_build.yml@b469512bc31f0425270a12b87ebe68807c3a1daf # v0.0.46
+    uses: nationalarchives/tdr-github-actions/.github/workflows/ecs_build.yml@1ef2644658f53e17ad5783c1fb87320a0c47f2f3 # v0.0.47
     with:
       java-version: '21'
       repo-name: tdr-transfer-service
