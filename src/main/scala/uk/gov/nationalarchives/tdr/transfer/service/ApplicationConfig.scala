@@ -33,7 +33,13 @@ object ApplicationConfig {
   case class Cors(permittedOrigins: List[String])
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
   case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean, blockServiceEndpoints: Boolean)
-  case class ErrorMessagePatterns(consignmentAccessDenied: String, inCorrectUploadState: String, transfersWithoutSeries: String)
+  case class ErrorMessagePatterns(
+      consignmentAccessDenied: String,
+      inCorrectUploadState: String,
+      sharePointUploadAccessDenied: String,
+      transfersWithoutSeries: String
+  )
+  case class FeatureAccessControls(sharePointUpload: Boolean)
 
   case class Configuration(
       auth: Auth,
@@ -45,7 +51,8 @@ object ApplicationConfig {
       cors: Cors,
       sqs: Sqs,
       featureAccessBlocks: FeatureAccessBlocks,
-      errorMessagePatterns: ErrorMessagePatterns
+      errorMessagePatterns: ErrorMessagePatterns,
+      featureAccessControls: FeatureAccessControls
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {

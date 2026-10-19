@@ -10,8 +10,9 @@ import org.http4s.implicits._
 import org.http4s.{Header, Headers, Method, Request, Status, Uri}
 import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor3}
 import org.typelevel.ci.CIString
+import sttp.model.StatusCode
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
@@ -19,7 +20,7 @@ import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, ErrorHandler, SeriesAssignmentError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, ErrorHandler}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
@@ -32,8 +33,12 @@ import java.util.UUID
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with TableDrivenPropertyChecks {
   val transferId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
   val transferRef = "Consignment-Ref"
+
   private val invalidTokenExpectedResponse = Json.obj(
     "message" := "Invalid token issuer. Expected 'http://localhost:8000/auth/realms/tdr'"
+  )
+  private val sharePointUploadFacExpectedResponse = Json.obj(
+    "message" := s"User $userId does not have permission to upload from SharePoint"
   )
 
   "'healthcheck' endpoint" should "return 200 if server running" in {
@@ -54,11 +59,11 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     Uri.fromString(uriString).fold(e => throw new RuntimeException(e.message), uri => uri)
   }
 
-  val sources: TableFor2[String, Int] = Table(
-    ("Source", "Number of metadata property details"),
-    (SourceSystemEnum.NetworkDrive.toString.toLowerCase, 0),
-    (SourceSystemEnum.HardDrive.toString.toLowerCase, 0),
-    (SourceSystemEnum.SharePoint.toString.toLowerCase, 11)
+  val sources: TableFor3[String, Int, StatusCode] = Table(
+    ("Source", "Number of metadata property details", "sharepoint feature access status code"),
+    (SourceSystemEnum.NetworkDrive.toString.toLowerCase, 0, StatusCode.Ok),
+    (SourceSystemEnum.HardDrive.toString.toLowerCase, 0, StatusCode.Ok),
+    (SourceSystemEnum.SharePoint.toString.toLowerCase, 11, StatusCode.Forbidden)
   )
 
   private def checkValidResponseHeaders(headers: Headers) = {
@@ -71,7 +76,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       "child-src 'self'; default-src 'self'; base-uri 'none'; script-src 'strict-dynamic'; connect-src 'self'; object-src 'none'"
   }
 
-  forAll(sources) { (source, numberPropertyDetails) =>
+  forAll(sources) { (source, numberPropertyDetails, sharePointFacStatus) =>
     val uri = generateUri(s"/load/$source/configuration")
 
     s"'load/$source/configuration' endpoint" should
@@ -119,9 +124,30 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       response.status shouldBe Status.Unauthorized
       response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
     }
+
+    s"'load/$source/configuration' endpoint" should
+      s"return ${sharePointFacStatus.code} response when user access no access to sharepoint upload feature" in {
+        val token = validUserToken(connectorForSharePointUser = "false")
+        val bearer = CIString("Authorization")
+        val authHeader = Header.Raw.apply(bearer, s"$token")
+        val fakeHeaders = Headers.apply(authHeader)
+        val response = LoadController
+          .apply()
+          .configurationRoute
+          .orNotFound
+          .run(
+            Request(method = Method.GET, uri = uri, headers = fakeHeaders)
+          )
+          .unsafeRunSync()
+
+        response.status.code shouldBe sharePointFacStatus.code
+        if (response.status.code != 200) {
+          response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+        }
+      }
   }
 
-  forAll(sources) { (source, _) =>
+  forAll(sources) { (source, _, sharePointFacStatus) =>
     val uri = generateUri(s"/load/$source/initiate")
     val expectedRecordsDestination = AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/$source/$transferId/records")
     val expectedMetadataLoadDestination = AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/$source/$transferId/metadata")
@@ -151,6 +177,28 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
     }
 
+    s"'load/$source/initiate' endpoint" should s"return ${sharePointFacStatus.code} response when user access no access to sharepoint upload feature" in {
+      graphqlOkJson(UUID.fromString(transferId))
+      val validToken = validUserToken(connectorForSharePointUser = "false")
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$validToken")
+      val fakeHeaders = Headers.apply(authHeader)
+      val response = LoadController
+        .apply()
+        .initiateLoadRoute
+        .orNotFound
+        .run(
+          Request(method = Method.POST, uri = uri, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      response.status.code shouldBe sharePointFacStatus.code
+
+      if (response.status.code != 200) {
+        response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+      }
+    }
+
     s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 200 with correct authorisation header" in {
       val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=$transferId")
       graphqlOkJson(UUID.fromString(transferId))
@@ -175,6 +223,29 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       loadDetails.transferReference shouldBe transferRef
       loadDetails.metadataLoadDestination shouldEqual expectedMetadataLoadDestination
       loadDetails.recordsLoadDestination shouldEqual expectedRecordsDestination
+    }
+
+    s"'load/$source/initiate' endpoint with optional transfer id argument" should s"return ${sharePointFacStatus.code} when user does not have access to sharepoint upload feature" in {
+      val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=$transferId")
+      graphqlOkJson(UUID.fromString(transferId))
+      val validToken = validUserToken(connectorForSharePointUser = "false")
+      val bearer = CIString("Authorization")
+      val authHeader = Header.Raw.apply(bearer, s"$validToken")
+      val fakeHeaders = Headers.apply(authHeader)
+      val response = LoadController
+        .apply()
+        .initiateLoadRoute
+        .orNotFound
+        .run(
+          Request(method = Method.POST, uri = uriOptionalTransferId, headers = fakeHeaders)
+        )
+        .unsafeRunSync()
+
+      response.status.code shouldBe sharePointFacStatus.code
+
+      if (response.status.code != 200) {
+        response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+      }
     }
 
     s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 500 response when transfer not in correct upload state" in {
@@ -283,7 +354,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     }
   }
 
-  forAll(sources) { (source, _) =>
+  forAll(sources) { (source, _, _) =>
     {
       val uri = generateUri(s"/load/$source/complete/6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
 

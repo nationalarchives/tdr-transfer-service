@@ -10,6 +10,7 @@ sealed trait BackendError extends Exception {
 case class TransferStateError(message: String) extends BackendError
 case class AuthenticationError(message: String) extends BackendError
 case class SeriesAssignmentError(message: String) extends BackendError
+case class AuthorisationError(message: String) extends BackendError
 
 class ErrorHandler()(implicit logger: SelfAwareStructuredLogger[IO]) {
   private def handleError(error: BackendError): IO[BackendError] = {

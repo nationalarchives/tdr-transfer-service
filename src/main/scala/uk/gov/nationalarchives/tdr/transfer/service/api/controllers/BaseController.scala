@@ -10,7 +10,7 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir._
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError, BackendError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -27,7 +27,8 @@ trait BaseController {
   private val baseEndpoint = endpoint
     .errorOut(
       oneOf[BackendError](
-        oneOfVariant(statusCode(StatusCode.Unauthorized).and(jsonBody[AuthenticationError].description("User not authorised"))),
+        oneOfVariant(statusCode(StatusCode.Unauthorized).and(jsonBody[AuthenticationError].description("User not authenticated"))),
+        oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[AuthorisationError].description("User not authorised"))),
         oneOfDefaultVariant(statusCode(StatusCode.InternalServerError).and(jsonBody[BackendError].description("Unknown")))
       )
     )

@@ -74,15 +74,34 @@ class LoadController(
       .out(jsonBody[LoadCompletionResponse])
 
   val configurationRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogic { ac =>
+      { sourceSystem =>
+        val authorisationIO = authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+        val configurationIO = dataLoadConfiguration.configuration(sourceSystem)
+        (for {
+          _ <- authorisationIO
+          result <- configurationIO
+        } yield Right(result)).handleErrorWith {
+          case err: BackendError =>
+            errorHandler.handleErrorAsLeft(err)
+          case err =>
+            IO.raiseError(err)
+        }
+      }
+    })
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
       initiateLoadEndpoint.serverLogic { ac =>
         { case (sourceSystem, existingTransferId) =>
-          val authorisationIO =
-            if (existingTransferId.nonEmpty) authorisation.validateUserConsignmentAccess(ac.token, existingTransferId.get)
-            else IO.unit
+          val authorisationIO = {
+            existingTransferId match {
+              case Some(_) =>
+                authorisation.validateUserConsignmentAccess(ac.token, existingTransferId.get) *>
+                  authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+              case _ => authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+            }
+          }
 
           val loadIO = dataLoadInitiation.initiateConsignmentLoad(ac.token, sourceSystem, existingTransferId)
 

@@ -4,19 +4,19 @@ object Dependencies {
   private val http4sVersion = "0.23.38"
   private val mockitoVersion = "2.2.3"
   private val nettyVersion = "4.2.19.Final"
-  private val pureConfigVersion = "0.17.10"
-  private val tapirVersion = "1.13.33"
+  private val pureConfigVersion = "0.17.11"
+  private val tapirVersion = "1.14.0"
   private val awsUtilsVersion = "0.1.340"
   private val tdrUtilsVersion = "0.0.54"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.305"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.306"
 
   lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
   lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.492"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.493"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.307"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -29,7 +29,7 @@ object Dependencies {
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
   lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.5"
 
-  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.150"
+  lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.151"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
   lazy val mockitoScalaTest = "org.mockito" %% "mockito-scala-scalatest" % mockitoVersion
 
@@ -46,7 +46,7 @@ object Dependencies {
     "netty-transport-native-unix-common"
   ).map("io.netty" % _ % nettyVersion)
 
-  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.4.1"
+  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.4.2"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
 
