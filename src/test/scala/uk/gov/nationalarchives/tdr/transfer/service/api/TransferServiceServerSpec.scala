@@ -1,7 +1,8 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
+import com.comcast.ip4s.Port
 import io.circe.Json
 import io.circe.generic.codec.DerivedAsObjectCodec.deriveCodec
 import io.circe.syntax._
@@ -17,6 +18,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedV
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Tls
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, ErrorHandler, SeriesAssignmentError}
@@ -27,7 +29,15 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpe
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 
+import java.io.IOException
+import java.net.URI
+import java.nio.file.{Files, Path}
+import java.security.KeyStore
+import java.security.cert.CertificateFactory
 import java.util.UUID
+import javax.net.ssl.{HttpsURLConnection, SSLContext, TrustManagerFactory}
+import scala.concurrent.duration._
+import scala.sys.process._
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with TableDrivenPropertyChecks {
   val transferId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
@@ -42,6 +52,106 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
     response.status shouldBe Status.Ok
     response.as[String].unsafeRunSync() shouldEqual "Healthy"
+  }
+
+  private def tlsFiles: Resource[IO, Tls] =
+    Resource
+      .make(IO.blocking(Files.createTempDirectory("transfer-service-tls")))(directory =>
+        IO.blocking {
+          Files.deleteIfExists(directory.resolve("server.key"))
+          Files.deleteIfExists(directory.resolve("server.crt"))
+          Files.delete(directory)
+        }
+      )
+      .evalMap { directory =>
+        IO.blocking {
+          val key = directory.resolve("server.key")
+          val certificate = directory.resolve("server.crt")
+          val output = new StringBuilder
+          val exitCode = Process(
+            Seq(
+              "openssl",
+              "req",
+              "-x509",
+              "-newkey",
+              "rsa:2048",
+              "-sha256",
+              "-noenc",
+              "-days",
+              "1",
+              "-keyout",
+              key.toString,
+              "-out",
+              certificate.toString,
+              "-subj",
+              "/CN=localhost",
+              "-addext",
+              "subjectAltName=DNS:localhost,IP:127.0.0.1"
+            )
+          ).!(ProcessLogger(line => output.append(line), line => output.append(line)))
+          require(exitCode == 0, s"Could not generate test TLS certificate: $output")
+          Tls(certificate.toString, key.toString)
+        }
+      }
+
+  "TLS server" should "serve HTTPS with the configured certificate and reject plaintext HTTP" in {
+    tlsFiles
+      .flatMap(tls => TransferServiceServer.serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, tls).map(tls -> _))
+      .use { case (tls, server) =>
+        IO.blocking {
+          val trustStore = KeyStore.getInstance("PKCS12")
+          trustStore.load(null, null)
+          val input = Files.newInputStream(Path.of(tls.certificatePath))
+          try trustStore.setCertificateEntry("server", CertificateFactory.getInstance("X.509").generateCertificate(input))
+          finally input.close()
+          val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
+          trustManagerFactory.init(trustStore)
+          val context = SSLContext.getInstance("TLS")
+          context.init(null, trustManagerFactory.getTrustManagers, null)
+          val https = URI.create(s"https://localhost:${server.address.getPort}/healthcheck").toURL.openConnection().asInstanceOf[HttpsURLConnection]
+          https.setSSLSocketFactory(context.getSocketFactory)
+          https.setConnectTimeout(3000)
+          https.setReadTimeout(3000)
+          try {
+            https.getResponseCode shouldBe 200
+            val body = https.getInputStream
+            try new String(body.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8) shouldBe "Healthy"
+            finally body.close()
+          } finally https.disconnect()
+
+          val http = URI.create(s"http://localhost:${server.address.getPort}/healthcheck").toURL.openConnection()
+          http.setConnectTimeout(3000)
+          http.setReadTimeout(3000)
+          intercept[IOException](http.getInputStream)
+        }
+      }
+      .timeout(15.seconds)
+      .unsafeRunSync()
+  }
+
+  it should "fail startup when the certificate is missing" in {
+    tlsFiles
+      .use { tls =>
+        TransferServiceServer
+          .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, tls.copy(certificatePath = tls.certificatePath + ".missing"))
+          .use(_ => IO.unit)
+          .attempt
+          .map(result => result.left.toOption.get shouldBe a[java.nio.file.NoSuchFileException])
+      }
+      .unsafeRunSync()
+  }
+
+  it should "fail startup when the private key is invalid" in {
+    tlsFiles
+      .use { tls =>
+        IO.blocking(Files.writeString(Path.of(tls.privateKeyPath), "invalid private key")) *>
+          TransferServiceServer
+            .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, tls)
+            .use(_ => IO.unit)
+            .attempt
+            .map(result => result.left.toOption.get shouldBe an[IllegalArgumentException])
+      }
+      .unsafeRunSync()
   }
 
   "'docs' endpoint" should "return 404 if the feature is blocked" in {
