@@ -10,7 +10,7 @@ import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir._
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError, ErrorHandler}
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -19,6 +19,7 @@ import java.util.UUID
 
 trait BaseController {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+  val errorHandler = new ErrorHandler()
 
   val sourceSystem: EndpointInput[SourceSystem] = path("sourceSystem")
 
@@ -58,4 +59,16 @@ trait BaseController {
     .options
 
   def routes: HttpRoutes[IO]
+
+  def serviceLogicRunner[RT](authorisationIO: IO[Unit], resultIO: IO[Either[BackendError, RT]]): IO[Either[BackendError, RT]] = {
+    (for {
+      _ <- authorisationIO
+      result <- resultIO
+    } yield result).handleErrorWith {
+      case err: BackendError =>
+        errorHandler.handleErrorAsLeft(err)
+      case err =>
+        IO.raiseError(err)
+    }
+  }
 }
