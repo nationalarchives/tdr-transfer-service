@@ -101,7 +101,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
   "TLS server" should "serve HTTPS with the configured certificate and reject plaintext HTTP" in {
     tlsFiles
-      .flatMap(tls => TransferServiceServer.serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, tls).map(tls -> _))
+      .flatMap(tls => TransferServiceServer.serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get).map(tls -> _))
       .use { case (tls, server) =>
         IO.blocking {
           val trustStore = KeyStore.getInstance("PKCS12")
