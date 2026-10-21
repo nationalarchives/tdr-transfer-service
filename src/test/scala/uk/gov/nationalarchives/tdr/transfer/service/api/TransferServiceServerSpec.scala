@@ -19,6 +19,7 @@ import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
@@ -298,7 +299,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       val authHeader = Header.Raw.apply(bearer, s"$validToken")
       val fakeHeaders = Headers.apply(authHeader)
 
-      when(mockAuthorisation.validateUserConsignmentAccess(any[Token], any[UUID]))
+      when(mockAuthorisation.endpointAuthorisation(any[AuthorisationInput]))
         .thenReturn(IO.raiseError(AuthenticationError("Authentication error message")))
 
       val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation).initiateLoadRoute.orNotFound

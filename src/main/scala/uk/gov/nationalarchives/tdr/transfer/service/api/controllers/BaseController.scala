@@ -9,7 +9,8 @@ import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerOptions
 import sttp.tapir._
-import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, TokenAuthenticator}
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError, BackendError, ErrorHandler}
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
@@ -61,9 +62,9 @@ trait BaseController {
 
   def routes: HttpRoutes[IO]
 
-  def serviceLogicRunner[RT](authorisationIO: IO[Unit], resultIO: IO[Either[BackendError, RT]]): IO[Either[BackendError, RT]] = {
+  def serviceLogicRunner[RT](authorisationInput: AuthorisationInput, authorisation: Authorisation, resultIO: IO[Either[BackendError, RT]]): IO[Either[BackendError, RT]] = {
     (for {
-      _ <- authorisationIO
+      _ <- authorisation.endpointAuthorisation(authorisationInput)
       result <- resultIO
     } yield result).handleErrorWith {
       case err: BackendError =>

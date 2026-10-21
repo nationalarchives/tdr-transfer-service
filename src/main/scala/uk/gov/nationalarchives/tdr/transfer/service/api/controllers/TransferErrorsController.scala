@@ -7,6 +7,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
@@ -41,10 +42,10 @@ class TransferErrorsController(
         { case (transferFunction, transferId) =>
           lazy val prefix = s"$transferId/$transferFunction"
 
-          val authorisationIO: IO[Unit] = authorisation.validateUserConsignmentAccess(ac.token, transferId)
+          val authorisationInput = AuthorisationInput(ac.token, Some(transferId), None)
 
           val resultIO: IO[Either[BackendError, TransferErrorsResults]] = transferErrors.result(TransferErrorsInput(ac.token, transferId, prefix))
-          serviceLogicRunner(authorisationIO, resultIO)
+          serviceLogicRunner(authorisationInput, authorisation, resultIO)
         }
       }
     )

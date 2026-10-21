@@ -8,6 +8,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
@@ -76,9 +77,9 @@ class LoadController(
   val configurationRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogic { ac =>
       { sourceSystem =>
-        val authorisationIO = authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+        val authorisationInput = AuthorisationInput(ac.token, None, Some(sourceSystem))
         val configurationIO = dataLoadConfiguration.result(sourceSystem)
-        serviceLogicRunner(authorisationIO, configurationIO)
+        serviceLogicRunner(authorisationInput, authorisation, configurationIO)
       }
     })
 
@@ -86,17 +87,9 @@ class LoadController(
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
       initiateLoadEndpoint.serverLogic { ac =>
         { case (sourceSystem, existingTransferId) =>
-          val authorisationIO = {
-            existingTransferId match {
-              case Some(_) =>
-                authorisation.validateUserConsignmentAccess(ac.token, existingTransferId.get) *>
-                  authorisation.endPointFeatureAccess(ac.token, sourceSystem)
-              case _ => authorisation.endPointFeatureAccess(ac.token, sourceSystem)
-            }
-          }
-
+          val authorisationInput = AuthorisationInput(ac.token, existingTransferId, Some(sourceSystem))
           val loadIO = dataLoadInitiation.result(DataLoadInitiationInput(ac.token, sourceSystem, existingTransferId))
-          serviceLogicRunner(authorisationIO, loadIO)
+          serviceLogicRunner(authorisationInput, authorisation, loadIO)
         }
       }
     )
@@ -106,9 +99,9 @@ class LoadController(
       completeLoadEndpoint.serverLogic { ac =>
         { input =>
           val sourceSystem = input._1
-          val authorisationIO = authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+          val authorisationInput = AuthorisationInput(ac.token, None, Some(sourceSystem))
           val processorIO = dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(sourceSystem, input._2, input._3, input._4), ac.token))
-          serviceLogicRunner(authorisationIO, processorIO)
+          serviceLogicRunner(authorisationInput, authorisation, processorIO)
         }
       }
     )

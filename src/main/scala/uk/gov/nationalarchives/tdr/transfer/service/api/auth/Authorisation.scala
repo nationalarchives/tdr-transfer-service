@@ -7,6 +7,7 @@ import uk.gov.nationalarchives.tdr.common.utils.authorisation.{Allow, Consignmen
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.{ErrorMessagePatterns, FeatureAccessControls, appConfig}
 import uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer.backend
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 
@@ -22,23 +23,33 @@ class Authorisation(
     featureAccessControls.sharePointUpload && sourceSystem == SharePoint && !isConnectorSharePointUser
   }
 
-  def validateUserConsignmentAccess(token: Token, transferId: UUID): IO[Unit] = {
-    val input = ConsignmentAuthorisationInput(transferId, token)
-    authorisationModule.hasAccess(input).flatMap {
-      case Allow => IO.unit
-      case Deny  =>
-        val errorMessage = s"User ${token.userId} ${appConfig.errorMessagePatterns.consignmentAccessDenied}: $transferId"
-        IO.raiseError(AuthorisationError(errorMessage))
+  def validateUserConsignmentAccess(token: Token, transferId: Option[UUID]): IO[Unit] =
+    transferId.fold(IO.unit) { id =>
+      authorisationModule
+        .hasAccess(ConsignmentAuthorisationInput(id, token))
+        .flatMap {
+          case Allow => IO.unit
+          case Deny  =>
+            IO.raiseError(
+              AuthorisationError(
+                s"User ${token.userId} ${appConfig.errorMessagePatterns.consignmentAccessDenied}: $id"
+              )
+            )
+        }
     }
-  }
 
-  def endPointFeatureAccess(token: Token, sourceSystem: SourceSystem): IO[Unit] = {
-    token match {
-      case _ if sharePointUploadAccessDenied(sourceSystem, token.isConnectorSharePointUser) =>
+  def endPointFeatureAccess(token: Token, sourceSystem: Option[SourceSystem]): IO[Unit] = {
+    sourceSystem.fold(IO.unit) {
+      case sourceSystem if sharePointUploadAccessDenied(sourceSystem, token.isConnectorSharePointUser) =>
         val errorMessage = s"User ${token.userId} ${errorMessagePatterns.sharePointUploadAccessDenied}"
         IO.raiseError(AuthorisationError(errorMessage))
       case _ => IO.unit
     }
+  }
+
+  def endpointAuthorisation(input: AuthorisationInput): IO[Unit] = {
+    val token = input.authenticatedToken
+    endPointFeatureAccess(token, input.sourceSystem) *> validateUserConsignmentAccess(token, input.transferId)
   }
 }
 
@@ -47,5 +58,8 @@ object Authorisation {
   private val client = new GraphQLClient[gc.Data, gc.Variables](apiUrl)
   private val errorMessagePatterns: ErrorMessagePatterns = appConfig.errorMessagePatterns
   private val featureAccessControls: FeatureAccessControls = appConfig.featureAccessControls
+
+  case class AuthorisationInput(authenticatedToken: Token, transferId: Option[UUID], sourceSystem: Option[SourceSystem])
+
   def apply() = new Authorisation(new ConsignmentAuthorisation(client), featureAccessControls, errorMessagePatterns)
 }
