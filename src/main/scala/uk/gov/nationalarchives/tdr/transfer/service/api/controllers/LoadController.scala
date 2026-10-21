@@ -74,15 +74,26 @@ class LoadController(
       .out(jsonBody[LoadCompletionResponse])
 
   val configurationRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogic(_ => input => dataLoadConfiguration.result(input)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogic { ac =>
+      { sourceSystem =>
+        val authorisationIO = authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+        val configurationIO = dataLoadConfiguration.result(sourceSystem)
+        serviceLogicRunner(authorisationIO, configurationIO)
+      }
+    })
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
       initiateLoadEndpoint.serverLogic { ac =>
         { case (sourceSystem, existingTransferId) =>
-          val authorisationIO =
-            if (existingTransferId.nonEmpty) authorisation.validateUserConsignmentAccess(ac.token, existingTransferId.get)
-            else IO.unit
+          val authorisationIO = {
+            existingTransferId match {
+              case Some(_) =>
+                authorisation.validateUserConsignmentAccess(ac.token, existingTransferId.get) *>
+                  authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+              case _ => authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+            }
+          }
 
           val loadIO = dataLoadInitiation.result(DataLoadInitiationInput(ac.token, sourceSystem, existingTransferId))
           serviceLogicRunner(authorisationIO, loadIO)
@@ -92,7 +103,14 @@ class LoadController(
 
   val completeLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      completeLoadEndpoint.serverLogic(ac => input => dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), ac.token)))
+      completeLoadEndpoint.serverLogic { ac =>
+        { input =>
+          val sourceSystem = input._1
+          val authorisationIO = authorisation.endPointFeatureAccess(ac.token, sourceSystem)
+          val processorIO = dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(sourceSystem, input._2, input._3, input._4), ac.token))
+          serviceLogicRunner(authorisationIO, processorIO)
+        }
+      }
     )
 }
 

@@ -13,11 +13,17 @@ object TestUtils {
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
   val transferServiceUserId: UUID = UUID.fromString("f67d1337-cbd0-4fd1-9eac-611489e7113f")
 
-  def validUserToken(userId: UUID = userId, body: Option[String] = Some("Code"), standardUser: String = "true"): OAuth2BearerToken = {
+  def validUserToken(
+      userId: UUID = userId,
+      body: Option[String] = Some("Code"),
+      standardUser: String = "true",
+      connectorForSharePointUser: String = "true"
+  ): OAuth2BearerToken = {
     val tokenBuilder = aTokenConfig()
       .withResourceRole("tdr", "tdr_user")
       .withClaim("user_id", userId)
       .withClaim("standard_user", standardUser)
+      .withClaim("connector_for_sharepoint_user", connectorForSharePointUser)
 
     if (body.nonEmpty) {
       tokenBuilder.withClaim("bodies", java.util.Arrays.asList(body))
