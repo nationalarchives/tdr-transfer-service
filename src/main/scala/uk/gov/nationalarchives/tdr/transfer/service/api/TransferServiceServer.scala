@@ -5,6 +5,7 @@ import cats.implicits.toSemigroupKOps
 import com.comcast.ip4s.{IpLiteralSyntax, Port}
 import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.server.Server
 import org.http4s.server.middleware.{Logger, Throttle}
 import org.http4s.{HttpApp, HttpRoutes}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
@@ -14,8 +15,8 @@ import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
-import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
+import uk.gov.nationalarchives.tdr.transfer.service.{ApplicationConfig, TransportLayerSecurity}
 
 import scala.concurrent.duration.DurationInt
 
@@ -38,6 +39,7 @@ object TransferServiceServer extends IOApp {
   private val openApiInfo: Info = Info(infoTitle, infoVersion, description = infoDescription)
   private val loadController = LoadController()
   private val transferErrorsController = TransferErrorsController()
+  private val tls = TransportLayerSecurity()
 
   private val documentationEndpoints =
     SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints ++ transferErrorsController.endpoints, openApiInfo)
@@ -72,13 +74,19 @@ object TransferServiceServer extends IOApp {
   private val transferServiceServer = for {
     httpApp <- Resource.eval(throttleService(allRoutes.orNotFound))
     finalApp = Logger.httpApp(logHeaders = serviceConfig.logHeaders, logBody = serviceConfig.logBody, logAction = Some(logAction))(httpApp)
-    server <- EmberServerBuilder
-      .default[IO]
-      .withHost(ipv4"0.0.0.0")
-      .withPort(apiPort)
-      .withHttpApp(finalApp)
-      .build
+    server <- serverResource(finalApp, apiPort)
   } yield server
+
+  private[api] def serverResource(httpApp: HttpApp[IO], port: Port): Resource[IO, Server] =
+    Resource.eval(tls.context).flatMap { context =>
+      EmberServerBuilder
+        .default[IO]
+        .withHost(ipv4"0.0.0.0")
+        .withPort(port)
+        .withHttpApp(httpApp)
+        .withTLS(context)
+        .build
+    }
 
   override def run(args: List[String]): IO[ExitCode] = {
     transferServiceServer.use(_ => IO.never).as(ExitCode.Success)
