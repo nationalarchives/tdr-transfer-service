@@ -17,6 +17,6 @@ class BackendErrorSpec extends BaseSpec {
 
     result.value shouldBe error
     verify(mockLogger, times(1)).isErrorEnabled
-    verify(mockLogger).error("Series assignment error message")
+    verify(mockLogger).error("SeriesAssignmentError: Series assignment error message")
   }
 }

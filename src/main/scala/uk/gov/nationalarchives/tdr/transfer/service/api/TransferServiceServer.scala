@@ -39,10 +39,6 @@ object TransferServiceServer extends IOApp {
   private val loadController = LoadController()
   private val transferErrorsController = TransferErrorsController()
 
-  private val x = loadController.endpoints
-
-  println("HERE")
-
   private val documentationEndpoints =
     SwaggerInterpreter().fromEndpoints[IO](loadController.endpoints ++ transferErrorsController.endpoints, openApiInfo)
 
