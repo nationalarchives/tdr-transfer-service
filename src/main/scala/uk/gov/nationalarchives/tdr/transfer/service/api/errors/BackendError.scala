@@ -14,7 +14,7 @@ case class AuthorisationError(message: String) extends BackendError
 
 class ErrorHandler()(implicit logger: SelfAwareStructuredLogger[IO]) {
   private def handleError(error: BackendError): IO[BackendError] = {
-    logger.error(error.message).as(error)
+    logger.error(s"${error.getClass.getSimpleName}: ${error.message}").as(error)
   }
 
   def handleErrorAsLeft(error: BackendError): IO[Left[BackendError, Nothing]] = {

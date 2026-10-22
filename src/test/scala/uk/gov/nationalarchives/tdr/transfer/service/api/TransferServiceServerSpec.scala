@@ -15,7 +15,6 @@ import org.typelevel.ci.CIString
 import sttp.model.StatusCode
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
-import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation

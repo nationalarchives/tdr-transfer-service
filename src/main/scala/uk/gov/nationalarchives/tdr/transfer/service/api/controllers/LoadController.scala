@@ -7,10 +7,10 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
-import sttp.tapir.server.http4s.Http4sServerInterpreter
-import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
+import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler}
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController.{CompleteEndpointInput, ConfigurationEndpointInput, InitiateEndpointInput}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
@@ -25,21 +25,21 @@ class LoadController(
     dataLoadConfiguration: DataLoadConfiguration,
     dataLoadInitiation: DataLoadInitiation,
     dataLoadProcessor: DataLoadProcessor,
-    authorisation: Authorisation
+    authorisationModule: Authorisation
 ) extends BaseController {
-
   def endpoints: List[Endpoint[
     String,
-    _ >: SourceSystem with (SourceSystem, Option[UUID]) with (SourceSystem, UUID, Option[Boolean], LoadCompletion) <: Serializable,
+    _ >: ConfigurationEndpointInput with InitiateEndpointInput with CompleteEndpointInput <: Serializable,
     BackendError,
     _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse <: Product,
     Any
-  ]] =
-    List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint)
+  ]] = List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint)
 
   override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute
 
-  private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, SourceSystem, BackendError, TransferConfiguration, Any, IO] =
+  override val authorisation: Authorisation = authorisationModule
+
+  private val configurationEndpoint: PartialServerEndpoint[String, AuthenticatedContext, ConfigurationEndpointInput, BackendError, TransferConfiguration, Any, IO] =
     securedWithStandardUserBearer
       .summary("Configuration for client transfer")
       .description("Provides configuration for calling client before starting an operation")
@@ -50,7 +50,7 @@ class LoadController(
   private val metadataOnly: EndpointInput[Option[Boolean]] = query("metadataOnly")
   private val existingTransferId: EndpointInput[Option[UUID]] = query("transferId")
 
-  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, (SourceSystem, Option[UUID]), BackendError, LoadDetails, Any, IO] =
+  private val initiateLoadEndpoint: PartialServerEndpoint[String, AuthenticatedContext, InitiateEndpointInput, BackendError, LoadDetails, Any, IO] =
     securedWithStandardUserBearer
       .summary("Initiate the load of records and metadata")
       .post
@@ -60,7 +60,7 @@ class LoadController(
   private val completeLoadEndpoint: PartialServerEndpoint[
     String,
     AuthenticatedContext,
-    (SourceSystem, UUID, Option[Boolean], LoadCompletion),
+    CompleteEndpointInput,
     BackendError,
     LoadCompletionResponse,
     Any,
@@ -75,39 +75,32 @@ class LoadController(
       .out(jsonBody[LoadCompletionResponse])
 
   val configurationRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogic { ac =>
-      { sourceSystem =>
-        val authorisationInput = AuthorisationInput(ac.token, None, Some(sourceSystem))
-        val configurationIO = dataLoadConfiguration.result(sourceSystem)
-        serviceLogicRunner(authorisationInput, authorisation, configurationIO)
-      }
-    })
+    routesWithAuthorisation(
+      configurationEndpoint,
+      (ac: AuthenticatedContext, input: ConfigurationEndpointInput) => authorisationFunc(ac.token, None, Some(input)),
+      (_, input: ConfigurationEndpointInput) => dataLoadConfiguration.result(input)
+    )
 
   val initiateLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      initiateLoadEndpoint.serverLogic { ac =>
-        { case (sourceSystem, existingTransferId) =>
-          val authorisationInput = AuthorisationInput(ac.token, existingTransferId, Some(sourceSystem))
-          val loadIO = dataLoadInitiation.result(DataLoadInitiationInput(ac.token, sourceSystem, existingTransferId))
-          serviceLogicRunner(authorisationInput, authorisation, loadIO)
-        }
-      }
+    routesWithAuthorisation(
+      initiateLoadEndpoint,
+      (ac: AuthenticatedContext, input: InitiateEndpointInput) => authorisationFunc(ac.token, input._2, Some(input._1)),
+      (token: Token, input: InitiateEndpointInput) => dataLoadInitiation.result(DataLoadInitiationInput(token, input._1, input._2))
     )
 
   val completeLoadRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      completeLoadEndpoint.serverLogic { ac =>
-        { input =>
-          val sourceSystem = input._1
-          val authorisationInput = AuthorisationInput(ac.token, None, Some(sourceSystem))
-          val processorIO = dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(sourceSystem, input._2, input._3, input._4), ac.token))
-          serviceLogicRunner(authorisationInput, authorisation, processorIO)
-        }
-      }
+    routesWithAuthorisation(
+      completeLoadEndpoint,
+      (ac: AuthenticatedContext, input: CompleteEndpointInput) => authorisationFunc(ac.token, Some(input._2), Some(input._1)),
+      (token: Token, input: CompleteEndpointInput) => dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), token))
     )
 }
 
 object LoadController {
+  type CompleteEndpointInput = (SourceSystem, UUID, Option[Boolean], LoadCompletion)
+  type ConfigurationEndpointInput = SourceSystem
+  type InitiateEndpointInput = (SourceSystem, Option[UUID])
+
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]): LoadController = {
     new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation())
   }
