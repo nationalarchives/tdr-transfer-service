@@ -52,7 +52,7 @@ class AuthorisationSpec extends BaseSpec {
     when(mockFeatureAccessControls.sharePointUpload).thenReturn(true)
 
     noException shouldBe thrownBy {
-      authorisation.endPointFeatureAccess(token, Some(SourceSystemEnum.SharePoint)).unsafeRunSync()
+      authorisation.featureAccess(token, Some(SourceSystemEnum.SharePoint)).unsafeRunSync()
     }
   }
 
@@ -63,7 +63,7 @@ class AuthorisationSpec extends BaseSpec {
     when(mockErrorMessagePatterns.sharePointUploadAccessDenied).thenReturn("does not have permission to upload from SharePoint")
 
     val ex = intercept[AuthorisationError] {
-      authorisation.endPointFeatureAccess(token, Some(SourceSystemEnum.SharePoint)).unsafeRunSync()
+      authorisation.featureAccess(token, Some(SourceSystemEnum.SharePoint)).unsafeRunSync()
     }
 
     ex.message should include(s"User $userId does not have permission to upload from SharePoint")
@@ -76,7 +76,7 @@ class AuthorisationSpec extends BaseSpec {
     when(mockFeatureAccessControls.sharePointUpload).thenReturn(false)
 
     noException shouldBe thrownBy {
-      authorisation.endPointFeatureAccess(token, Some(SourceSystemEnum.SharePoint)).unsafeRunSync()
+      authorisation.featureAccess(token, Some(SourceSystemEnum.SharePoint)).unsafeRunSync()
     }
   }
 
@@ -88,7 +88,7 @@ class AuthorisationSpec extends BaseSpec {
     val nonSharePointSourceSystem = SourceSystemEnum.NetworkDrive
 
     noException shouldBe thrownBy {
-      authorisation.endPointFeatureAccess(token, Some(nonSharePointSourceSystem)).unsafeRunSync()
+      authorisation.featureAccess(token, Some(nonSharePointSourceSystem)).unsafeRunSync()
     }
   }
 }

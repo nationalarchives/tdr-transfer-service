@@ -38,7 +38,7 @@ class Authorisation(
         }
     }
 
-  def endPointFeatureAccess(token: Token, sourceSystem: Option[SourceSystem]): IO[Unit] = {
+  def featureAccess(token: Token, sourceSystem: Option[SourceSystem]): IO[Unit] = {
     sourceSystem.fold(IO.unit) {
       case sourceSystem if sharePointUploadAccessDenied(sourceSystem, token.isConnectorSharePointUser) =>
         val errorMessage = s"User ${token.userId} ${errorMessagePatterns.sharePointUploadAccessDenied}"
@@ -49,7 +49,7 @@ class Authorisation(
 
   def endpointAuthorisation(input: AuthorisationInput): IO[Unit] = {
     val token = input.authenticatedToken
-    endPointFeatureAccess(token, input.sourceSystem) *> validateUserConsignmentAccess(token, input.transferId)
+    featureAccess(token, input.sourceSystem) *> validateUserConsignmentAccess(token, input.transferId)
   }
 }
 

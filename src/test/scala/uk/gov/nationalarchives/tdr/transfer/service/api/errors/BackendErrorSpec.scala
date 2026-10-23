@@ -12,11 +12,11 @@ class BackendErrorSpec extends BaseSpec {
     when(mockLogger.isErrorEnabled).thenReturn(true)
 
     val handler = new ErrorHandler()(Slf4jFactory.create[IO].getLoggerFromSlf4j(mockLogger))
-    val error = SeriesAssignmentError("Series assignment error message")
+    val expectedError = SeriesAssignmentError("Series assignment error message")
     val result = handler.handleErrorAsLeft(SeriesAssignmentError("Series assignment error message")).unsafeRunSync()
 
-    result.value shouldBe error
+    result.value shouldBe expectedError
     verify(mockLogger, times(1)).isErrorEnabled
-    verify(mockLogger).error("SeriesAssignmentError: Series assignment error message")
+    verify(mockLogger).error(s"${expectedError.getClass.getSimpleName}: ${expectedError.message}")
   }
 }
