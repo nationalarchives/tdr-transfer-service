@@ -9,12 +9,13 @@ import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.DataLoadInitiationInput
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{DataLoadProcessorEvent, DataLoadProcessorInput}
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 
 import java.util.UUID
@@ -23,8 +24,7 @@ class LoadController(
     dataLoadConfiguration: DataLoadConfiguration,
     dataLoadInitiation: DataLoadInitiation,
     dataLoadProcessor: DataLoadProcessor,
-    authorisation: Authorisation,
-    errorHandler: ErrorHandler
+    authorisation: Authorisation
 ) extends BaseController {
 
   def endpoints: List[Endpoint[
@@ -74,7 +74,7 @@ class LoadController(
       .out(jsonBody[LoadCompletionResponse])
 
   val configurationRoute: HttpRoutes[IO] =
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogicSuccess(_ => input => dataLoadConfiguration.configuration(input)))
+    Http4sServerInterpreter[IO](customServerOptions).toRoutes(configurationEndpoint.serverLogic(_ => input => dataLoadConfiguration.result(input)))
 
   val initiateLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
@@ -84,29 +84,20 @@ class LoadController(
             if (existingTransferId.nonEmpty) authorisation.validateUserConsignmentAccess(ac.token, existingTransferId.get)
             else IO.unit
 
-          val loadIO = dataLoadInitiation.initiateConsignmentLoad(ac.token, sourceSystem, existingTransferId)
-
-          (for {
-            _ <- authorisationIO
-            result <- loadIO
-          } yield result).handleErrorWith {
-            case err: BackendError =>
-              errorHandler.handleErrorAsLeft(err)
-            case err =>
-              IO.raiseError(err)
-          }
+          val loadIO = dataLoadInitiation.result(DataLoadInitiationInput(ac.token, sourceSystem, existingTransferId))
+          serviceLogicRunner(authorisationIO, loadIO)
         }
       }
     )
 
   val completeLoadRoute: HttpRoutes[IO] =
     Http4sServerInterpreter[IO](customServerOptions).toRoutes(
-      completeLoadEndpoint.serverLogicSuccess(ac => input => dataLoadProcessor.trigger(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), ac.token))
+      completeLoadEndpoint.serverLogic(ac => input => dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), ac.token)))
     )
 }
 
 object LoadController {
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]): LoadController = {
-    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation(), new ErrorHandler())
+    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation())
   }
 }

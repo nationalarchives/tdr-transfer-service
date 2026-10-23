@@ -13,7 +13,7 @@ import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{DataLoadProcessorEvent, DataLoadProcessorInput}
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
 import uk.gov.nationalarchives.tdr.transfer.service.{ApplicationConfig, BaseSpec}
@@ -134,13 +134,13 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
           val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
           val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), loadCompletionDetails)
 
-          val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
+          val result = processor.result(DataLoadProcessorInput(event, mockKeycloakToken)).unsafeRunSync()
 
           val sqsEffectRun = expectedNumberSnsMessages != 0
 
           sqsEffectWasRun.get() shouldBe sqsEffectRun
-          result.transferId shouldBe expectedLoadResponse.transferId
-          result.success shouldBe expectedLoadResponse.success
+          result.map(_.transferId) shouldBe Right(expectedLoadResponse.transferId)
+          result.map(_.success) shouldBe Right(expectedLoadResponse.success)
 
           verify(mockMessageService, times(expectedNumberSnsMessages)).sendAggregateProcessingEventMessage(any[UUID], any[AggregateProcessingEvent])
           verify(mockGraphQlApiService, times(expectedNumberOfStateCalls)).consignmentState(mockKeycloakToken, transferId)
@@ -173,9 +173,9 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
     val processor = new DataLoadProcessor(mockMessageService, mockConfig, mockGraphQlApiService)
     val event = DataLoadProcessorEvent(SourceSystemEnum.SharePoint, transferId, Some(false), noErrors)
 
-    val result = processor.trigger(event, mockKeycloakToken).unsafeRunSync()
-    result.transferId shouldBe transferId
-    result.success shouldBe true
+    val result = processor.result(DataLoadProcessorInput(event, mockKeycloakToken)).unsafeRunSync()
+    result.map(_.transferId) shouldBe Right(transferId)
+    result.map(_.success) shouldBe Right(true)
 
     transferIdArgumentCaptor.getValue shouldBe transferId
     eventArgumentCaptor.getValue.dataLoadErrors shouldBe false

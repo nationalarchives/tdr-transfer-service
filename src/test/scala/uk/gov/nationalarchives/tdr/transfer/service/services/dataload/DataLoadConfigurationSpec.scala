@@ -11,7 +11,7 @@ class DataLoadConfigurationSpec extends BaseSpec {
     val expectedResult = expectedTransferConfiguration
 
     val service = new DataLoadConfiguration
-    val result = service.configuration(sourceSystem).unsafeRunSync()
-    result shouldBe expectedResult
+    val result = service.result(sourceSystem).unsafeRunSync()
+    result shouldBe Right(expectedResult)
   }
 }

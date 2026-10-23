@@ -15,6 +15,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.errors.ErrorHandler
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.DataLoadInitiationInput
 
 import java.time.{LocalDateTime, ZoneId, ZonedDateTime}
 import java.util.UUID
@@ -51,7 +52,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val result = service.initiateConsignmentLoad(mockToken, nonSharePointSourceSystem).unsafeRunSync()
+    val result = service.result(DataLoadInitiationInput(mockToken, nonSharePointSourceSystem)).unsafeRunSync()
     result shouldBe Right(expectedResult)
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, nonSharePointSourceSystem)
@@ -72,7 +73,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     when(mockToken.userId).thenReturn(userId)
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val response = service.initiateConsignmentLoad(mockToken, nonSharePointSourceSystem).unsafeRunSync()
+    val response = service.result(DataLoadInitiationInput(mockToken, nonSharePointSourceSystem)).unsafeRunSync()
     response.isLeft should equal(true)
     response.left.value.message should equal(s"User $userId has too many consignments without series assigned")
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
@@ -99,7 +100,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val result = service.initiateConsignmentLoad(mockToken, sharePointSourceSystem).unsafeRunSync()
+    val result = service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem)).unsafeRunSync()
     result shouldBe Right(expectedResult)
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
     verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, sharePointSourceSystem)
@@ -124,7 +125,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val result = service.initiateConsignmentLoad(mockToken, sharePointSourceSystem, Some(consignmentId)).unsafeRunSync()
+    val result = service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem, Some(consignmentId))).unsafeRunSync()
     result shouldBe Right(expectedResult)
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
     verify(mockGraphQlApiService, times(1)).existingConsignment(mockToken, consignmentId)
@@ -143,7 +144,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     when(mockToken.userId).thenReturn(userId)
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val result = service.initiateConsignmentLoad(mockToken, sharePointSourceSystem, Some(consignmentId)).unsafeRunSync()
+    val result = service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem, Some(consignmentId))).unsafeRunSync()
     result.isLeft shouldBe true
     result.left.value.message shouldBe s"Existing consignment state incorrect for upload: $consignmentId"
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
@@ -157,7 +158,7 @@ class DataLoadInitiationSpec extends BaseSpec {
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
     val exception = intercept[RuntimeException] {
-      service.initiateConsignmentLoad(mockToken, sharePointSourceSystem).unsafeRunSync()
+      service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem)).unsafeRunSync()
     }
 
     exception.getMessage shouldBe "Error adding consignment"
@@ -172,7 +173,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     when(mockGraphQlApiService.addConsignment(mockToken, sharePointSourceSystem)).thenThrow(new RuntimeException("Error adding consignment"))
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val response = service.initiateConsignmentLoad(mockToken, sharePointSourceSystem).attempt.unsafeRunSync()
+    val response = service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem)).attempt.unsafeRunSync()
     response.isLeft should equal(true)
     response.left.value.getMessage shouldBe "Error adding consignment"
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
@@ -189,7 +190,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     when(mockGraphQlApiService.startUpload(mockToken, consignmentId, None, Some(true))).thenThrow(new RuntimeException("Error starting upload"))
 
     val service = new DataLoadInitiation(mockGraphQlApiService, new ErrorHandler())
-    val response = service.initiateConsignmentLoad(mockToken, sharePointSourceSystem).attempt.unsafeRunSync()
+    val response = service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem)).attempt.unsafeRunSync()
 
     response.isLeft should equal(true)
     response.left.value.getMessage should equal("Error starting upload")

@@ -19,13 +19,14 @@ import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, ErrorHandler, SeriesAssignmentError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthenticationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
+import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors.TransferErrorsInput
 
 import java.util.UUID
 
@@ -230,7 +231,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       when(mockAuthorisation.validateUserConsignmentAccess(any[Token], any[UUID]))
         .thenReturn(IO.raiseError(AuthenticationError("Authentication error message")))
 
-      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation, new ErrorHandler()).initiateLoadRoute.orNotFound
+      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation).initiateLoadRoute.orNotFound
         .run(
           Request(method = Method.POST, uri = uriOptionalTransferId, headers = fakeHeaders)
         )
@@ -342,18 +343,20 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     )
 
     val mockedTransferErrors = mock[TransferErrors]
-    when(mockedTransferErrors.getTransferErrors(any[Token](), any[UUID], any[String]()))
+    when(mockedTransferErrors.result(any[TransferErrorsInput]()))
       .thenReturn(
         IO.pure(
-          TransferErrorsResults(
-            uploadCompleted = true,
-            errors = List(jsonResponse),
-            transferId = UUID.fromString(transferId)
+          Right(
+            TransferErrorsResults(
+              uploadCompleted = true,
+              errors = List(jsonResponse),
+              transferId = UUID.fromString(transferId)
+            )
           )
         )
       )
 
-    val controller = new TransferErrorsController(mockedTransferErrors, Authorisation(), new ErrorHandler())
+    val controller = new TransferErrorsController(mockedTransferErrors, Authorisation())
 
     val response = controller.getErrorsRoute.orNotFound
       .run(
