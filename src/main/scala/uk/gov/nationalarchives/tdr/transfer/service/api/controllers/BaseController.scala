@@ -12,7 +12,7 @@ import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation, TokenAuthenticator}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError, BackendError, ErrorHandler}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError, BackendError, ErrorHandler, SeriesAssignmentError, TransferStateError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -34,6 +34,8 @@ trait BaseController {
       oneOf[BackendError](
         oneOfVariant(statusCode(StatusCode.Unauthorized).and(jsonBody[AuthenticationError].description("User not authenticated"))),
         oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[AuthorisationError].description("User not authorised"))),
+        oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[SeriesAssignmentError].description("Too many unassigned transfers"))),
+        oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[TransferStateError].description("Transfer in incorrect state for upload"))),
         oneOfDefaultVariant(statusCode(StatusCode.InternalServerError).and(jsonBody[BackendError].description("Unknown")))
       )
     )
