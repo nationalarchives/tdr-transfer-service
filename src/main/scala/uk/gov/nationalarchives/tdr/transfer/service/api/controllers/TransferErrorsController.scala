@@ -8,18 +8,18 @@ import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, BackendError, ErrorHandler}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
+import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors.TransferErrorsInput
 
 import java.util.UUID
 
 class TransferErrorsController(
     transferErrors: TransferErrors,
-    authorisation: Authorisation,
-    errorHandler: ErrorHandler
+    authorisation: Authorisation
 ) extends BaseController {
   private val transferFunction: EndpointInput[TransferFunction] = path("transferFunction")
 
@@ -43,17 +43,8 @@ class TransferErrorsController(
 
           val authorisationIO: IO[Unit] = authorisation.validateUserConsignmentAccess(ac.token, transferId)
 
-          val resultIO: IO[TransferErrorsResults] = transferErrors.getTransferErrors(ac.token, transferId, prefix)
-
-          (for {
-            _ <- authorisationIO
-            result <- resultIO
-          } yield Right(result)).handleErrorWith {
-            case err: BackendError =>
-              errorHandler.handleErrorAsLeft(err)
-            case err =>
-              IO.raiseError(err)
-          }
+          val resultIO: IO[Either[BackendError, TransferErrorsResults]] = transferErrors.result(TransferErrorsInput(ac.token, transferId, prefix))
+          serviceLogicRunner(authorisationIO, resultIO)
         }
       }
     )
@@ -61,5 +52,5 @@ class TransferErrorsController(
 
 object TransferErrorsController {
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
-    new TransferErrorsController(TransferErrors(), Authorisation(), new ErrorHandler())
+    new TransferErrorsController(TransferErrors(), Authorisation())
 }

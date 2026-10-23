@@ -11,10 +11,11 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChec
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue, InProgressValue, StatusValue}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
-import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.DataLoadProcessorEvent
+import uk.gov.nationalarchives.tdr.transfer.service.services.{BaseService, GraphQlApiService}
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{DataLoadProcessorEvent, DataLoadProcessorInput}
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
 
@@ -22,7 +23,7 @@ import java.util.UUID
 
 class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.Configuration, graphQlApiService: GraphQlApiService)(implicit
     logger: SelfAwareStructuredLogger[IO]
-) {
+) extends BaseService[DataLoadProcessorInput, LoadCompletionResponse] {
 
   private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean, loadedNumberOfFiles: Int): IO[SendMessageResponse] = {
     val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/metadata"
@@ -45,7 +46,9 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       )
   }
 
-  def trigger(event: DataLoadProcessorEvent, token: Token): IO[LoadCompletionResponse] = {
+  def result(input: DataLoadProcessorInput): IO[Either[BackendError, LoadCompletionResponse]] = {
+    val event = input.event
+    val token = input.token
     val transferId = event.transferId
     for {
       statuses <- graphQlApiService.consignmentState(token, transferId)
@@ -61,7 +64,7 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
       _ <- if (stateCorrect) graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) else IO.unit
       _ <- sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles)
         .unlessA(clientSideErrors)
-    } yield loadCompletionResponse
+    } yield Right(loadCompletionResponse)
   }
 
   private def hasClientSideErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Boolean] = {
@@ -82,6 +85,7 @@ object DataLoadProcessor {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
   private val messageService = Messages()(logger)
   val config: ApplicationConfig.Configuration = ApplicationConfig.appConfig
+  case class DataLoadProcessorInput(event: DataLoadProcessorEvent, token: Token)
   case class DataLoadProcessorEvent(source: SourceSystem, transferId: UUID, metadataOnly: Option[Boolean] = None, loadCompletionDetails: LoadCompletion)
 
   def apply() = new DataLoadProcessor(messageService, config, GraphQlApiService.service)(logger)

@@ -11,22 +11,24 @@ import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler, SeriesAssignmentError, TransferStateError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
-import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{errorMessagePatterns, s3Config, transferConfigurationConfig}
+import uk.gov.nationalarchives.tdr.transfer.service.services.{BaseService, GraphQlApiService}
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{DataLoadInitiationInput, errorMessagePatterns, s3Config, transferConfigurationConfig}
 
 import java.util.UUID
 
 class DataLoadInitiation(
     graphQlApiService: GraphQlApiService,
     errorHandler: ErrorHandler
-)(implicit logger: SelfAwareStructuredLogger[IO]) {
-  def initiateConsignmentLoad(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None): IO[Either[BackendError, LoadDetails]] = {
+)(implicit logger: SelfAwareStructuredLogger[IO])
+    extends BaseService[DataLoadInitiationInput, LoadDetails] {
+  def result(input: DataLoadInitiationInput): IO[Either[BackendError, LoadDetails]] = {
+    val token = input.token
     for {
       userTransfers <- graphQlApiService.getAllUserConsignments(token)
-      canStart <- canInitiate(userTransfers, token.userId, existingTransferId)
+      canStart <- canInitiate(userTransfers, token.userId, input.existingTransferId)
       result <- canStart match {
         case Left(err) => IO.pure(Left(err))
-        case Right(_)  => getResult(token, sourceSystem, existingTransferId).map(Right(_))
+        case Right(_)  => getResult(token, input.sourceSystem, input.existingTransferId).map(Right(_))
       }
     } yield result
   }
@@ -111,6 +113,7 @@ class DataLoadInitiation(
 
 object DataLoadInitiation {
   private val appConfig = ApplicationConfig.appConfig
+  case class DataLoadInitiationInput(token: Token, sourceSystem: SourceSystem, existingTransferId: Option[UUID] = None)
   val s3Config: ApplicationConfig.S3 = appConfig.s3
   val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = appConfig.transferConfiguration
   val errorMessagePatterns: ApplicationConfig.ErrorMessagePatterns = appConfig.errorMessagePatterns
