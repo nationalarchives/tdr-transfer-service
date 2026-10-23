@@ -5,6 +5,10 @@ import org.typelevel.log4cats.SelfAwareStructuredLogger
 
 sealed trait BackendError extends Exception {
   val message: String
+
+  override def getMessage: String = {
+    s"${this.getClass.getSimpleName}: $message"
+  }
 }
 
 case class TransferStateError(message: String) extends BackendError
@@ -14,7 +18,7 @@ case class AuthorisationError(message: String) extends BackendError
 
 class ErrorHandler()(implicit logger: SelfAwareStructuredLogger[IO]) {
   private def handleError(error: BackendError): IO[BackendError] = {
-    logger.error(s"${error.getClass.getSimpleName}: ${error.message}").as(error)
+    logger.error(error.getMessage).as(error)
   }
 
   def handleErrorAsLeft(error: BackendError): IO[Left[BackendError, Nothing]] = {

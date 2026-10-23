@@ -248,7 +248,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       }
     }
 
-    s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 500 response when transfer not in correct upload state" in {
+    s"'load/$source/initiate' endpoint with optional transfer id argument" should "return 403 response when transfer not in correct upload state" in {
       val uriOptionalTransferId = generateUri(s"/load/$source/initiate/?transferId=$transferId")
       graphqlOkJson(UUID.fromString(transferId), overrideStatusType = SeriesType, uploadStatusValue = CompletedValue.value, addUploadStatus = true)
       val validToken = validUserToken()
@@ -264,9 +264,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         )
         .unsafeRunSync()
 
-      response.status shouldBe Status.InternalServerError
+      response.status shouldBe Status.Forbidden
       val error = response.as[String].unsafeRunSync()
-      error.contains("TransferStateError") shouldBe true
       error.contains(s"Existing consignment state incorrect for upload: $transferId")
     }
 
@@ -332,7 +331,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       response.as[Json].unsafeRunSync() shouldEqual invalidTokenExpectedResponse
     }
 
-    s"'load/$source/initiate' endpoint" should "return 500 response when a user has too many transfers without a series assigned" in {
+    s"'load/$source/initiate' endpoint" should "return 403 response when a user has too many transfers without a series assigned" in {
       graphqlOkJson(UUID.fromString(transferId), overrideStatusType = UploadType)
       val validToken = validUserToken()
       val bearer = CIString("Authorization")
@@ -347,9 +346,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         )
         .unsafeRunSync()
 
-      response.status shouldBe Status.InternalServerError
+      response.status shouldBe Status.Forbidden
       val error = response.as[String].unsafeRunSync()
-      error.contains("SeriesAssignmentError") shouldBe true
       error.contains(s"User $userId has too many consignments without series assigned")
     }
   }

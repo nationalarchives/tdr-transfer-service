@@ -12,7 +12,7 @@ import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation, TokenAuthenticator}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError, BackendError, ErrorHandler, SeriesAssignmentError, TransferStateError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors._
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -75,16 +75,17 @@ trait BaseController {
       authorisationIOFunc: (AuthenticatedContext, IT) => IO[Unit],
       resultIOFunc: (Token, IT) => IO[Either[BackendError, RT]]
   ): HttpRoutes[IO] = {
-    Http4sServerInterpreter[IO](customServerOptions).toRoutes(endpoint.serverLogic { ac => input: IT =>
-      (for {
-        _ <- authorisationIOFunc(ac, input)
-        result <- resultIOFunc(ac.token, input)
-      } yield result).handleErrorWith {
-        case err: BackendError =>
-          errorHandler.handleErrorAsLeft(err)
-        case err =>
-          IO.raiseError(err)
-      }
-    })
+    Http4sServerInterpreter[IO](customServerOptions)
+      .toRoutes(endpoint.serverLogic { ac => input: IT =>
+        (for {
+          _ <- authorisationIOFunc(ac, input)
+          result <- resultIOFunc(ac.token, input)
+        } yield result).handleErrorWith {
+          case err: BackendError =>
+            errorHandler.handleErrorAsLeft(err)
+          case err =>
+            IO.raiseError(err)
+        }
+      })
   }
 }
