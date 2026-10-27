@@ -8,17 +8,16 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ErrorHandler, SeriesAssignmentError, TransferStateError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, SeriesAssignmentError, TransferStateError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{AWSS3LoadDestination, LoadDetails}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
-import uk.gov.nationalarchives.tdr.transfer.service.services.{BaseService, GraphQlApiService}
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.{DataLoadInitiationInput, errorMessagePatterns, s3Config, transferConfigurationConfig}
+import uk.gov.nationalarchives.tdr.transfer.service.services.{BaseService, GraphQlApiService}
 
 import java.util.UUID
 
 class DataLoadInitiation(
-    graphQlApiService: GraphQlApiService,
-    errorHandler: ErrorHandler
+    graphQlApiService: GraphQlApiService
 )(implicit logger: SelfAwareStructuredLogger[IO])
     extends BaseService[DataLoadInitiationInput, LoadDetails] {
   def result(input: DataLoadInitiationInput): IO[Either[BackendError, LoadDetails]] = {
@@ -50,7 +49,7 @@ class DataLoadInitiation(
     })
     if (missingSeriesCount > transferConfigurationConfig.maxConsignmentsWithoutSeries) {
       val errorMessage = s"User $userId has ${errorMessagePatterns.transfersWithoutSeries}"
-      logger.error(errorMessage).as(Left(SeriesAssignmentError(errorMessage)))
+      IO.raiseError(SeriesAssignmentError(errorMessage))
     } else isTransferStateCorrect(existingTransferId, userTransfers)
   }
 
@@ -62,7 +61,7 @@ class DataLoadInitiation(
     uploadState match {
       case Some(state) if state.value == CompletedValue.value =>
         val errorMessage = s"Existing ${errorMessagePatterns.inCorrectUploadState}: ${existingTransferId.get}"
-        errorHandler.handleErrorAsLeft(TransferStateError(errorMessage))
+        IO.raiseError(TransferStateError(errorMessage))
       case _ => IO.pure(Right(true))
     }
   }
@@ -118,5 +117,5 @@ object DataLoadInitiation {
   val transferConfigurationConfig: ApplicationConfig.TransferConfiguration = appConfig.transferConfiguration
   val errorMessagePatterns: ApplicationConfig.ErrorMessagePatterns = appConfig.errorMessagePatterns
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]) =
-    new DataLoadInitiation(GraphQlApiService.service, new ErrorHandler())(logger)
+    new DataLoadInitiation(GraphQlApiService.service)(logger)
 }
