@@ -8,7 +8,7 @@ import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.{ErrorMessagePatterns, FeatureAccessControls, appConfig}
 import uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer.backend
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{AuthenticationError, AuthorisationError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthorisationError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 
 import java.util.UUID
@@ -32,7 +32,7 @@ class Authorisation(
           case Deny  =>
             IO.raiseError(
               AuthorisationError(
-                s"User ${token.userId} ${appConfig.errorMessagePatterns.consignmentAccessDenied}: $id"
+                s"User ${token.userId} ${errorMessagePatterns.consignmentAccessDenied}: $id"
               )
             )
         }

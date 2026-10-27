@@ -25,6 +25,8 @@ class AuthorisationSpec extends BaseSpec {
   val userId: UUID = UUID.fromString("4ab14990-ed63-4615-8336-56fbb9960300")
 
   when(mockConsignmentApi.url).thenReturn("someUrl")
+  when(mockErrorMessagePatterns.sharePointUploadAccessDenied).thenReturn("does not have permission to upload from SharePoint")
+  when(mockErrorMessagePatterns.consignmentAccessDenied).thenReturn("does not have access to consignment")
 
   "endpointAuthorisation" should "succeed when user has access to consignment" in {
     when(token.userId).thenReturn(userId)
@@ -61,7 +63,6 @@ class AuthorisationSpec extends BaseSpec {
     when(token.userId).thenReturn(userId)
     when(token.isConnectorSharePointUser).thenReturn(false)
     when(mockFeatureAccessControls.sharePointUpload).thenReturn(true)
-    when(mockErrorMessagePatterns.sharePointUploadAccessDenied).thenReturn("does not have permission to upload from SharePoint")
 
     val ex = intercept[AuthorisationError] {
       authorisation.endpointAuthorisation(AuthorisationInput(token, None, Some(SourceSystemEnum.SharePoint))).unsafeRunSync()
