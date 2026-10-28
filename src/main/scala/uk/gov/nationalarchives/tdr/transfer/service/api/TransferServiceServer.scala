@@ -74,10 +74,10 @@ object TransferServiceServer extends IOApp {
   private val transferServiceServer = for {
     httpApp <- Resource.eval(throttleService(allRoutes.orNotFound))
     finalApp = Logger.httpApp(logHeaders = serviceConfig.logHeaders, logBody = serviceConfig.logBody, logAction = Some(logAction))(httpApp)
-    server <- serverResource(finalApp, apiPort)
+    server <- serverResource(finalApp, apiPort, tls)
   } yield server
 
-  private[api] def serverResource(httpApp: HttpApp[IO], port: Port): Resource[IO, Server] =
+  private[api] def serverResource(httpApp: HttpApp[IO], port: Port, tls: TransportLayerSecurity): Resource[IO, Server] =
     Resource.eval(tls.context).flatMap { context =>
       EmberServerBuilder
         .default[IO]
