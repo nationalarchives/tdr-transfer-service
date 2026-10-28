@@ -19,6 +19,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedV
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Tls
+import uk.gov.nationalarchives.tdr.transfer.service.TransportLayerSecurity
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
@@ -101,7 +102,11 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
   "TLS server" should "serve HTTPS with the configured certificate and reject plaintext HTTP" in {
     tlsFiles
-      .flatMap(tls => TransferServiceServer.serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get).map(tls -> _))
+      .flatMap(tls =>
+        TransferServiceServer
+          .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, new TransportLayerSecurity(tls))
+          .map(tls -> _)
+      )
       .use { case (tls, server) =>
         IO.blocking {
           val trustStore = KeyStore.getInstance("PKCS12")
@@ -138,7 +143,11 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     tlsFiles
       .use { tls =>
         TransferServiceServer
-          .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, tls.copy(certificatePath = tls.certificatePath + ".missing"))
+          .serverResource(
+            TransferServiceServer.healthCheckRoute.orNotFound,
+            Port.fromInt(0).get,
+            new TransportLayerSecurity(tls.copy(certificatePath = tls.certificatePath + ".missing"))
+          )
           .use(_ => IO.unit)
           .attempt
           .map(result => result.left.toOption.get shouldBe a[java.nio.file.NoSuchFileException])
@@ -151,7 +160,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       .use { tls =>
         IO.blocking(Files.writeString(Path.of(tls.privateKeyPath), "invalid private key")) *>
           TransferServiceServer
-            .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, tls)
+            .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, new TransportLayerSecurity(tls))
             .use(_ => IO.unit)
             .attempt
             .map(result => result.left.toOption.get shouldBe an[IllegalArgumentException])
