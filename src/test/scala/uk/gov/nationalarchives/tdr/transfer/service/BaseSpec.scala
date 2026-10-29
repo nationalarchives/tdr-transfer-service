@@ -1,6 +1,6 @@
 package uk.gov.nationalarchives.tdr.transfer.service
 
-import cats.effect.IO
+import cats.effect.{IO, Resource}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{okJson, post, urlEqualTo}
@@ -18,10 +18,13 @@ import sttp.client3.{HttpURLConnectionBackend, Identity, SttpBackend}
 import uk.gov.nationalarchives.tdr.keycloak.TdrKeycloakDeployment
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames.FilenamePattern
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Tls
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{Header, MetadataPropertyDetails, TransferConfiguration}
 
+import java.nio.file.Files
 import scala.concurrent.ExecutionContextExecutor
 import scala.io.Source.fromResource
+import scala.sys.process.{Process, ProcessLogger}
 
 trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherValues with BeforeAndAfterEach with BeforeAndAfterAll {
   implicit def logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
@@ -82,6 +85,46 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
       .get(urlEqualTo(keycloakGetUserPath))
       .willReturn(okJson(fromResource(s"json/get_keycloak_user.json").mkString))
   )
+
+  def tlsFiles: Resource[IO, Tls] =
+    Resource
+      .make(IO.blocking(Files.createTempDirectory("transfer-service-tls")))(directory =>
+        IO.blocking {
+          Files.deleteIfExists(directory.resolve("server.key"))
+          Files.deleteIfExists(directory.resolve("server.crt"))
+          Files.delete(directory)
+        }
+      )
+      .evalMap { directory =>
+        IO.blocking {
+          val key = directory.resolve("server.key")
+          val certificate = directory.resolve("server.crt")
+          val output = new StringBuilder
+          val exitCode = Process(
+            Seq(
+              "openssl",
+              "req",
+              "-x509",
+              "-newkey",
+              "rsa:2048",
+              "-sha256",
+              "-noenc",
+              "-days",
+              "1",
+              "-keyout",
+              key.toString,
+              "-out",
+              certificate.toString,
+              "-subj",
+              "/CN=localhost",
+              "-addext",
+              "subjectAltName=DNS:localhost,IP:127.0.0.1"
+            )
+          ).!(ProcessLogger(line => output.append(line), line => output.append(line)))
+          require(exitCode == 0, s"Could not generate test TLS certificate: $output")
+          Tls(certificate.toString, key.toString)
+        }
+      }
 
   override def beforeAll(): Unit = {
     wiremockAuthServer.start()
