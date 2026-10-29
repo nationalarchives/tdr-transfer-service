@@ -1,6 +1,6 @@
 package uk.gov.nationalarchives.tdr.transfer.service.api
 
-import cats.effect.{IO, Resource}
+import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.comcast.ip4s.Port
 import io.circe.Json
@@ -18,7 +18,6 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
-import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.Tls
 import uk.gov.nationalarchives.tdr.transfer.service.TransportLayerSecurity
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
@@ -40,7 +39,6 @@ import java.security.cert.CertificateFactory
 import java.util.UUID
 import javax.net.ssl.{HttpsURLConnection, SSLContext, TrustManagerFactory}
 import scala.concurrent.duration._
-import scala.sys.process._
 
 class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with TableDrivenPropertyChecks {
   val transferId = "6e3b76c4-1745-4467-8ac5-b4dd736e1b3e"
@@ -60,47 +58,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     response.as[String].unsafeRunSync() shouldEqual "Healthy"
   }
 
-  private def tlsFiles: Resource[IO, Tls] =
-    Resource
-      .make(IO.blocking(Files.createTempDirectory("transfer-service-tls")))(directory =>
-        IO.blocking {
-          Files.deleteIfExists(directory.resolve("server.key"))
-          Files.deleteIfExists(directory.resolve("server.crt"))
-          Files.delete(directory)
-        }
-      )
-      .evalMap { directory =>
-        IO.blocking {
-          val key = directory.resolve("server.key")
-          val certificate = directory.resolve("server.crt")
-          val output = new StringBuilder
-          val exitCode = Process(
-            Seq(
-              "openssl",
-              "req",
-              "-x509",
-              "-newkey",
-              "rsa:2048",
-              "-sha256",
-              "-noenc",
-              "-days",
-              "1",
-              "-keyout",
-              key.toString,
-              "-out",
-              certificate.toString,
-              "-subj",
-              "/CN=localhost",
-              "-addext",
-              "subjectAltName=DNS:localhost,IP:127.0.0.1"
-            )
-          ).!(ProcessLogger(line => output.append(line), line => output.append(line)))
-          require(exitCode == 0, s"Could not generate test TLS certificate: $output")
-          Tls(certificate.toString, key.toString)
-        }
-      }
-
-  "TLS server" should "serve HTTPS with the configured certificate and reject plaintext HTTP" in {
+  "server" should "serve HTTPS with the configured certificate and reject plaintext HTTP" in {
     tlsFiles
       .flatMap(tls =>
         TransferServiceServer
