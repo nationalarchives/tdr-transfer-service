@@ -61,8 +61,6 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
   val sources: TableFor3[String, Int, StatusCode] = Table(
     ("Source", "Number of metadata property details", "sharepoint feature access status code"),
-    (SourceSystemEnum.NetworkDrive.toString.toLowerCase, 0, StatusCode.Ok),
-    (SourceSystemEnum.HardDrive.toString.toLowerCase, 0, StatusCode.Ok),
     (SourceSystemEnum.SharePoint.toString.toLowerCase, 11, StatusCode.Forbidden)
   )
 

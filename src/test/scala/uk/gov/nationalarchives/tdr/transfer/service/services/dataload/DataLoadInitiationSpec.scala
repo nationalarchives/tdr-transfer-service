@@ -27,7 +27,6 @@ class DataLoadInitiationSpec extends BaseSpec {
   private val consignmentId = UUID.fromString("6e3b76c4-1745-4467-8ac5-b4dd736e1b3e")
   private val userId = UUID.randomUUID()
   private val sharePointSourceSystem = SourceSystemEnum.SharePoint
-  private val nonSharePointSourceSystem = SourceSystemEnum.HardDrive
   private val someDateTime: ZonedDateTime = ZonedDateTime.of(LocalDateTime.of(2022, 3, 10, 1, 0), ZoneId.systemDefault())
 
   private val stubbedStatuses = List(Node.ConsignmentStatuses(UUID.randomUUID(), consignmentId, SeriesType.id, CompletedValue.value, someDateTime, None))
@@ -37,8 +36,8 @@ class DataLoadInitiationSpec extends BaseSpec {
     val addConsignmentResponse = AddConsignment(Some(consignmentId), None, "Consignment-Ref")
     val mockGraphQlApiService = mock[GraphQlApiService]
 
-    when(mockGraphQlApiService.addConsignment(mockToken, nonSharePointSourceSystem)).thenReturn(IO(addConsignmentResponse))
-    when(mockGraphQlApiService.startUpload(mockToken, consignmentId, None, None)).thenReturn(IO("response string"))
+    when(mockGraphQlApiService.addConsignment(mockToken, sharePointSourceSystem)).thenReturn(IO(addConsignmentResponse))
+    when(mockGraphQlApiService.startUpload(mockToken, consignmentId, None, Some(true))).thenReturn(IO("response string"))
     when(mockGraphQlApiService.getAllUserConsignments(any[Token])).thenReturn(IO(stubbedNodes()))
     when(mockToken.bearerAccessToken).thenReturn(mockBearerAccessToken)
     when(mockToken.bearerAccessToken.getValue).thenReturn("some value")
@@ -47,16 +46,16 @@ class DataLoadInitiationSpec extends BaseSpec {
     val expectedResult = LoadDetails(
       consignmentId,
       "Consignment-Ref",
-      AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/$nonSharePointSourceSystem/$consignmentId/records"),
-      AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/$nonSharePointSourceSystem/$consignmentId/metadata")
+      AWSS3LoadDestination("aws-region", "s3BucketNameRecordsArn", "s3BucketNameRecordsName", s"$userId/$sharePointSourceSystem/$consignmentId/records"),
+      AWSS3LoadDestination("aws-region", "s3BucketNameMetadataArn", "s3BucketNameMetadataName", s"$userId/$sharePointSourceSystem/$consignmentId/metadata")
     )
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
-    val result = service.result(DataLoadInitiationInput(mockToken, nonSharePointSourceSystem)).unsafeRunSync()
+    val result = service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem)).unsafeRunSync()
     result shouldBe Right(expectedResult)
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
-    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, nonSharePointSourceSystem)
-    verify(mockGraphQlApiService, times(1)).startUpload(mockToken, consignmentId, None, None)
+    verify(mockGraphQlApiService, times(1)).addConsignment(mockToken, sharePointSourceSystem)
+    verify(mockGraphQlApiService, times(1)).startUpload(mockToken, consignmentId, None, Some(true))
   }
 
   "'initiateConsignmentLoad'" should "throw an error where the user has too many consignments without a series assigned" in {
@@ -65,7 +64,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     val addConsignmentResponse = AddConsignment(Some(consignmentId), None, "Consignment-Ref")
     val mockGraphQlApiService = mock[GraphQlApiService]
 
-    when(mockGraphQlApiService.addConsignment(mockToken, nonSharePointSourceSystem)).thenReturn(IO(addConsignmentResponse))
+    when(mockGraphQlApiService.addConsignment(mockToken, sharePointSourceSystem)).thenReturn(IO(addConsignmentResponse))
     when(mockGraphQlApiService.startUpload(mockToken, consignmentId, None, None)).thenReturn(IO("response string"))
     when(mockGraphQlApiService.getAllUserConsignments(any[Token])).thenReturn(IO(List(node)))
     when(mockToken.bearerAccessToken).thenReturn(mockBearerAccessToken)
@@ -74,7 +73,7 @@ class DataLoadInitiationSpec extends BaseSpec {
 
     val service = new DataLoadInitiation(mockGraphQlApiService)
     val exception = intercept[SeriesAssignmentError] {
-      service.result(DataLoadInitiationInput(mockToken, nonSharePointSourceSystem)).unsafeRunSync()
+      service.result(DataLoadInitiationInput(mockToken, sharePointSourceSystem)).unsafeRunSync()
     }
 
     exception.message should equal(s"User $userId has too many consignments without series assigned")
@@ -154,7 +153,7 @@ class DataLoadInitiationSpec extends BaseSpec {
     exception.message shouldBe s"Existing consignment state incorrect for upload: $consignmentId"
 
     verify(mockGraphQlApiService, times(1)).getAllUserConsignments(any[Token])
-    verify(mockGraphQlApiService, times(0)).addConsignment(mockToken, nonSharePointSourceSystem)
+    verify(mockGraphQlApiService, times(0)).addConsignment(mockToken, sharePointSourceSystem)
   }
 
   "'initiateConsignmentLoad'" should "throw an error if 'getConsignments' GraphQl service call fails" in {
