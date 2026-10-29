@@ -13,10 +13,8 @@ object MetadataLoadConfiguration {
   private val blockTdrCustomTags = ApplicationConfig.appConfig.featureAccessBlocks.blockTdrCustomTags
 
   private def sourceSystemSchemaMapping(sourceSystem: SourceSystem): String = sourceSystem match {
-    case SourceSystemEnum.SharePoint   => schemaConfig.dataLoadSharePointLocation
-    case SourceSystemEnum.HardDrive    => schemaConfig.hardDriveLocation
-    case SourceSystemEnum.NetworkDrive => schemaConfig.networkDriveLocation
-    case _                             => throw new RuntimeException(s"Source System '$sourceSystem' not mapped to schema")
+    case SourceSystemEnum.SharePoint => schemaConfig.dataLoadSharePointLocation
+    case _                           => throw new RuntimeException(s"Source System '$sourceSystem' not mapped to schema")
   }
 
   def metadataLoadConfiguration(sourceSystem: SourceSystem): Set[MetadataPropertyDetails] = {

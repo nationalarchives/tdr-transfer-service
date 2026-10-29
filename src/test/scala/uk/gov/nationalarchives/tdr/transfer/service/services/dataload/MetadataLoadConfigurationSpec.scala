@@ -19,12 +19,6 @@ class MetadataLoadConfigurationSpec extends BaseSpec {
     sharePointResult.contains(MetadataPropertyDetails("Modified", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("SiteName", required = true)) shouldBe true
     sharePointResult.contains(MetadataPropertyDetails("LibraryName", required = true)) shouldBe true
-
-    val hardDriveResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.HardDrive)
-    hardDriveResult.size shouldBe 0
-
-    val networkDriveResult = MetadataLoadConfiguration.metadataLoadConfiguration(SourceSystemEnum.NetworkDrive)
-    networkDriveResult.size shouldBe 0
   }
 
   "'metadataLoadConfiguration'" should "return an error if source system not mapped to a schema" in {
