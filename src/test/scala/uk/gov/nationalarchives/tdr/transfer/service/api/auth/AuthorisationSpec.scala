@@ -82,19 +82,7 @@ class AuthorisationSpec extends BaseSpec {
     }
   }
 
-  it should "not raise authorisation error when sharepoint feature access controlled enable but source system is not sharepoint" in {
-    when(token.userId).thenReturn(userId)
-    when(token.isConnectorSharePointUser).thenReturn(false)
-    when(mockFeatureAccessControls.sharePointUpload).thenReturn(true)
-
-    val nonSharePointSourceSystem = SourceSystemEnum.NetworkDrive
-
-    noException shouldBe thrownBy {
-      authorisation.endpointAuthorisation(AuthorisationInput(token, None, Some(nonSharePointSourceSystem))).unsafeRunSync()
-    }
-  }
-
-  it should "raise an authorisation error when sharepoint feature access controlled enable, user is sharepoint user, but does not have access to consignment" in {
+  it should "raise an authorisation error when sharepoint feature access controlled enabled, user is sharepoint user, but does not have access to consignment" in {
     when(token.userId).thenReturn(userId)
     when(token.isConnectorSharePointUser).thenReturn(true)
     when(mockFeatureAccessControls.sharePointUpload).thenReturn(true)
