@@ -46,7 +46,11 @@ class TransferErrorsController(
   }
 
   val getErrorsRoute: HttpRoutes[IO] =
-    routesWithAuthorisation(getErrorsEndpoint, (ac: AuthenticatedContext, input: TransferErrorsEndpointInput) => authorisationFunc(ac.token, Some(input._2), None), resultFunc)
+    routesWithAuthorisation(
+      getErrorsEndpoint,
+      (ac: AuthenticatedContext, input: TransferErrorsEndpointInput) => authorisationFunc(ac.token, Some(input._2), None, TransferFunction.Errors),
+      resultFunc
+    )
 }
 
 object TransferErrorsController {

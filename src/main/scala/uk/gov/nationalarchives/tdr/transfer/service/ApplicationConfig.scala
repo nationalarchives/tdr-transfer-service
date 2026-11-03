@@ -37,9 +37,9 @@ object ApplicationConfig {
       consignmentAccessDenied: String,
       inCorrectUploadState: String,
       transfersWithoutSeries: String,
-      sharePointUploadAccessDenied: String
+      functionAccessDenied: String
   )
-  case class FeatureAccessControls(sharePointUpload: Boolean)
+  case class FeatureAccessControls(sharePointUpload: Boolean, transferErrors: Boolean)
 
   case class Configuration(
       auth: Auth,

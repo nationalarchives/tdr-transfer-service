@@ -21,6 +21,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.{LoadController, TransferErrorsController}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthenticationError
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.{Load, TransferFunction}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
@@ -37,8 +38,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
   private val invalidTokenExpectedResponse = Json.obj(
     "message" := "Invalid token issuer. Expected 'http://localhost:8000/auth/realms/tdr'"
   )
-  private val sharePointUploadFacExpectedResponse = Json.obj(
-    "message" := s"User $userId does not have permission to upload from SharePoint"
+  private def functionAccessDeniedExpectedResponse(transferFunction: TransferFunction): Json = Json.obj(
+    "message" := s"User $userId access denied to transfer function: $transferFunction"
   )
 
   "'healthcheck' endpoint" should "return 200 if server running" in {
@@ -140,7 +141,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
         response.status.code shouldBe sharePointFacStatus.code
         if (response.status.code != 200) {
-          response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+          response.as[Json].unsafeRunSync() shouldEqual functionAccessDeniedExpectedResponse(Load)
         }
       }
   }
@@ -193,7 +194,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       response.status.code shouldBe sharePointFacStatus.code
 
       if (response.status.code != 200) {
-        response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+        response.as[Json].unsafeRunSync() shouldEqual functionAccessDeniedExpectedResponse(Load)
       }
     }
 
@@ -242,7 +243,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       response.status.code shouldBe sharePointFacStatus.code
 
       if (response.status.code != 200) {
-        response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+        response.as[Json].unsafeRunSync() shouldEqual functionAccessDeniedExpectedResponse(Load)
       }
     }
 
@@ -394,7 +395,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         response.status.code shouldBe sharePointFacStatus.code
 
         if (response.status.code != 200) {
-          response.as[Json].unsafeRunSync() shouldEqual sharePointUploadFacExpectedResponse
+          response.as[Json].unsafeRunSync() shouldEqual functionAccessDeniedExpectedResponse(Load)
         }
       }
 
