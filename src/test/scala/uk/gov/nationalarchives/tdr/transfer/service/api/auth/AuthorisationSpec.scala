@@ -3,7 +3,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.api.auth
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import org.mockito.ArgumentMatchers.any
-import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor4, TableFor6}
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor3, TableFor5}
 import uk.gov.nationalarchives.tdr.common.utils.authorisation.{Allow, AuthorisationResult, ConsignmentAuthorisation, ConsignmentAuthorisationInput, Deny}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.{ConsignmentApi, ErrorMessagePatterns, FeatureAccessControls}
@@ -35,16 +35,16 @@ class AuthorisationSpec extends BaseSpec with TableDrivenPropertyChecks {
   val expectedConsignmentAccessDeniedError =
     s"User $userId does not have access to consignment: $consignmentId"
 
-  val loadFunctionScenarios: TableFor6[Boolean, AuthorisationResult, Boolean, SourceSystem, Boolean, Option[String]] = Table(
-    ("connector for sharepoint user", "consignment access", "sharepoint upload  fac", "source system", "error expected", "expected error message"),
-    (true, Allow, false, SharePoint, false, None),
-    (true, Allow, true, SharePoint, true, Some(expectedAccessDeniedError(Load))),
-    (true, Deny, false, SharePoint, true, Some(expectedConsignmentAccessDeniedError)),
-    (true, Deny, true, SharePoint, true, Some(expectedAccessDeniedError(Load))),
-    (false, Allow, false, SharePoint, true, Some(expectedAccessDeniedError(Load))),
-    (false, Allow, true, SharePoint, true, Some(expectedAccessDeniedError(Load))),
-    (false, Deny, false, SharePoint, true, Some(expectedAccessDeniedError(Load))),
-    (false, Deny, true, SharePoint, true, Some(expectedAccessDeniedError(Load)))
+  val loadFunctionScenarios: TableFor5[Boolean, AuthorisationResult, Boolean, SourceSystem, Option[String]] = Table(
+    ("connector for sharepoint user", "consignment access", "sharepoint upload  fac", "source system", "expected error message"),
+    (true, Allow, false, SharePoint, None),
+    (true, Allow, true, SharePoint, None),
+    (true, Deny, false, SharePoint, Some(expectedConsignmentAccessDeniedError)),
+    (true, Deny, true, SharePoint, Some(expectedConsignmentAccessDeniedError)),
+    (false, Allow, false, SharePoint, None),
+    (false, Allow, true, SharePoint, Some(expectedAccessDeniedError(Load))),
+    (false, Deny, false, SharePoint, Some(expectedConsignmentAccessDeniedError)),
+    (false, Deny, true, SharePoint, Some(expectedAccessDeniedError(Load)))
   )
 
   forAll(loadFunctionScenarios) {
@@ -53,7 +53,6 @@ class AuthorisationSpec extends BaseSpec with TableDrivenPropertyChecks {
         consignmentAccess,
         sharepointUploadFac,
         sourceSystem,
-        errorExpected,
         expectedErrorMessage
     ) =>
       s"endpointAuthorisation with $sourceSystem" should
@@ -63,7 +62,7 @@ class AuthorisationSpec extends BaseSpec with TableDrivenPropertyChecks {
           when(authModule.hasAccess(any[ConsignmentAuthorisationInput])).thenReturn(IO(consignmentAccess))
           when(mockFeatureAccessControls.sharePointUpload).thenReturn(sharepointUploadFac)
 
-          if (errorExpected) {
+          if (expectedErrorMessage.nonEmpty) {
             val ex = intercept[AuthorisationError] {
               authorisation.endpointAuthorisation(AuthorisationInput(mockToken, Some(consignmentId), Some(sourceSystem), Load)).unsafeRunSync()
             }
@@ -77,19 +76,18 @@ class AuthorisationSpec extends BaseSpec with TableDrivenPropertyChecks {
         }
   }
 
-  val transferErrorsScenarios: TableFor4[Boolean, AuthorisationResult, Boolean, Option[String]] = Table(
-    ("transfer errors fac", "consignment access", "error expected", "expected error message"),
-    (false, Allow, false, None),
-    (false, Deny, true, Some(expectedConsignmentAccessDeniedError)),
-    (true, Allow, true, Some(expectedAccessDeniedError(Errors))),
-    (true, Deny, true, Some(expectedAccessDeniedError(Errors)))
+  val transferErrorsScenarios: TableFor3[Boolean, AuthorisationResult, Option[String]] = Table(
+    ("transfer errors fac", "consignment access", "expected error message"),
+    (false, Allow, None),
+    (false, Deny, Some(expectedConsignmentAccessDeniedError)),
+    (true, Allow, Some(expectedAccessDeniedError(Errors))),
+    (true, Deny, Some(expectedAccessDeniedError(Errors)))
   )
 
   forAll(transferErrorsScenarios) {
     (
         transferErrorsFac,
         consignmentAccess,
-        errorExpected,
         expectedErrorMessage
     ) =>
       s"endpointAuthorisation" should
@@ -98,7 +96,7 @@ class AuthorisationSpec extends BaseSpec with TableDrivenPropertyChecks {
           when(authModule.hasAccess(any[ConsignmentAuthorisationInput])).thenReturn(IO(consignmentAccess))
           when(mockFeatureAccessControls.transferErrors).thenReturn(transferErrorsFac)
 
-          if (errorExpected) {
+          if (expectedErrorMessage.nonEmpty) {
             val ex = intercept[AuthorisationError] {
               authorisation.endpointAuthorisation(AuthorisationInput(mockToken, Some(consignmentId), None, Errors)).unsafeRunSync()
             }

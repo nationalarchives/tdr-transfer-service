@@ -7,6 +7,7 @@ import sttp.tapir._
 import sttp.tapir.json.circe._
 import sttp.tapir.server.PartialServerEndpoint
 import uk.gov.nationalarchives.tdr.keycloak.Token
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.TransferErrorsController.TransferErrorsEndpointInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
@@ -48,7 +49,7 @@ class TransferErrorsController(
   val getErrorsRoute: HttpRoutes[IO] =
     routesWithAuthorisation(
       getErrorsEndpoint,
-      (ac: AuthenticatedContext, input: TransferErrorsEndpointInput) => authorisationFunc(ac.token, Some(input._2), None, TransferFunction.Errors),
+      (ac: AuthenticatedContext, input: TransferErrorsEndpointInput) => authorisationFunc(AuthorisationInput(ac.token, Some(input._2), None, TransferFunction.Errors)),
       resultFunc
     )
 }

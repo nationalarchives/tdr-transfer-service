@@ -14,7 +14,6 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.Autho
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation, TokenAuthenticator}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors._
 import uk.gov.nationalarchives.tdr.transfer.service.api.interceptors.CustomInterceptors
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 
@@ -67,13 +66,9 @@ trait BaseController {
   def routes: HttpRoutes[IO]
 
   def authorisationFunc(
-      token: Token,
-      transferId: Option[UUID],
-      sourceSystem: Option[SourceSystem],
-      transferFunction: TransferFunction
+      input: AuthorisationInput
   ): IO[Unit] = {
-    val authorisationInput = AuthorisationInput(token, transferId, sourceSystem, transferFunction)
-    authorisation.endpointAuthorisation(authorisationInput)
+    authorisation.endpointAuthorisation(input)
   }
 
   def routesWithAuthorisation[IT, RT](

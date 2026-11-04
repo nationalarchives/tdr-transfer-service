@@ -23,8 +23,9 @@ class Authorisation(
 ) {
   private def loadAccessDenied(sourceSystem: Option[SourceSystem], token: Token): Boolean = {
     sourceSystem match {
-      case Some(v) if v == SharePoint => featureAccessControls.sharePointUpload || !token.isConnectorSharePointUser
-      case _                          => true
+      case Some(v) if v == SharePoint =>
+        featureAccessControls.sharePointUpload && !token.isConnectorSharePointUser
+      case _ => true
     }
   }
 
