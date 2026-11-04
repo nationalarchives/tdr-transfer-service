@@ -65,9 +65,10 @@ trait BaseController {
 
   def routes: HttpRoutes[IO]
 
-  def authorisationFunc(token: Token, transferId: Option[UUID], sourceSystem: Option[SourceSystem]): IO[Unit] = {
-    val authorisationInput = AuthorisationInput(token, transferId, sourceSystem)
-    authorisation.endpointAuthorisation(authorisationInput)
+  def authorisationFunc(
+      input: AuthorisationInput
+  ): IO[Unit] = {
+    authorisation.endpointAuthorisation(input)
   }
 
   def routesWithAuthorisation[IT, RT](

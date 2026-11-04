@@ -8,10 +8,12 @@ import sttp.tapir._
 import sttp.tapir.json.circe.jsonBody
 import sttp.tapir.server.PartialServerEndpoint
 import uk.gov.nationalarchives.tdr.keycloak.Token
+import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
 import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController.{CompleteEndpointInput, ConfigurationEndpointInput, InitiateEndpointInput}
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.Load
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
@@ -77,21 +79,21 @@ class LoadController(
   val configurationRoute: HttpRoutes[IO] =
     routesWithAuthorisation(
       configurationEndpoint,
-      (ac: AuthenticatedContext, input: ConfigurationEndpointInput) => authorisationFunc(ac.token, None, Some(input)),
+      (ac: AuthenticatedContext, input: ConfigurationEndpointInput) => authorisationFunc(AuthorisationInput(ac.token, None, Some(input), Load)),
       (_, input: ConfigurationEndpointInput) => dataLoadConfiguration.result(input)
     )
 
   val initiateLoadRoute: HttpRoutes[IO] =
     routesWithAuthorisation(
       initiateLoadEndpoint,
-      (ac: AuthenticatedContext, input: InitiateEndpointInput) => authorisationFunc(ac.token, input._2, Some(input._1)),
+      (ac: AuthenticatedContext, input: InitiateEndpointInput) => authorisationFunc(AuthorisationInput(ac.token, input._2, Some(input._1), Load)),
       (token: Token, input: InitiateEndpointInput) => dataLoadInitiation.result(DataLoadInitiationInput(token, input._1, input._2))
     )
 
   val completeLoadRoute: HttpRoutes[IO] =
     routesWithAuthorisation(
       completeLoadEndpoint,
-      (ac: AuthenticatedContext, input: CompleteEndpointInput) => authorisationFunc(ac.token, Some(input._2), Some(input._1)),
+      (ac: AuthenticatedContext, input: CompleteEndpointInput) => authorisationFunc(AuthorisationInput(ac.token, Some(input._2), Some(input._1), Load)),
       (token: Token, input: CompleteEndpointInput) => dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), token))
     )
 }
