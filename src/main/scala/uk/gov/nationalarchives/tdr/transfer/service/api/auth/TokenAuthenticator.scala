@@ -23,6 +23,10 @@ class TokenAuthenticator(errorHandler: ErrorHandler)(implicit logger: SelfAwareS
   private def parseToken(bearer: String): IO[Either[Throwable, Token]] =
     IO.blocking(KeycloakUtils().token(bearer))
 
+  private def adminUser(token: Token): Boolean = {
+    true
+  }
+
   def authenticateStandardUserToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
     parseToken(bearer).flatMap {
       case Right(t) if t.isStandardUser =>
@@ -40,6 +44,17 @@ class TokenAuthenticator(errorHandler: ErrorHandler)(implicit logger: SelfAwareS
   def authenticateClientToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
     parseToken(bearer).flatMap {
       case Right(t) if t.transferServiceRoles.contains("data-load") =>
+        IO.pure(Right(AuthenticatedContext(t)))
+      case Right(t) =>
+        val errorMessage = s"${t.userId} does not have correct authorisation"
+        errorHandler.handleErrorAsLeft(AuthorisationError(errorMessage))
+      case Left(e) =>
+        errorHandler.handleErrorAsLeft(AuthenticationError(e.getMessage))
+    }
+
+  def authenticateAdminUserToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
+    parseToken(bearer).flatMap {
+      case Right(t) if adminUser(t) =>
         IO.pure(Right(AuthenticatedContext(t)))
       case Right(t) =>
         val errorMessage = s"${t.userId} does not have correct authorisation"

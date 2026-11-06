@@ -16,7 +16,7 @@ object Dependencies {
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.494"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.496"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.308"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -45,6 +45,8 @@ object Dependencies {
     "netty-transport-classes-epoll",
     "netty-transport-native-unix-common"
   ).map("io.netty" % _ % nettyVersion)
+
+  lazy val notifyJavaClient = "uk.gov.service.notify" % "notifications-java-client" % "6.2.1-RELEASE"
 
   lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "1.4.2"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion

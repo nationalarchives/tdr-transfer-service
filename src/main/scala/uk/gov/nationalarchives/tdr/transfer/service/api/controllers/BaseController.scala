@@ -58,6 +58,11 @@ trait BaseController {
       tokenAuthenticator.authenticateStandardUserToken
     )
 
+  val securedWithAdminUserBearer: PartialServerEndpoint[String, AuthenticatedContext, Unit, BackendError, Unit, Any, IO] = securedWithBearerEndpoint
+    .serverSecurityLogic(
+      tokenAuthenticator.authenticateAdminUserToken
+    )
+
   private val customServerOptions: Http4sServerOptions[IO] = Http4sServerOptions
     .customiseInterceptors[IO]
     .corsInterceptor(CustomInterceptors.customCorsInterceptor)

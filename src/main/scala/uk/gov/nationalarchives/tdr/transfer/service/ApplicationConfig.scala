@@ -40,6 +40,9 @@ object ApplicationConfig {
       functionAccessDenied: String
   )
   case class FeatureAccessControls(sharePointUpload: Boolean, transferErrors: Boolean)
+//  admin client id and secret should be pulled in at runtime so use ssm param paths
+  case class Keycloak(url: String, adminClientId: String, adminClientSecret: String, tdrRealm: String)
+  case class EmailClient(url: String, apiSecret: String, genericTemplateId: String)
 
   case class Configuration(
       auth: Auth,
@@ -52,7 +55,9 @@ object ApplicationConfig {
       sqs: Sqs,
       featureAccessBlocks: FeatureAccessBlocks,
       errorMessagePatterns: ErrorMessagePatterns,
-      featureAccessControls: FeatureAccessControls
+      featureAccessControls: FeatureAccessControls,
+      keycloak: Keycloak,
+      emailClient: EmailClient
   )
 
   val appConfig: Configuration = ConfigSource.default.load[Configuration] match {
