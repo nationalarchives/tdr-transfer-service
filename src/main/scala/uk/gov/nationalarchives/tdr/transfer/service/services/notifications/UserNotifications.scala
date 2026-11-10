@@ -19,8 +19,8 @@ class UserNotifications(keycloakClient: KeycloakClient, emailClient: EmailClient
       SubGroupInput(parentGroup.getId, totalSubGroups = parentGroup.getSubGroupCount)
     )
     val subGroup = subGroups
-      .find(g => g.getName.contains(userTypeGroup.name))
-      .getOrElse(throw new RuntimeException(s"No such user group: ${userTypeGroup.name}"))
+      .find(g => g.getName.contains(userTypeGroup.groupName))
+      .getOrElse(throw new RuntimeException(s"No such user group: ${userTypeGroup.groupName}"))
     keycloakClient.getGroupMembers(subGroup.getId, enabledOnly = true)
   }
 

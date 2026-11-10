@@ -9,7 +9,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.{ErrorMess
 import uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer.backend
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthorisationError
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.{Email, Errors, Load, TransferFunction}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.{Email, Errors, Load, TransferFunction, Admin}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.{SharePoint, SourceSystem}
 
 import java.util.UUID
@@ -50,14 +50,15 @@ class Authorisation(
   private def featureAccess(token: Token, transferFunction: TransferFunction, sourceSystem: Option[SourceSystem]): IO[Unit] = {
     val errorMessage = s"User ${token.userId} ${errorMessagePatterns.functionAccessDenied}: $transferFunction"
     transferFunction match {
-      case Load =>
-        if (loadAccessDenied(sourceSystem, token)) { IO.raiseError(AuthorisationError(errorMessage)) }
-        else IO.unit
+      case Admin  => IO.unit
+      case Email  => IO.unit
       case Errors =>
         if (transferErrorsAccessDenied()) { IO.raiseError(AuthorisationError(errorMessage)) }
         else IO.unit
-      case Email => IO.unit
-      case _     =>
+      case Load =>
+        if (loadAccessDenied(sourceSystem, token)) { IO.raiseError(AuthorisationError(errorMessage)) }
+        else IO.unit
+      case _ =>
         IO.raiseError(AuthorisationError(errorMessage))
     }
   }

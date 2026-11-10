@@ -17,8 +17,8 @@ class KeycloakClient(realmResource: RealmResource) {
       .groups()
       .asScala
       .toList
-      .find(_.getName == group.name)
-      .getOrElse(throw new RuntimeException(s"No such group: ${group.name}"))
+      .find(_.getName == group.groupName)
+      .getOrElse(throw new RuntimeException(s"No such group: ${group.groupName}"))
   }
 
   def getSubGroups(input: SubGroupInput): List[GroupRepresentation] = {
