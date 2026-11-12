@@ -36,6 +36,7 @@ trait BaseController {
         oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[AuthorisationError].description("User not authorised"))),
         oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[SeriesAssignmentError].description("Too many unassigned transfers"))),
         oneOfVariant(statusCode(StatusCode.Forbidden).and(jsonBody[TransferStateError].description("Transfer in incorrect state for upload"))),
+        oneOfVariant(statusCode(StatusCode.BadRequest).and(jsonBody[DataLoadError].description("Errors found with data load completion request"))),
         oneOfDefaultVariant(statusCode(StatusCode.InternalServerError).and(jsonBody[BackendError].description("Unknown")))
       )
     )

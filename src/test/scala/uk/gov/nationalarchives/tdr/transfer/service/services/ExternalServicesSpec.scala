@@ -2,6 +2,7 @@ package uk.gov.nationalarchives.tdr.transfer.service.services
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
@@ -16,17 +17,35 @@ class ExternalServicesSpec extends BaseSpec with BeforeAndAfterEach with BeforeA
 
   val wiremockGraphqlServer = new WireMockServer(9001)
   val wiremockS3 = new WireMockServer(8003)
+  val wiremockSqs = new WireMockServer(8004)
 
   override def beforeAll(): Unit = {
     wiremockGraphqlServer.start()
+    wiremockSqs.start()
   }
 
   override def afterAll(): Unit = {
     wiremockGraphqlServer.stop()
+    wiremockSqs.stop()
   }
 
   override def afterEach(): Unit = {
     wiremockGraphqlServer.resetAll()
+    wiremockSqs.resetAll()
+  }
+
+  def setUpSqsServer(messageBodyMd5: String = "238bc6265f517e232ee324369ba53edd"): StubMapping = {
+    val response =
+      s"""
+        |{
+        |   "MD5OfMessageBody": "$messageBodyMd5"
+        |}
+        |""".stripMargin
+
+    wiremockSqs
+      .stubFor(
+        post(urlEqualTo("/")).willReturn(okJson(response))
+      )
   }
 
   val graphQlPath = "/graphql"

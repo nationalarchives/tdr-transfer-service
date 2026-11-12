@@ -6,17 +6,17 @@ object Dependencies {
   private val nettyVersion = "4.2.19.Final"
   private val pureConfigVersion = "0.17.11"
   private val tapirVersion = "1.14.1"
-  private val awsUtilsVersion = "0.1.341"
+  private val awsUtilsVersion = "0.1.343"
   private val tdrUtilsVersion = "0.0.55"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.308"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.309"
 
-  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
-  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
+  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.87"
+  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.87"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.494"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.496"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.308"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -59,6 +59,6 @@ object Dependencies {
   lazy val tdrStatuses = "uk.gov.nationalarchives" %% "tdr-statuses" % tdrUtilsVersion
 
   lazy val s3Utils = "uk.gov.nationalarchives" %% "s3-utils" % awsUtilsVersion
-  lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"
+  lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.2.20"  
   lazy val sqsUtils = "uk.gov.nationalarchives" %% "sqs-utils" % awsUtilsVersion
 }

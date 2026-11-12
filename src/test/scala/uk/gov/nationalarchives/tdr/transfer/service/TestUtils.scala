@@ -26,7 +26,7 @@ object TestUtils {
       .withClaim("connector_for_sharepoint_user", connectorForSharePointUser)
 
     if (body.nonEmpty) {
-      tokenBuilder.withClaim("bodies", java.util.Arrays.asList(body))
+      tokenBuilder.withClaim("bodies", java.util.Arrays.asList(body.get))
     } else {
       tokenBuilder.withClaim("bodies", java.util.Arrays.asList())
     }

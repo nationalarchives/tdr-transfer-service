@@ -45,6 +45,7 @@ lazy val root = (project in file("."))
 (Compile / run / mainClass) := Some("uk.gov.nationalarchives.tdr.transfer.service.api.TransferServiceServer")
 
 (Test / javaOptions) += s"-Dconfig.file=${sourceDirectory.value}/test/resources/application.conf"
+(Test / envVars) := Map("AWS_ACCESS_KEY_ID" -> "test", "AWS_SECRET_ACCESS_KEY" -> "test")
 (Test / fork) := true
 (assembly / assemblyJarName) := "transferservice.jar"
 (assembly / assemblyOutputPath) := Def.uncached {

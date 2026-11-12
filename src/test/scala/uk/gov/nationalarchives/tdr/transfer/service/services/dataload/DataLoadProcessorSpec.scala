@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, StatusType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues._
 import uk.gov.nationalarchives.tdr.keycloak.Token
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ClientSideError, DataLoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
@@ -56,10 +57,10 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
     ConsignmentStatuses(UUID.randomUUID(), transferId, ClientChecksType.id, CompletedWithIssuesValue.value, someDateTime, None)
   )
 
-  val successResponse = LoadCompletionResponse(transferId, success = true)
-  val noSuccessResponse = LoadCompletionResponse(transferId, success = false)
+  private val successResponse = Right(LoadCompletionResponse(transferId, success = true))
+  private val clientSideError = Left(ClientSideError(s"Client side data load error(s) for transfer $transferId: LoadError(client side error)"))
 
-  val scenarios: TableFor10[String, List[ConsignmentStatuses], LoadCompletion, Boolean, LoadCompletionResponse, StatusValue, Int, Int, Int, Int] = Table(
+  val scenarios: TableFor10[String, List[ConsignmentStatuses], LoadCompletion, Boolean, Either[BackendError, LoadCompletionResponse], StatusValue, Int, Int, Int, Int] = Table(
     (
       "Scenario",
       "Transfer State",
@@ -73,32 +74,109 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       "Expected Number of Loaded Files"
     ),
     ("transfer state correct and no errors", correctTransferStatuses, noErrors, false, successResponse, CompletedValue, 1, 1, 1, 2),
-    ("transfer state correct with data load errors", correctTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 1, 1),
-    ("transfer state correct with client side errors", correctTransferStatuses, clientSideErrorsOnly, false, noSuccessResponse, FailedValue, 0, 1, 1, 1),
-    ("transfer state correct with client side and data load errors", correctTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 1, 1),
-    ("upload state not correct and no errors", incorrectUploadStatus, noErrors, true, noSuccessResponse, FailedValue, 1, 1, 0, 2),
-    ("upload state not correct with client side errors", incorrectUploadStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0, 1, 0, 1),
-    ("upload state not correct with data load errors", incorrectUploadStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 0, 1),
-    ("upload state not correct with client side errors and data load errors", incorrectUploadStatus, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 0, 1),
-    ("client side checks state not in progress and no errors", incorrectClientSideChecksStatus, noErrors, true, noSuccessResponse, FailedValue, 1, 1, 0, 2),
-    ("client side checks state not in progress with client side errors", incorrectClientSideChecksStatus, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0, 1, 0, 1),
-    ("client side checks state not in progress with data load errors", incorrectClientSideChecksStatus, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 0, 1),
     (
-      "client side checks state not in progress with client side and data load errors",
-      incorrectClientSideChecksStatus,
-      allErrors,
+      "transfer state correct with data load errors",
+      correctTransferStatuses,
+      dataLoadErrorsOnly,
       true,
-      noSuccessResponse,
+      Left(DataLoadError(s"Expected files does not match actual files: $transferId")),
+      FailedValue,
+      0,
+      1,
+      1,
+      1
+    ),
+    ("transfer state correct with client side errors", correctTransferStatuses, clientSideErrorsOnly, false, clientSideError, FailedValue, 0, 1, 1, 1),
+    ("transfer state correct with client side and data load errors", correctTransferStatuses, allErrors, true, clientSideError, FailedValue, 0, 1, 1, 1),
+    (
+      "upload state not correct and no errors",
+      incorrectUploadStatus,
+      noErrors,
+      true,
+      Left(DataLoadError(s"Upload state change Completed rejected for transfer: $transferId")),
+      FailedValue,
+      0,
+      1,
+      0,
+      2
+    ),
+    ("upload state not correct with client side errors", incorrectUploadStatus, clientSideErrorsOnly, true, clientSideError, FailedValue, 0, 1, 0, 1),
+    (
+      "upload state not correct with data load errors",
+      incorrectUploadStatus,
+      dataLoadErrorsOnly,
+      true,
+      Left(DataLoadError(s"Expected files does not match actual files: $transferId")),
       FailedValue,
       0,
       1,
       0,
       1
     ),
-    ("transfer state incorrect and no errors", incorrectTransferStatuses, noErrors, true, noSuccessResponse, FailedValue, 1, 1, 0, 2),
-    ("transfer state incorrect with data load errors", incorrectTransferStatuses, dataLoadErrorsOnly, true, noSuccessResponse, FailedValue, 1, 1, 0, 1),
-    ("transfer state incorrect with client side errors", incorrectTransferStatuses, clientSideErrorsOnly, true, noSuccessResponse, FailedValue, 0, 1, 0, 1),
-    ("transfer state incorrect with client side and data load errors", incorrectTransferStatuses, allErrors, true, noSuccessResponse, FailedValue, 0, 1, 0, 1)
+    ("upload state not correct with client side errors and data load errors", incorrectUploadStatus, allErrors, true, clientSideError, FailedValue, 0, 1, 0, 1),
+    (
+      "client side checks state not in progress and no errors",
+      incorrectClientSideChecksStatus,
+      noErrors,
+      true,
+      Left(DataLoadError(s"Transfer state incorrect: $transferId")),
+      FailedValue,
+      0,
+      1,
+      0,
+      2
+    ),
+    ("client side checks state not in progress with client side errors", incorrectClientSideChecksStatus, clientSideErrorsOnly, true, clientSideError, FailedValue, 0, 1, 0, 1),
+    (
+      "client side checks state not in progress with data load errors",
+      incorrectClientSideChecksStatus,
+      dataLoadErrorsOnly,
+      true,
+      Left(DataLoadError(s"Expected files does not match actual files: $transferId")),
+      FailedValue,
+      0,
+      1,
+      0,
+      1
+    ),
+    (
+      "client side checks state not in progress with client side and data load errors",
+      incorrectClientSideChecksStatus,
+      allErrors,
+      true,
+      clientSideError,
+      FailedValue,
+      0,
+      1,
+      0,
+      1
+    ),
+    (
+      "transfer state incorrect and no errors",
+      incorrectTransferStatuses,
+      noErrors,
+      true,
+      Left(DataLoadError(s"Upload state change Completed rejected for transfer: $transferId")),
+      FailedValue,
+      0,
+      1,
+      0,
+      2
+    ),
+    (
+      "transfer state incorrect with data load errors",
+      incorrectTransferStatuses,
+      dataLoadErrorsOnly,
+      true,
+      Left(DataLoadError(s"Expected files does not match actual files: $transferId")),
+      FailedValue,
+      0,
+      1,
+      0,
+      1
+    ),
+    ("transfer state incorrect with client side errors", incorrectTransferStatuses, clientSideErrorsOnly, true, clientSideError, FailedValue, 0, 1, 0, 1),
+    ("transfer state incorrect with client side and data load errors", incorrectTransferStatuses, allErrors, true, clientSideError, FailedValue, 0, 1, 0, 1)
   )
 
   forAll(scenarios) {
@@ -115,7 +193,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
         expectedNumberOfLoadedFiles
     ) =>
       {
-        "'trigger' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
+        "'result' function" should s"send correct aggregate processing SQS event message and return the correct result for $scenario" in {
           reset(mockGraphQlApiService)
           val mockMessageService = mock[Messages]
           val sqsEffectWasRun = new java.util.concurrent.atomic.AtomicBoolean(false)
@@ -139,8 +217,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
           val sqsEffectRun = expectedNumberSnsMessages != 0
 
           sqsEffectWasRun.get() shouldBe sqsEffectRun
-          result.map(_.transferId) shouldBe Right(expectedLoadResponse.transferId)
-          result.map(_.success) shouldBe Right(expectedLoadResponse.success)
+          result shouldBe expectedLoadResponse
 
           verify(mockMessageService, times(expectedNumberSnsMessages)).sendAggregateProcessingEventMessage(any[UUID], any[AggregateProcessingEvent])
           verify(mockGraphQlApiService, times(expectedNumberOfStateCalls)).consignmentState(mockKeycloakToken, transferId)
@@ -158,7 +235,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       }
   }
 
-  "'trigger' function" should "send aggregate processing SQS event message and return the correct result when ignore site name" in {
+  "'result' function" should "send aggregate processing SQS event message and return the correct result when ignore site name" in {
     val mockMessageService = mock[Messages]
     val transferIdArgumentCaptor: ArgumentCaptor[UUID] = ArgumentCaptor.forClass(classOf[UUID])
     val eventArgumentCaptor: ArgumentCaptor[AggregateProcessingEvent] = ArgumentCaptor.forClass(classOf[AggregateProcessingEvent])

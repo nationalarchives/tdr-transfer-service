@@ -11,7 +11,7 @@ import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChec
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue, InProgressValue, StatusValue}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ClientSideError, DataLoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
 import uk.gov.nationalarchives.tdr.transfer.service.services.{BaseService, GraphQlApiService}
@@ -36,48 +36,69 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
   }
 
-  private def isStateCorrect(transferId: UUID, statuses: List[ConsignmentStatuses], statusValue: StatusValue): IO[Boolean] = {
-    TransferState
+  private def isStateCorrect(
+      transferId: UUID,
+      statuses: List[ConsignmentStatuses],
+      statusValue: StatusValue
+  ): IO[Option[DataLoadError]] = {
+    val clientChecksInProgress =
+      statuses.exists(s => s.statusType == ClientChecksType.id && s.value == InProgressValue.value)
+
+    val result = TransferState
       .apply(UploadType)
       .checkStateChange(statusValue, CurrentState(transferId, statuses))
       .fold(
-        err => logger.warn(s"State change rejected for transfer $transferId: $err").as(false),
-        _ => IO.pure(statuses.find(_.statusType == ClientChecksType.id).exists(_.value == InProgressValue.value))
+        _ => Some(DataLoadError(s"${UploadType.id} state change ${statusValue.value} rejected for transfer: $transferId")),
+        _ =>
+          if (clientChecksInProgress) None
+          else Some(DataLoadError(s"Transfer state incorrect: $transferId"))
       )
+
+    IO.pure(result)
   }
 
   def result(input: DataLoadProcessorInput): IO[Either[BackendError, LoadCompletionResponse]] = {
     val event = input.event
     val token = input.token
     val transferId = event.transferId
+    val details = event.loadCompletionDetails
+
     for {
       statuses <- graphQlApiService.consignmentState(token, transferId)
-      loadCompletionDetails = event.loadCompletionDetails
-      clientSideErrors <- hasClientSideErrors(transferId, loadCompletionDetails)
-      dataLoadErrors = hasDataLoadErrors(loadCompletionDetails)
-      uploadStatus =
-        if (!dataLoadErrors && !clientSideErrors) { CompletedValue }
-        else FailedValue
-      stateCorrect <- isStateCorrect(transferId, statuses, uploadStatus)
-      loadSuccess = stateCorrect && !dataLoadErrors && !clientSideErrors
-      loadCompletionResponse = LoadCompletionResponse(transferId, loadSuccess)
-      _ <- if (stateCorrect) graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) else IO.unit
-      _ <- sendProcessMessage(transferId, token, event.source, loadSuccess, loadCompletionDetails.loadedNumberFiles)
-        .unlessA(clientSideErrors)
-    } yield Right(loadCompletionResponse)
+      loadErrors <- hasClientSideErrors(transferId, details)
+      uploadStatus = if (loadErrors.isEmpty) CompletedValue else FailedValue
+      stateErrors <- isStateCorrect(transferId, statuses, uploadStatus)
+      loadSuccess = loadErrors.isEmpty && stateErrors.isEmpty
+      _ <- (
+        graphQlApiService.updateConsignmentStatus(token, transferId, UploadType, uploadStatus) *>
+          logger.info(s"${UploadType.id} status updated to ${uploadStatus.value} for transfer: $transferId")
+      ).whenA(stateErrors.isEmpty)
+      _ <- (
+        sendProcessMessage(transferId, token, event.source, loadSuccess, details.loadedNumberFiles) *>
+          logger.info(s"Process message sent for transfer: $transferId")
+      ).whenA(loadSuccess)
+    } yield loadErrors
+      .orElse(stateErrors)
+      .toLeft(LoadCompletionResponse(transferId, loadSuccess))
   }
 
-  private def hasClientSideErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Boolean] = {
+  private def hasClientSideErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Option[BackendError]] = {
     val clientSideErrors = loadCompletionDetails.loadErrors
     if (clientSideErrors.nonEmpty) {
-      logger
-        .info(s"Client side data load error(s) for transfer $transferId: ${clientSideErrors.mkString("; ").trim}")
-        .as(true)
-    } else IO.pure(false)
+      IO(Some(ClientSideError(s"Client side data load error(s) for transfer $transferId: ${clientSideErrors.mkString("; ").trim}")))
+    } else hasDataLoadErrors(transferId, loadCompletionDetails)
   }
 
-  private def hasDataLoadErrors(loadCompletionDetails: LoadCompletion): Boolean = {
-    (loadCompletionDetails.expectedNumberFiles != loadCompletionDetails.loadedNumberFiles) || loadCompletionDetails.loadedNumberFiles < 1
+  private def hasDataLoadErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Option[BackendError]] = {
+    val errorMessage = loadCompletionDetails match {
+      case _ if loadCompletionDetails.expectedNumberFiles != loadCompletionDetails.loadedNumberFiles => Some(s"Expected files does not match actual files: $transferId")
+      case _ if loadCompletionDetails.loadedNumberFiles < 1                                          => Some(s"No files uploaded: $transferId")
+      case _                                                                                         => None
+    }
+    errorMessage match {
+      case Some(value) => IO(Some(DataLoadError(value)))
+      case _           => IO.pure(None)
+    }
   }
 }
 

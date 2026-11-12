@@ -286,7 +286,8 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
       s"'load/$source/complete' endpoint" should "return 200 with correct authorisation header" in {
         graphqlOkJson(UUID.fromString(transferId))
-        val loadCompletionBody = LoadCompletion(3, 3, Set(LoadError("There was an error"))).asJson
+        setUpSqsServer()
+        val loadCompletionBody = LoadCompletion(3, 3).asJson
         val validToken = validUserToken()
         val bearer = CIString("Authorization")
         val authHeader = Header.Raw.apply(bearer, s"$validToken")
@@ -302,7 +303,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
         response.status shouldBe Status.Ok
         checkValidResponseHeaders(response.headers)
-        response.as[String].unsafeRunSync() shouldEqual "{\"transferId\":\"6e3b76c4-1745-4467-8ac5-b4dd736e1b3e\",\"success\":false}"
+        response.as[String].unsafeRunSync() shouldEqual "{\"transferId\":\"6e3b76c4-1745-4467-8ac5-b4dd736e1b3e\",\"success\":true}"
       }
 
       s"'load/$source/complete' endpoint" should "return 401 response with incorrect authorisation header" in {
