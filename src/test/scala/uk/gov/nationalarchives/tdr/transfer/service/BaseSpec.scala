@@ -90,39 +90,23 @@ trait BaseSpec extends AnyFlatSpec with MockitoSugar with Matchers with EitherVa
     Resource
       .make(IO.blocking(Files.createTempDirectory("transfer-service-tls")))(directory =>
         IO.blocking {
-          Files.deleteIfExists(directory.resolve("server.key"))
-          Files.deleteIfExists(directory.resolve("server.crt"))
+          Files.deleteIfExists(directory.resolve("certs/this.p12"))
+          Files.deleteIfExists(directory.resolve("certs"))
           Files.delete(directory)
         }
       )
       .evalMap { directory =>
         IO.blocking {
-          val key = directory.resolve("server.key")
-          val certificate = directory.resolve("server.crt")
+          val certs = Files.createDirectory(directory.resolve("certs"))
+          val keyStore = certs.resolve("this.p12")
           val output = new StringBuilder
           val exitCode = Process(
-            Seq(
-              "openssl",
-              "req",
-              "-x509",
-              "-newkey",
-              "rsa:2048",
-              "-sha256",
-              "-noenc",
-              "-days",
-              "1",
-              "-keyout",
-              key.toString,
-              "-out",
-              certificate.toString,
-              "-subj",
-              "/CN=localhost",
-              "-addext",
-              "subjectAltName=DNS:localhost,IP:127.0.0.1"
-            )
+            Seq("sh", "docker-entrypoint.sh", "true"),
+            None,
+            "SERVICE_NAME" -> directory.toString.stripPrefix("/")
           ).!(ProcessLogger(line => output.append(line), line => output.append(line)))
-          require(exitCode == 0, s"Could not generate test TLS certificate: $output")
-          Tls(certificate.toString, key.toString)
+          require(exitCode == 0, s"Could not generate test TLS key store: $output")
+          Tls(keyStore.toString)
         }
       }
 

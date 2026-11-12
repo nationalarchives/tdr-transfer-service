@@ -34,7 +34,6 @@ import java.io.IOException
 import java.net.URI
 import java.nio.file.{Files, Path}
 import java.security.KeyStore
-import java.security.cert.CertificateFactory
 import java.util.UUID
 import javax.net.ssl.{HttpsURLConnection, SSLContext, TrustManagerFactory}
 import scala.concurrent.duration._
@@ -65,9 +64,11 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
         IO.blocking {
           val trustStore = KeyStore.getInstance("PKCS12")
           trustStore.load(null, null)
-          val input = Files.newInputStream(Path.of(tls.certificatePath))
-          try trustStore.setCertificateEntry("server", CertificateFactory.getInstance("X.509").generateCertificate(input))
+          val keyStore = KeyStore.getInstance("PKCS12")
+          val input = Files.newInputStream(Path.of(tls.keyStorePath))
+          try keyStore.load(input, Array.emptyCharArray)
           finally input.close()
+          trustStore.setCertificateEntry("server", keyStore.getCertificate("transfer-service"))
           val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
           trustManagerFactory.init(trustStore)
           val context = SSLContext.getInstance("TLS")
@@ -93,14 +94,14 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       .unsafeRunSync()
   }
 
-  it should "fail startup when the certificate is missing" in {
+  it should "fail startup when the key store is missing" in {
     tlsFiles
       .use { tls =>
         TransferServiceServer
           .serverResource(
             TransferServiceServer.healthCheckRoute.orNotFound,
             Port.fromInt(0).get,
-            new TransportLayerSecurity(tls.copy(certificatePath = tls.certificatePath + ".missing"))
+            new TransportLayerSecurity(tls.copy(keyStorePath = tls.keyStorePath + ".missing"))
           )
           .use(_ => IO.unit)
           .attempt
@@ -109,15 +110,33 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       .unsafeRunSync()
   }
 
-  it should "fail startup when the private key is invalid" in {
+  it should "fail startup when the key store is invalid" in {
     tlsFiles
       .use { tls =>
-        IO.blocking(Files.writeString(Path.of(tls.privateKeyPath), "invalid private key")) *>
+        IO.blocking(Files.writeString(Path.of(tls.keyStorePath), "invalid key store")) *>
           TransferServiceServer
             .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, new TransportLayerSecurity(tls))
             .use(_ => IO.unit)
             .attempt
-            .map(result => result.left.toOption.get shouldBe an[IllegalArgumentException])
+            .map(result => result.left.toOption.get shouldBe an[IOException])
+      }
+      .unsafeRunSync()
+  }
+
+  it should "fail startup when the key store contains no private key" in {
+    tlsFiles
+      .use { tls =>
+        IO.blocking {
+          val keyStore = KeyStore.getInstance("PKCS12")
+          keyStore.load(null, Array.emptyCharArray)
+          val output = Files.newOutputStream(Path.of(tls.keyStorePath))
+          try keyStore.store(output, Array.emptyCharArray)
+          finally output.close()
+        } *> TransferServiceServer
+          .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, new TransportLayerSecurity(tls))
+          .use(_ => IO.unit)
+          .attempt
+          .map(result => result.left.toOption.get shouldBe an[IllegalArgumentException])
       }
       .unsafeRunSync()
   }
