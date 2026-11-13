@@ -6,6 +6,8 @@ import graphql.codegen.GetConsignmentStatus.getConsignmentStatus.GetConsignment.
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
+import uk.gov.nationalarchives.tdr.common.utils.objectkeycontext.ObjectCategories.Records
+import uk.gov.nationalarchives.tdr.common.utils.objectkeycontext.ObjectTypes.Metadata
 import uk.gov.nationalarchives.tdr.common.utils.statecontrol.{CurrentState, TransferState}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.{CompletedValue, FailedValue, InProgressValue, StatusValue}
@@ -26,13 +28,23 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
 ) extends BaseService[DataLoadProcessorInput, LoadCompletionResponse] {
 
   private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean, loadedNumberOfFiles: Int): IO[SendMessageResponse] = {
-    val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/metadata"
+    val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/${Metadata.id}"
     val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
+    val recordsSourceBucket = appConfig.s3.recordsUploadBucketName
+    val recordsSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/${Records.id}"
     val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(";").toSet
     val transferringBodies: Set[String] = token.transferringBodies.getOrElse(Nil).toSet
     val ignoreSiteName = transferringBodies.exists(ignoreSiteNameBodies.contains)
 
-    val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, !loadSuccess, ignoreSiteName = ignoreSiteName, loadedNumberOfFiles)
+    val eventMessage = AggregateProcessingEvent(
+      metadataSourceBucket,
+      metadataSourceObjectPrefix,
+      !loadSuccess,
+      ignoreSiteName = ignoreSiteName,
+      loadedNumberOfFiles,
+      recordsSourceBucket,
+      recordsSourceObjectPrefix
+    )
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
   }
 

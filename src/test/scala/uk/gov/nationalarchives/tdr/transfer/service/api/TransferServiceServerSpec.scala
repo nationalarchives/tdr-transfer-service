@@ -12,9 +12,11 @@ import org.mockito.ArgumentMatchers.any
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 import org.typelevel.ci.CIString
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{SeriesType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues.CompletedValue
 import uk.gov.nationalarchives.tdr.schema.generated.ExcludedFilenames
+import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
 import uk.gov.nationalarchives.tdr.transfer.service.TestUtils.{invalidToken, userId, validUserToken}
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
@@ -23,10 +25,12 @@ import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthenticationErr
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.TransferErrorResultsModel.TransferErrorsResults
-import uk.gov.nationalarchives.tdr.transfer.service.services.ExternalServicesSpec
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
+import uk.gov.nationalarchives.tdr.transfer.service.services.{ExternalServicesSpec, GraphQlApiService}
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{ClientSideFailure, DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors
 import uk.gov.nationalarchives.tdr.transfer.service.services.errors.TransferErrors.TransferErrorsInput
+import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
+import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
 
 import java.util.UUID
 
@@ -228,7 +232,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
       when(mockAuthorisation.endpointAuthorisation(any[AuthorisationInput]))
         .thenReturn(IO.raiseError(AuthenticationError("Authentication error message")))
 
-      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation).initiateLoadRoute.orNotFound
+      val response = new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), mockAuthorisation, ClientSideFailure()).initiateLoadRoute.orNotFound
         .run(
           Request(method = Method.POST, uri = uriOptionalTransferId, headers = fakeHeaders)
         )
@@ -286,16 +290,35 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
 
       s"'load/$source/complete' endpoint" should "return 200 with correct authorisation header" in {
         graphqlOkJson(UUID.fromString(transferId))
-        setUpSqsServer()
+
+        val mockMessages = mock[Messages]
+        when(
+          mockMessages.sendAggregateProcessingEventMessage(
+            any[UUID],
+            any[AggregateProcessingEvent]
+          )
+        ).thenReturn(IO.pure(SendMessageResponse.builder().messageId("test-message").build()))
+
+        val processor = new DataLoadProcessor(
+          mockMessages,
+          ApplicationConfig.appConfig,
+          GraphQlApiService.service
+        )
+
+        val controller = new LoadController(
+          DataLoadConfiguration(),
+          DataLoadInitiation(),
+          processor,
+          Authorisation(),
+          ClientSideFailure()
+        )
+
         val loadCompletionBody = LoadCompletion(3, 3).asJson
         val validToken = validUserToken()
         val bearer = CIString("Authorization")
         val authHeader = Header.Raw.apply(bearer, s"$validToken")
         val fakeHeaders = Headers.apply(authHeader)
-        val response = LoadController
-          .apply()
-          .completeLoadRoute
-          .orNotFound
+        val response = controller.completeLoadRoute.orNotFound
           .run(
             Request(method = Method.POST, uri = uri, headers = fakeHeaders).withEntity(loadCompletionBody)
           )

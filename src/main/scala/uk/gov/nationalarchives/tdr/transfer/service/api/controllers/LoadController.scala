@@ -10,16 +10,17 @@ import sttp.tapir.server.PartialServerEndpoint
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.Authorisation.AuthorisationInput
 import uk.gov.nationalarchives.tdr.transfer.service.api.auth.{AuthenticatedContext, Authorisation}
-import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController.{CompleteEndpointInput, ConfigurationEndpointInput, InitiateEndpointInput}
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.BackendError
+import uk.gov.nationalarchives.tdr.transfer.service.api.controllers.LoadController.{CompleteEndpointInput, ConfigurationEndpointInput, FailedEndpointInput, InitiateEndpointInput}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, DataLoadError}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Common.TransferFunction.Load
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, TransferConfiguration}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadDetails, LoadFailed, TransferConfiguration}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.Serializers._
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum.SourceSystem
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.ClientSideFailure.ClientSideFailureInput
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadInitiation.DataLoadInitiationInput
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{DataLoadProcessorEvent, DataLoadProcessorInput}
-import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
+import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.{ClientSideFailure, DataLoadConfiguration, DataLoadInitiation, DataLoadProcessor}
 
 import java.util.UUID
 
@@ -27,17 +28,22 @@ class LoadController(
     dataLoadConfiguration: DataLoadConfiguration,
     dataLoadInitiation: DataLoadInitiation,
     dataLoadProcessor: DataLoadProcessor,
-    authorisationModule: Authorisation
+    authorisationModule: Authorisation,
+    clientSideFailure: ClientSideFailure
 ) extends BaseController {
   def endpoints: List[Endpoint[
     String,
-    _ >: ConfigurationEndpointInput with InitiateEndpointInput with CompleteEndpointInput <: Serializable,
+    _ >: ConfigurationEndpointInput with (SourceSystem, Option[UUID]) with (SourceSystem, UUID, Option[Boolean], LoadCompletion) with (
+        SourceSystem,
+        UUID,
+        LoadFailed
+    ) <: Serializable,
     BackendError,
-    _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse <: Product,
+    _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse with Unit,
     Any
-  ]] = List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint)
+  ]] = List(configurationEndpoint.endpoint, initiateLoadEndpoint.endpoint, completeLoadEndpoint.endpoint, failedLoadEndpoint.endpoint)
 
-  override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute
+  override def routes: HttpRoutes[IO] = configurationRoute <+> initiateLoadRoute <+> completeLoadRoute <+> failedLoadRoute
 
   override val authorisation: Authorisation = authorisationModule
 
@@ -76,6 +82,12 @@ class LoadController(
       .in(jsonBody[LoadCompletion])
       .out(jsonBody[LoadCompletionResponse])
 
+  private val failedLoadEndpoint = securedWithStandardUserBearer
+    .summary("Notify that client side upload failed")
+    .post
+    .in(s"${TransferFunction.Load}" / sourceSystem / "failed" / transferId)
+    .in(jsonBody[LoadFailed])
+
   val configurationRoute: HttpRoutes[IO] =
     routesWithAuthorisation(
       configurationEndpoint,
@@ -96,14 +108,22 @@ class LoadController(
       (ac: AuthenticatedContext, input: CompleteEndpointInput) => authorisationFunc(AuthorisationInput(ac.token, Some(input._2), Some(input._1), Load)),
       (token: Token, input: CompleteEndpointInput) => dataLoadProcessor.result(DataLoadProcessorInput(DataLoadProcessorEvent(input._1, input._2, input._3, input._4), token))
     )
+
+  val failedLoadRoute: HttpRoutes[IO] =
+    routesWithAuthorisation(
+      failedLoadEndpoint,
+      (ac: AuthenticatedContext, input: FailedEndpointInput) => authorisationFunc(AuthorisationInput(ac.token, Some(input._2), Some(input._1), Load)),
+      (token: Token, input: FailedEndpointInput) => clientSideFailure.result(ClientSideFailureInput(token, input._1, input._2, input._3))
+    )
 }
 
 object LoadController {
   type CompleteEndpointInput = (SourceSystem, UUID, Option[Boolean], LoadCompletion)
   type ConfigurationEndpointInput = SourceSystem
+  type FailedEndpointInput = (SourceSystem, UUID, LoadFailed)
   type InitiateEndpointInput = (SourceSystem, Option[UUID])
 
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]): LoadController = {
-    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation())
+    new LoadController(DataLoadConfiguration(), DataLoadInitiation(), DataLoadProcessor(), Authorisation(), ClientSideFailure())
   }
 }

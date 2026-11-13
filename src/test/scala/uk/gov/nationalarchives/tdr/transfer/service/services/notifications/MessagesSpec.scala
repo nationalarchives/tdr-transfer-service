@@ -14,13 +14,23 @@ class MessagesSpec extends BaseSpec {
     val mockSqsUtils = mock[SQSUtils]
     when(mockSqsConfig.aggregateProcessingQueueUrl).thenReturn("sqs/url")
     val service = new Messages(mockSqsUtils, mockSqsConfig)
-    val event = AggregateProcessingEvent("source-bucket", "metadata/source/prefix", dataLoadErrors = true, ignoreSiteName = true, loadedNumberOfFiles = 2)
+    val event = AggregateProcessingEvent(
+      "source-bucket",
+      "metadata/source/prefix",
+      dataLoadErrors = true,
+      ignoreSiteName = true,
+      loadedNumberOfFiles = 2,
+      "records-source-bucket",
+      "records/source/prefix"
+    )
     val expectedMessageString = """{
                                   |  "metadataSourceBucket" : "source-bucket",
                                   |  "metadataSourceObjectPrefix" : "metadata/source/prefix",
                                   |  "dataLoadErrors" : true,
                                   |  "ignoreSiteName" : true,
-                                  |  "loadedNumberOfFiles" : 2
+                                  |  "loadedNumberOfFiles" : 2,
+                                  |  "recordsSourceBucket" : "records-source-bucket",
+                                  |  "recordsSourceObjectPrefix" : "records/source/prefix"
                                   |}""".stripMargin
 
     service.sendAggregateProcessingEventMessage(transferId, event).unsafeRunSync()
@@ -33,13 +43,21 @@ class MessagesSpec extends BaseSpec {
     val mockSqsUtils = mock[SQSUtils]
     when(mockSqsConfig.aggregateProcessingQueueUrl).thenReturn("sqs/url")
     val service = new Messages(mockSqsUtils, mockSqsConfig)
-    val event = AggregateProcessingEvent("source-bucket", "metadata/source/prefix", loadedNumberOfFiles = 2)
+    val event = AggregateProcessingEvent(
+      "source-bucket",
+      "metadata/source/prefix",
+      loadedNumberOfFiles = 2,
+      recordsSourceBucket = "records-source-bucket",
+      recordsSourceObjectPrefix = "records/source/prefix"
+    )
     val expectedMessageString = """{
                                   |  "metadataSourceBucket" : "source-bucket",
                                   |  "metadataSourceObjectPrefix" : "metadata/source/prefix",
                                   |  "dataLoadErrors" : false,
                                   |  "ignoreSiteName" : false,
-                                  |  "loadedNumberOfFiles" : 2
+                                  |  "loadedNumberOfFiles" : 2,
+                                  |  "recordsSourceBucket" : "records-source-bucket",
+                                  |  "recordsSourceObjectPrefix" : "records/source/prefix"
                                   |}""".stripMargin
 
     service.sendAggregateProcessingEventMessage(transferId, event).unsafeRunSync()
