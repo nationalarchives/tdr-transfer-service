@@ -53,7 +53,7 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
     response.as[String].unsafeRunSync() shouldEqual "Healthy"
   }
 
-  "server" should "serve HTTPS with the configured certificate and reject plaintext HTTP" in {
+  "server" should "serve HTTPS with the configured certificate" in {
     tlsFiles
       .flatMap(tls =>
         TransferServiceServer
@@ -83,7 +83,20 @@ class TransferServiceServerSpec extends ExternalServicesSpec with Matchers with 
             try new String(body.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8) shouldBe "Healthy"
             finally body.close()
           } finally https.disconnect()
+        }
+      }
+      .timeout(15.seconds)
+      .unsafeRunSync()
+  }
 
+  it should "reject plaintext HTTP" in {
+    tlsFiles
+      .flatMap(tls =>
+        TransferServiceServer
+          .serverResource(TransferServiceServer.healthCheckRoute.orNotFound, Port.fromInt(0).get, new TransportLayerSecurity(tls))
+      )
+      .use { server =>
+        IO.blocking {
           val http = URI.create(s"http://localhost:${server.address.getPort}/healthcheck").toURL.openConnection()
           http.setConnectTimeout(3000)
           http.setReadTimeout(3000)
