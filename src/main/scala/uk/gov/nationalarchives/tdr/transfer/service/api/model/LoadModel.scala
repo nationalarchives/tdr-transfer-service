@@ -33,7 +33,7 @@ object LoadModel {
   ) extends LoadModel
 
   case class LoadError(message: String)
-  case class LoadCompletion(expectedNumberFiles: Int, loadedNumberFiles: Int, loadErrors: Set[LoadError] = Set())
+  case class LoadCompletion(expectedNumberFiles: Int, loadedNumberFiles: Int)
   case class LoadCompletionResponse(transferId: UUID, success: Boolean)
-  case class LoadFailed(expectedNumberFiles: Int, loadedNumberFiles: Int, loadErrors: Set[LoadError])
+  case class LoadFailed(expectedNumberFiles: Int, loadedNumberFiles: Int, loadError: LoadError)
 }

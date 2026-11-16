@@ -34,6 +34,7 @@ object ApplicationConfig {
   case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
   case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean, blockServiceEndpoints: Boolean)
   case class ErrorMessagePatterns(
+      clientSideDataLoadError: String,
       consignmentAccessDenied: String,
       inCorrectUploadState: String,
       transfersWithoutSeries: String,

@@ -77,7 +77,7 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
 
     for {
       statuses <- graphQlApiService.consignmentState(token, transferId)
-      loadErrors <- hasClientSideErrors(transferId, details)
+      loadErrors <- hasDataLoadErrors(transferId, details)
       uploadStatus = if (loadErrors.isEmpty) CompletedValue else FailedValue
       stateErrors <- isStateCorrect(transferId, statuses, uploadStatus)
       loadSuccess = loadErrors.isEmpty && stateErrors.isEmpty
@@ -92,13 +92,6 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
     } yield loadErrors
       .orElse(stateErrors)
       .toLeft(LoadCompletionResponse(transferId, loadSuccess))
-  }
-
-  private def hasClientSideErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Option[BackendError]] = {
-    val clientSideErrors = loadCompletionDetails.loadErrors
-    if (clientSideErrors.nonEmpty) {
-      IO(Some(ClientSideError(s"Client side data load error(s) for transfer $transferId: ${clientSideErrors.mkString("; ").trim}")))
-    } else hasDataLoadErrors(transferId, loadCompletionDetails)
   }
 
   private def hasDataLoadErrors(transferId: UUID, loadCompletionDetails: LoadCompletion): IO[Option[BackendError]] = {

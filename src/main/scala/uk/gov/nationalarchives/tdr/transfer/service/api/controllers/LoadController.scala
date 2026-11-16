@@ -33,11 +33,7 @@ class LoadController(
 ) extends BaseController {
   def endpoints: List[Endpoint[
     String,
-    _ >: ConfigurationEndpointInput with (SourceSystem, Option[UUID]) with (SourceSystem, UUID, Option[Boolean], LoadCompletion) with (
-        SourceSystem,
-        UUID,
-        LoadFailed
-    ) <: Serializable,
+    _ >: ConfigurationEndpointInput with InitiateEndpointInput with CompleteEndpointInput with FailedEndpointInput <: Serializable,
     BackendError,
     _ >: TransferConfiguration with LoadDetails with LoadCompletionResponse with Unit,
     Any

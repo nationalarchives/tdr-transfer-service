@@ -10,8 +10,8 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusTypes.{ClientChecksType, StatusType, UploadType}
 import uk.gov.nationalarchives.tdr.common.utils.statuses.StatusValues._
 import uk.gov.nationalarchives.tdr.keycloak.Token
-import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, ClientSideError, DataLoadError}
-import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse, LoadError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.errors.{BackendError, DataLoadError}
+import uk.gov.nationalarchives.tdr.transfer.service.api.model.LoadModel.{LoadCompletion, LoadCompletionResponse}
 import uk.gov.nationalarchives.tdr.transfer.service.api.model.SourceSystem.SourceSystemEnum
 import uk.gov.nationalarchives.tdr.transfer.service.services.GraphQlApiService
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{DataLoadProcessorEvent, DataLoadProcessorInput}
@@ -34,8 +34,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
 
   val noErrors = LoadCompletion(2, 2)
   val dataLoadErrorsOnly = LoadCompletion(2, 1)
-  val clientSideErrorsOnly = LoadCompletion(2, 2, Set(LoadError("client side error")))
-  val allErrors = LoadCompletion(2, 1, Set(LoadError("client side error")))
 
   private val correctTransferStatuses = List(
     ConsignmentStatuses(UUID.randomUUID(), transferId, UploadType.id, InProgressValue.value, someDateTime, None),
@@ -58,7 +56,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
   )
 
   private val successResponse = Right(LoadCompletionResponse(transferId, success = true))
-  private val clientSideError = Left(ClientSideError(s"Client side data load error(s) for transfer $transferId: LoadError(client side error)"))
 
   val scenarios: TableFor10[String, List[ConsignmentStatuses], LoadCompletion, Boolean, Either[BackendError, LoadCompletionResponse], StatusValue, Int, Int, Int, Int] = Table(
     (
@@ -86,8 +83,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       1,
       1
     ),
-    ("transfer state correct with client side errors", correctTransferStatuses, clientSideErrorsOnly, false, clientSideError, FailedValue, 0, 1, 1, 1),
-    ("transfer state correct with client side and data load errors", correctTransferStatuses, allErrors, true, clientSideError, FailedValue, 0, 1, 1, 1),
     (
       "upload state not correct and no errors",
       incorrectUploadStatus,
@@ -100,7 +95,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       0,
       2
     ),
-    ("upload state not correct with client side errors", incorrectUploadStatus, clientSideErrorsOnly, true, clientSideError, FailedValue, 0, 1, 0, 1),
     (
       "upload state not correct with data load errors",
       incorrectUploadStatus,
@@ -113,7 +107,6 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       0,
       1
     ),
-    ("upload state not correct with client side errors and data load errors", incorrectUploadStatus, allErrors, true, clientSideError, FailedValue, 0, 1, 0, 1),
     (
       "client side checks state not in progress and no errors",
       incorrectClientSideChecksStatus,
@@ -126,25 +119,12 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       0,
       2
     ),
-    ("client side checks state not in progress with client side errors", incorrectClientSideChecksStatus, clientSideErrorsOnly, true, clientSideError, FailedValue, 0, 1, 0, 1),
     (
       "client side checks state not in progress with data load errors",
       incorrectClientSideChecksStatus,
       dataLoadErrorsOnly,
       true,
       Left(DataLoadError(s"Expected files does not match actual files: $transferId")),
-      FailedValue,
-      0,
-      1,
-      0,
-      1
-    ),
-    (
-      "client side checks state not in progress with client side and data load errors",
-      incorrectClientSideChecksStatus,
-      allErrors,
-      true,
-      clientSideError,
       FailedValue,
       0,
       1,
@@ -174,9 +154,7 @@ class DataLoadProcessorSpec extends BaseSpec with TableDrivenPropertyChecks {
       1,
       0,
       1
-    ),
-    ("transfer state incorrect with client side errors", incorrectTransferStatuses, clientSideErrorsOnly, true, clientSideError, FailedValue, 0, 1, 0, 1),
-    ("transfer state incorrect with client side and data load errors", incorrectTransferStatuses, allErrors, true, clientSideError, FailedValue, 0, 1, 0, 1)
+    )
   )
 
   forAll(scenarios) {
