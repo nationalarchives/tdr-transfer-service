@@ -8,4 +8,4 @@ RUN addgroup --system transferservicegroup && adduser --system transferserviceus
 COPY target/scala-2.13/transferservice.jar /transferservice
 
 USER transferserviceuser
-CMD java -jar /transferservice/transferservice.jar
+CMD java -XX:-UseBASE64Intrinsics -jar /transferservice/transferservice.jar
