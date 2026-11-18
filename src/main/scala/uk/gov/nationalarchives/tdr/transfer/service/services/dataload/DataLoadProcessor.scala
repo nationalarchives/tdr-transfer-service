@@ -18,6 +18,7 @@ import uk.gov.nationalarchives.tdr.transfer.service.services.{BaseService, Graph
 import uk.gov.nationalarchives.tdr.transfer.service.services.dataload.DataLoadProcessor.{DataLoadProcessorEvent, DataLoadProcessorInput}
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
+import uk.gov.nationalarchives.tdr.common.utils.objectkeycontext.ObjectCategories.{Records, Metadata}
 
 import java.util.UUID
 
@@ -26,13 +27,23 @@ class DataLoadProcessor(messageService: Messages, appConfig: ApplicationConfig.C
 ) extends BaseService[DataLoadProcessorInput, LoadCompletionResponse] {
 
   private def sendProcessMessage(transferId: UUID, token: Token, sourceSystem: SourceSystem, loadSuccess: Boolean, loadedNumberOfFiles: Int): IO[SendMessageResponse] = {
-    val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/metadata"
+    val metadataSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/${Metadata.id}"
     val metadataSourceBucket = appConfig.s3.metadataUploadBucketName
+    val recordsSourceObjectPrefix = s"${token.userId}/$sourceSystem/$transferId/${Records.id}"
+    val recordsSourceBucket = appConfig.s3.recordsUploadBucketName
     val ignoreSiteNameBodies = appConfig.transferConfiguration.ignoreSiteNameBodies.split(";").toSet
     val transferringBodies: Set[String] = token.transferringBodies.getOrElse(Nil).toSet
     val ignoreSiteName = transferringBodies.exists(ignoreSiteNameBodies.contains)
 
-    val eventMessage = AggregateProcessingEvent(metadataSourceBucket, metadataSourceObjectPrefix, !loadSuccess, ignoreSiteName = ignoreSiteName, loadedNumberOfFiles)
+    val eventMessage = AggregateProcessingEvent(
+      metadataSourceBucket,
+      metadataSourceObjectPrefix,
+      !loadSuccess,
+      ignoreSiteName = ignoreSiteName,
+      loadedNumberOfFiles,
+      recordsSourceBucket,
+      recordsSourceObjectPrefix
+    )
     messageService.sendAggregateProcessingEventMessage(transferId, eventMessage)
   }
 
