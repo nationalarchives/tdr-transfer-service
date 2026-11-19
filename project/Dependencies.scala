@@ -27,7 +27,7 @@ object Dependencies {
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.21.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.5"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.7"
 
   lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.151"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
