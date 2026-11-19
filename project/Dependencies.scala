@@ -11,8 +11,8 @@ object Dependencies {
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.305"
 
-  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.86"
-  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.86"
+  lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.87"
+  lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.87"
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
