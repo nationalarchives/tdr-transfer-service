@@ -2,11 +2,11 @@ import sbt.*
 
 object Dependencies {
   private val http4sVersion = "0.23.39"
-  private val mockitoVersion = "2.2.3"
+  private val mockitoVersion = "2.2.4"
   private val nettyVersion = "4.2.21.Final"
   private val pureConfigVersion = "0.17.11"
   private val tapirVersion = "1.14.1"
-  private val awsUtilsVersion = "0.1.344"
+  private val awsUtilsVersion = "0.1.345"
   private val tdrUtilsVersion = "0.0.56"
 
   lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.309"
@@ -16,7 +16,7 @@ object Dependencies {
 
   lazy val catsEffect = "org.typelevel" %% "cats-effect" % "3.7.1"
 
-  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.497"
+  lazy val generatedGraphql = "uk.gov.nationalarchives" %% "tdr-generated-graphql" % "0.0.498"
   lazy val graphqlClient = "uk.gov.nationalarchives" %% "tdr-graphql-client" % "0.0.309"
 
   lazy val http4sCirce = "org.http4s" %% "http4s-circe" % http4sVersion
@@ -27,7 +27,7 @@ object Dependencies {
   lazy val keycloakMock = "com.tngtech.keycloakmock" % "mock" % "0.22.0"
 
   lazy val logBackEncoder = "net.logstash.logback" % "logstash-logback-encoder" % "9.0"
-  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.7"
+  lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.6.8"
 
   lazy val metadataSchema = "uk.gov.nationalarchives" %% "da-metadata-schema" % "0.0.156"
   lazy val mockito = "org.mockito" %% "mockito-scala" % mockitoVersion
