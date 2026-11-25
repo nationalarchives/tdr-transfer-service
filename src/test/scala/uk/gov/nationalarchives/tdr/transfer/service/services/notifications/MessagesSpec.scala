@@ -8,6 +8,17 @@ import cats.effect.unsafe.implicits.global
 import java.util.UUID
 
 class MessagesSpec extends BaseSpec {
+  "'sendIngestCompleteMessage'" should "send a DR2-compatible event to the external events queue" in {
+    val assetId = UUID.randomUUID()
+    val config = mock[ApplicationConfig.Sqs]
+    val sqs = mock[SQSUtils]
+    when(config.externalEventHandlingQueueUrl).thenReturn("external/queue")
+
+    new Messages(sqs, config).sendIngestCompleteMessage(assetId).unsafeRunSync()
+
+    verify(sqs).send("external/queue", s"""{"properties":{"messageType":"preserve.digital.asset.ingest.complete"},"parameters":{"assetId":"$assetId"}}""")
+  }
+
   "'sendAggregateProcessingEventMessage'" should "send a aggregate processing event message to the correct sqs queue" in {
     val transferId = UUID.randomUUID()
     val mockSqsConfig = mock[ApplicationConfig.Sqs]
