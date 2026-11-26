@@ -19,6 +19,7 @@ object ApplicationConfig {
       recordsUploadBucketName: String,
       endpoint: String,
       transferErrorsBucketName: String,
+      consignmentExportBucketName: String,
       aclHeaderValue: String,
       ifNoneMatchHeaderValue: String
   )

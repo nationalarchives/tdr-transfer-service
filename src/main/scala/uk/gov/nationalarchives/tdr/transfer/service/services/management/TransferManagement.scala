@@ -11,14 +11,19 @@ import uk.gov.nationalarchives.tdr.error.{HttpException, NotAuthorisedError}
 import uk.gov.nationalarchives.tdr.keycloak.Token
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig.appConfig
 import uk.gov.nationalarchives.tdr.transfer.service.api.errors.AuthorisationError
+import uk.gov.nationalarchives.tdr.transfer.service.services.S3Service
 import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TransferManagement(client: GraphQLClient[query.Data, query.Variables], messages: Messages)(implicit backend: SttpBackend[Identity, Any]) {
+class TransferManagement(client: GraphQLClient[query.Data, query.Variables], messages: Messages, s3Service: S3Service, exportBucket: String)(implicit
+    backend: SttpBackend[Identity, Any]
+) {
+  private case class ConsignmentAssets(reference: String, assetIds: List[UUID])
+
   def ingestComplete(token: Token, consignmentIds: List[UUID]): IO[Unit] = {
-    def assets(consignmentId: UUID): IO[List[UUID]] =
+    def assets(consignmentId: UUID): IO[ConsignmentAssets] =
       for {
         response <- IO.fromFuture(IO.blocking(client.getResult(token.bearerAccessToken, query.document, Some(query.Variables(consignmentId))))).adaptError {
           case error: HttpException if error.response.code == StatusCode.Forbidden =>
@@ -39,15 +44,19 @@ class TransferManagement(client: GraphQLClient[query.Data, query.Variables], mes
             case None           => IO.pure(file.fileId)
           }
         }
-      } yield assetIds
+      } yield ConsignmentAssets(consignment.consignmentReference, assetIds)
 
-    consignmentIds.distinct.traverse(assets).flatMap(_.flatten.traverse_(messages.sendIngestCompleteMessage))
+    for {
+      consignments <- consignmentIds.distinct.traverse(assets)
+      _ <- consignments.flatMap(_.assetIds).traverse_(messages.sendIngestCompleteMessage)
+      _ <- consignments.traverse_(consignment => s3Service.tagBagitPackage(exportBucket, consignment.reference))
+    } yield ()
   }
 }
 
 object TransferManagement {
   def apply()(implicit logger: SelfAwareStructuredLogger[IO]): TransferManagement = {
     implicit val backend: SttpBackend[Identity, Any] = HttpURLConnectionBackend()
-    new TransferManagement(new GraphQLClient[query.Data, query.Variables](appConfig.consignmentApi.url), Messages())
+    new TransferManagement(new GraphQLClient[query.Data, query.Variables](appConfig.consignmentApi.url), Messages(), S3Service(), appConfig.s3.consignmentExportBucketName)
   }
 }

@@ -2,14 +2,63 @@ package uk.gov.nationalarchives.tdr.transfer.service.services
 
 import cats.effect.unsafe.implicits.global
 import io.circe.Json
-import software.amazon.awssdk.services.s3.model.S3Object
+import org.mockito.ArgumentCaptor
+import org.mockito.ArgumentMatchers.any
+import software.amazon.awssdk.services.s3.S3AsyncClient
+import software.amazon.awssdk.services.s3.model.{GetObjectTaggingRequest, GetObjectTaggingResponse, PutObjectTaggingRequest, PutObjectTaggingResponse, S3Object, Tag}
 import uk.gov.nationalarchives.aws.utils.s3.S3Utils
 import uk.gov.nationalarchives.tdr.transfer.service.BaseSpec
 
 import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.CompletableFuture
+import scala.jdk.CollectionConverters._
 
 class S3ServiceSpec extends BaseSpec {
+
+  "tagBagitPackage" should "tag the archive and checksum while preserving existing tags" in {
+    val client = mock[S3AsyncClient]
+    val existing = Tag.builder().key("existing").value("value").build()
+    val oldIngestTag = Tag.builder().key("PreserveDigitalAssetIngest").value("Pending").build()
+    when(client.getObjectTagging(any[GetObjectTaggingRequest]))
+      .thenReturn(CompletableFuture.completedFuture(GetObjectTaggingResponse.builder().tagSet(existing, oldIngestTag).build()))
+    val requests = ArgumentCaptor.forClass(classOf[PutObjectTaggingRequest])
+    when(client.putObjectTagging(requests.capture()))
+      .thenReturn(CompletableFuture.completedFuture(PutObjectTaggingResponse.builder().build()))
+
+    new S3Service(S3Utils(client)).tagBagitPackage("export-bucket", "TDR-2025-TEST").unsafeRunSync()
+
+    val sent = requests.getAllValues.asScala.toList
+    sent.map(_.key()) shouldBe List("TDR-2025-TEST.tar.gz", "TDR-2025-TEST.tar.gz.sha256")
+    sent.foreach { request =>
+      request.bucket() shouldBe "export-bucket"
+      request.tagging().tagSet().asScala.map(tag => tag.key() -> tag.value()).toMap shouldBe
+        Map("existing" -> "value", "PreserveDigitalAssetIngest" -> "Complete")
+    }
+  }
+
+  it should "propagate failures reading existing object tags" in {
+    val client = mock[S3AsyncClient]
+    when(client.getObjectTagging(any[GetObjectTaggingRequest]))
+      .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tag read failed")))
+    val error = intercept[Exception] {
+      new S3Service(S3Utils(client)).tagBagitPackage("export-bucket", "TDR-2025-TEST").unsafeRunSync()
+    }
+    error.toString should include("tag read failed")
+    verify(client, never).putObjectTagging(any[PutObjectTaggingRequest])
+  }
+
+  it should "propagate failures writing object tags" in {
+    val client = mock[S3AsyncClient]
+    when(client.getObjectTagging(any[GetObjectTaggingRequest]))
+      .thenReturn(CompletableFuture.completedFuture(GetObjectTaggingResponse.builder().build()))
+    when(client.putObjectTagging(any[PutObjectTaggingRequest]))
+      .thenReturn(CompletableFuture.failedFuture(new RuntimeException("tag write failed")))
+    val error = intercept[Exception] {
+      new S3Service(S3Utils(client)).tagBagitPackage("export-bucket", "TDR-2025-TEST").unsafeRunSync()
+    }
+    error.toString should include("tag write failed")
+  }
 
   "getJsonObjectsWithPrefix" should "return empty list when no objects exist" in {
     val s3Utils = mock[S3Utils]

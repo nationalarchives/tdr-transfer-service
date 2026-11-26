@@ -14,7 +14,7 @@ class TransferManagementController(management: TransferManagement) extends BaseC
   override val authorisation: Authorisation = Authorisation()
 
   private val ingestCompleteEndpoint = securedWithBearer.post
-    .summary("Send ingest-complete events for consignments")
+    .summary("Send ingest-complete events and tag BagIt packages for consignments")
     .in("admin" / "transfer" / "management" / "ingest-complete")
     .in(jsonBody[List[UUID]])
 
