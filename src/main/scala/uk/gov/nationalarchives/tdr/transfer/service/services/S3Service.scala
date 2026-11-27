@@ -11,6 +11,14 @@ import java.nio.charset.StandardCharsets
 
 class S3Service(s3Utils: S3Utils) {
 
+  def tagBagitPackage(bucketName: String, consignmentReference: String): IO[Unit] = {
+    val archiveKey = s"$consignmentReference.tar.gz"
+    val tags = Map("PreserveDigitalAssetIngest" -> "Complete")
+    List(archiveKey, s"$archiveKey.sha256").traverse_ { key =>
+      IO.blocking(s3Utils.addObjectTags(bucketName, key, tags)).flatten.void
+    }
+  }
+
   def getAllJsonObjectsWithPrefix(objectPrefix: String, bucketName: String): IO[List[Json]] = {
     for {
       s3Objects <- IO.blocking(s3Utils.listAllObjectsWithPrefix(bucketName, objectPrefix))

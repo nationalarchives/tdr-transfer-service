@@ -1,7 +1,7 @@
 package uk.gov.nationalarchives.tdr.transfer.service.services.notifications
 
 import cats.effect.IO
-import io.circe.Encoder
+import io.circe.{Encoder, Json}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 import org.typelevel.log4cats.SelfAwareStructuredLogger
@@ -10,7 +10,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.nationalarchives.aws.utils.sqs.SQSClients.sqs
 import uk.gov.nationalarchives.aws.utils.sqs.SQSUtils
 import uk.gov.nationalarchives.tdr.transfer.service.ApplicationConfig
-import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.AggregateProcessingEvent
+import uk.gov.nationalarchives.tdr.transfer.service.services.notifications.Messages.{AggregateProcessingEvent, IngestCompleteMessageType}
 
 import java.util.UUID
 
@@ -26,12 +26,24 @@ class Messages(sqsUtils: SQSUtils, sqsConfig: ApplicationConfig.Sqs)(implicit lo
     } yield response
   }
 
+  def sendIngestCompleteMessage(assetId: UUID): IO[SendMessageResponse] = {
+    val message = Json.obj(
+      "properties" -> Json.obj("messageType" -> Json.fromString(IngestCompleteMessageType)),
+      "parameters" -> Json.obj("assetId" -> Json.fromString(assetId.toString))
+    )
+    for {
+      _ <- logger.info(s"Sending ingest complete event for asset: $assetId")
+      response <- IO.blocking(sendMessage(sqsConfig.externalEventHandlingQueueUrl, message.noSpaces))
+    } yield response
+  }
+
   private def sendMessage(queueUrl: String, messageBody: String): SendMessageResponse = {
     sqsUtils.send(queueUrl, messageBody)
   }
 }
 
 object Messages {
+  private val IngestCompleteMessageType = "preserve.digital.asset.ingest.complete"
   private val sqsConfig = ApplicationConfig.appConfig.sqs
   private val sqsClient: SqsClient = sqs(sqsConfig.endpoint)
   case class AggregateProcessingEvent(

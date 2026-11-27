@@ -19,6 +19,7 @@ object ApplicationConfig {
       recordsUploadBucketName: String,
       endpoint: String,
       transferErrorsBucketName: String,
+      consignmentExportBucketName: String,
       aclHeaderValue: String,
       ifNoneMatchHeaderValue: String
   )
@@ -32,7 +33,7 @@ object ApplicationConfig {
       overrideIncludeTopLevelFolder: Boolean
   )
   case class Cors(permittedOrigins: List[String])
-  case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String)
+  case class Sqs(endpoint: String, aggregateProcessingQueueUrl: String, externalEventHandlingQueueUrl: String)
   case class FeatureAccessBlocks(blockApiDocumentation: Boolean, blockTdrCustomTags: Boolean, blockServiceEndpoints: Boolean)
   case class ErrorMessagePatterns(
       consignmentAccessDenied: String,

@@ -37,6 +37,12 @@ class TokenAuthenticator(errorHandler: ErrorHandler)(implicit logger: SelfAwareS
         errorHandler.handleErrorAsLeft(AuthenticationError(e.getMessage))
     }
 
+  def authenticateToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
+    parseToken(bearer).flatMap {
+      case Right(token) => IO.pure(Right(AuthenticatedContext(token)))
+      case Left(error)  => errorHandler.handleErrorAsLeft(AuthenticationError(error.getMessage))
+    }
+
   def authenticateClientToken(bearer: String): IO[Either[BackendError, AuthenticatedContext]] =
     parseToken(bearer).flatMap {
       case Right(t) if t.transferServiceRoles.contains("data-load") =>
