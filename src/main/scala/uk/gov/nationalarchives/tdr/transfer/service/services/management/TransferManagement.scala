@@ -35,7 +35,7 @@ class TransferManagement(client: GraphQLClient[query.Data, query.Variables], mes
           else IO.raiseWhen(response.errors.nonEmpty)(new RuntimeException(s"Failed to retrieve consignment $consignmentId: ${response.errors.map(_.message).mkString(", ")}"))
         data <- IO.fromOption(response.data)(new RuntimeException(s"Failed to retrieve consignment: $consignmentId"))
         consignment <- IO.fromOption(data.getConsignment)(new RuntimeException(s"Consignment not found: $consignmentId"))
-        _ <- IO.raiseWhen(!token.transferServiceRoles.contains("transfer-management") && consignment.userid != token.userId)(
+        _ <- IO.raiseWhen(!token.transferServiceRoles.contains("transfer_management") && consignment.userid != token.userId)(
           AuthorisationError(s"User ${token.userId} does not own consignment: $consignmentId")
         )
         assetIds <- consignment.files.filter(_.fileType.contains("File")).traverse { file =>

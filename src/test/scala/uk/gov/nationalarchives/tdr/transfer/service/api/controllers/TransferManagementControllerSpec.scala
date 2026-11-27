@@ -28,7 +28,7 @@ class TransferManagementControllerSpec extends BaseSpec {
     when(management.ingestComplete(any[Token], any[List[UUID]])).thenReturn(IO.unit)
     val response = new TransferManagementController(management).routes
       .orNotFound(
-        request("/admin/transfer/management/ingest-complete", Some(validClientToken(role = "transfer-management").toString), s"""["$id"]""")
+        request("/admin/transfer/management/ingest-complete", Some(validClientToken(role = "transfer_management").toString), s"""["$id"]""")
       )
       .unsafeRunSync()
     response.status shouldBe Status.Ok
@@ -43,7 +43,7 @@ class TransferManagementControllerSpec extends BaseSpec {
 
   it should "reject malformed IDs and unknown operations" in {
     val routes = new TransferManagementController(management).routes.orNotFound
-    val token = Some(validClientToken(role = "transfer-management").toString)
+    val token = Some(validClientToken(role = "transfer_management").toString)
     routes(request("/admin/transfer/management/ingest-complete", token, """["not-a-uuid"]""")).unsafeRunSync().status shouldBe Status.BadRequest
     routes(request("/admin/transfer/management/unknown", token, "[]")).unsafeRunSync().status shouldBe Status.NotFound
   }

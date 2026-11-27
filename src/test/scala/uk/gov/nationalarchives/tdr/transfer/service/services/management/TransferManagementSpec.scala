@@ -75,7 +75,7 @@ class TransferManagementSpec extends BaseSpec {
   }
 
   it should "allow a transfer management administrator to operate on another user's consignment" in {
-    when(token.transferServiceRoles).thenReturn(Set("transfer-management"))
+    when(token.transferServiceRoles).thenReturn(Set("transfer_management"))
     stubResponses(consignment(UUID.randomUUID()))
     new TransferManagement(client, messages, s3, bucket).ingestComplete(token, List(first)).unsafeRunSync()
     verify(messages).sendIngestCompleteMessage(asset)
