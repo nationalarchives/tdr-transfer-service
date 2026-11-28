@@ -5,7 +5,7 @@ object Dependencies {
   private val mockitoVersion = "2.2.4"
   private val nettyVersion = "4.2.21.Final"
   private val pureConfigVersion = "0.17.11"
-  private val tapirVersion = "1.14.1"
+  private val tapirVersion = "1.14.2"
   private val awsUtilsVersion = "0.1.345"
   private val tdrUtilsVersion = "0.0.57"
 
