@@ -5,11 +5,11 @@ object Dependencies {
   private val mockitoVersion = "2.2.4"
   private val nettyVersion = "4.2.21.Final"
   private val pureConfigVersion = "0.17.11"
-  private val tapirVersion = "1.14.1"
+  private val tapirVersion = "1.14.2"
   private val awsUtilsVersion = "0.1.345"
   private val tdrUtilsVersion = "0.0.57"
 
-  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.309"
+  lazy val authUtils = "uk.gov.nationalarchives" %% "tdr-auth-utils" % "0.0.310"
 
   lazy val bcprov = "org.bouncycastle" % "bcprov-jdk18on" % "1.87"
   lazy val bcpkix = "org.bouncycastle" % "bcpkix-jdk18on" % "1.87"
@@ -46,7 +46,7 @@ object Dependencies {
     "netty-transport-native-unix-common"
   ).map("io.netty" % _ % nettyVersion)
 
-  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "2.0.0"
+  lazy val pekkoTestKitHttp = "org.apache.pekko" %% "pekko-http-testkit" % "2.0.1"
   lazy val pureConfig = "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
   lazy val pureConfigCatsEffect = "com.github.pureconfig" %% "pureconfig-cats-effect" % pureConfigVersion
 
